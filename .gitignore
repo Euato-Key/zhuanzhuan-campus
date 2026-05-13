@@ -1,0 +1,40 @@
+# 依赖
+node_modules/
+
+# 构建输出
+dist/
+build/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 测试
+coverage/
+
+# Prisma
+prisma/*.db
+prisma/migrations/
+
+# 后端
+backend/logs/
+
+# 前端
+frontend/.env.local
