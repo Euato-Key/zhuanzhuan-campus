@@ -19,6 +19,8 @@ This file provides guidance to Claude Code when working with this repository.
 zhuanzhuan-campus/
 ├── docs/                    # 项目文档
 │   ├── 需求.md              # 需求规格说明
+│   ├── backend/             # 后端项目文档
+│   ├── frontend/            # 前端项目文档
 │   └── 前后端技术选型.md    # 技术选型文档
 ├── Database/                # 数据库SQL脚本
 │   ├── 01-用户模块.sql
@@ -53,6 +55,45 @@ zhuanzhuan-campus/
 3. **数据库**: 使用Prisma ORM，SQL脚本在Database目录
 4. **API规范**: RESTful风格，响应格式 `{ code: 200, data: {}, message: 'success' }`
 5. **WebSocket**: 使用Socket.io实现实时聊天，命名空间隔离业务
+
+---
+
+## 样式风格规范
+
+采用**清新校园风**设计系统，体现校园生机与环保理念。
+
+### 色彩系统
+- 主色: `#4CAF50` (绿色系)
+- 主色深: `#2E7D32`
+- 辅助色: 橙色 `#FF9800`、蓝色 `#2196F3`
+- 功能色: 成功 `#4CAF50`、警告 `#FF9800`、错误 `#F44336`
+- 支持深色模式
+
+### 样式文件结构
+```
+frontend/src/assets/styles/
+├── _variables.scss    # 变量定义（颜色、间距、圆角等）
+├── _mixins.scss       # 混合宏
+├── _reset.scss        # 重置样式
+├── _typography.scss   # 字体排版
+├── _components.scss   # 通用组件样式
+├── _animations.scss   # 动画定义
+└── main.scss          # 入口文件
+```
+
+### 使用方式
+```scss
+<style scoped lang="scss">
+@import '@/assets/styles/variables';
+
+.my-component {
+  color: $color-primary;
+  border-radius: $radius-md;
+}
+</style>
+```
+### 规范文档
+详细规范见 `docs/frontend/样式风格规范.md`
 
 ---
 

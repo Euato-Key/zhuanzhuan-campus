@@ -1,0 +1,269 @@
+// 通用组件样式
+
+// 容器
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+
+  @media (min-width: 768px) {
+    padding: 0 40px;
+  }
+}
+
+// 按钮
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  @extend .btn;
+  background: var(--color-primary);
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-dark);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
+.btn-secondary {
+  @extend .btn;
+  background: #fff;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-pale);
+  }
+}
+
+.btn-text {
+  @extend .btn;
+  background: transparent;
+  color: var(--color-primary);
+  padding: 8px 16px;
+
+  &:hover:not(:disabled) {
+    background: rgba(76, 175, 80, 0.08);
+  }
+}
+
+// 卡片
+.card {
+  background: var(--color-bg-card);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// 输入框
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &::placeholder {
+    color: var(--color-text-placeholder);
+  }
+
+  &:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+  }
+
+  &.error {
+    border-color: var(--color-error);
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.15);
+    }
+  }
+}
+
+.textarea {
+  @extend .input;
+  height: auto;
+  min-height: 100px;
+  padding: 12px;
+  resize: vertical;
+}
+
+// 标签
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tag-success {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.tag-warning {
+  background: #FFF3E0;
+  color: #E65100;
+}
+
+.tag-error {
+  background: #FFEBEE;
+  color: #C62828;
+}
+
+.tag-info {
+  background: #E3F2FD;
+  color: #1565C0;
+}
+
+// 列表
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--color-bg-card);
+  border-radius: 8px;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: var(--color-primary-pale);
+  }
+}
+
+// 分隔线
+.divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 16px 0;
+}
+
+// 空状态
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 48px;
+    color: var(--color-text-placeholder);
+    margin-bottom: 16px;
+  }
+
+  .empty-text {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+  }
+}
+
+// 加载中
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// 徽章
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+// 头像
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-primary-pale);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  &.avatar-lg {
+    width: 56px;
+    height: 56px;
+    font-size: 20px;
+  }
+}
