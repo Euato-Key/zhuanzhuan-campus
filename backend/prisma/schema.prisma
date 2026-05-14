@@ -1,13 +1,457 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  admin
+  super_admin
+}
+
+enum EmailCodeType {
+  register
+  login
+  reset_password
+  change_email
+}
+
+enum DeliveryType {
+  self
+  express
+  both
+}
+
+enum ItemCondition {
+  new
+  ninety_nine_new  @map("99new")
+  ninety_five_new  @map("95new")
+  ninety_new       @map("90new")
+  eighty_new       @map("80new")
+}
+
+enum ProductStatus {
+  pending
+  active
+  offline
+  banned
+  audit_failed
+}
+
+enum OrderDeliveryType {
+  self
+  express
+}
+
+enum PaymentMethod {
+  wechat
+  alipay
+}
+
+enum OrderStatus {
+  pending_payment
+  pending_ship
+  pending_pickup
+  pending_receive
+  pending_confirm
+  completed
+  cancelled
+  returning
+  refunded
+}
+
+enum ReturnStatus {
+  none
+  pending
+  approved
+  rejected
+}
+
+enum ReviewType {
+  buyer_to_seller
+  seller_to_buyer
+}
+
+enum ReviewStatus {
+  pending
+  approved
+  rejected
+  deleted
+}
+
+enum AppendStatus {
+  pending
+  approved
+  rejected
+}
+
+enum NotificationType {
+  system
+  product
+  order
+  chat
+  review
+  interaction
+}
+
+enum RelatedType {
+  order
+  product
+  review
+  user
+  want_buy
+}
+
+enum ReportTargetType {
+  product
+  user
+  review
+  want_buy
+  comment
+}
+
+enum ReportReason {
+  fraud
+  prohibited
+  inappropriate
+  spam
+  other
+}
+
+enum ReportStatus {
+  pending
+  dismissed
+  warning
+  banned
+  resolved
+}
+
+enum ComplaintType {
+  quality
+  delivery
+  payment
+  attitude
+  other
+}
+
+enum ComplaintStatus {
+  pending
+  processing
+  resolved
+  closed
+}
+
+model User {
+  id              Int       @id @default(autoincrement())
+  email           String    @unique(map: "uk_email") @db.VarChar(255)
+  username        String    @unique(map: "uk_username") @db.VarChar(50)
+  passwordHash    String    @map("password_hash") @db.VarChar(255)
+  avatar          String?   @db.VarChar(500)
+  bio             String?   @db.VarChar(500)
+  school          String?   @db.VarChar(100)
+  campus          String?   @db.VarChar(100)
+  phone           String?   @db.VarChar(20)
+  role            UserRole  @default(user)
+  creditScore     Int       @default(100) @map("credit_score")
+  isBlocked       Boolean   @default(false) @map("is_blocked") @db.TinyInt
+  blockedUntil    DateTime? @map("blocked_until") @db.DateTime
+  lastLoginAt     DateTime? @map("last_login_at") @db.DateTime
+  loginFailCount  Int       @default(0) @map("login_fail_count")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.DateTime
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.DateTime
+
+  refreshTokens   RefreshToken[]
+  addresses       Address[]
+  products        Product[]
+  favorites       Favorite[]
+  ordersBuyer     Order[]       @relation("BuyerOrders")
+  ordersSeller    Order[]       @relation("SellerOrders")
+  reviewsGiven    Review[]      @relation("ReviewerReviews")
+  reviewsReceived Review[]      @relation("ReviewedReviews")
+  notifications   Notification[]
+  reportsFiled    Report[]      @relation("ReporterReports")
+  reportsHandled  Report[]      @relation("HandlerReports")
+  complaintsMade  Complaint[]   @relation("ComplainantComplaints")
+  complaintsReceived Complaint[] @relation("RespondentComplaints")
+  complaintsHandled  Complaint[] @relation("HandlerComplaints")
+
+  @@index([role], map: "idx_role")
+  @@index([isBlocked], map: "idx_is_blocked")
+  @@map("users")
+}
+
+model RefreshToken {
+  id         BigInt   @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  tokenHash  String   @unique(map: "uk_token_hash") @map("token_hash") @db.VarChar(64)
+  expiresAt  DateTime @map("expires_at") @db.DateTime
+  isRevoked  Boolean  @default(false) @map("is_revoked") @db.TinyInt
+  userAgent  String?  @map("user_agent") @db.VarChar(500)
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime @default(now()) @map("created_at") @db.DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_refresh_tokens_user_id")
+
+  @@index([userId], map: "idx_user_id")
+  @@index([expiresAt], map: "idx_expires_at")
+  @@index([userId, isRevoked], map: "idx_user_revoked")
+  @@map("refresh_tokens")
+}
+
+model EmailCode {
+  id        Int           @id @default(autoincrement())
+  email     String        @db.VarChar(255)
+  code      String        @db.VarChar(10)
+  type      EmailCodeType
+  expiresAt DateTime      @map("expires_at") @db.DateTime
+  isUsed    Boolean       @default(false) @map("is_used") @db.TinyInt
+  createdAt DateTime      @default(now()) @map("created_at") @db.DateTime
+
+  @@index([email, type], map: "idx_email_type")
+  @@index([expiresAt], map: "idx_expires_at")
+  @@map("email_codes")
+}
+
+model Address {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  receiverName  String   @map("receiver_name") @db.VarChar(50)
+  receiverPhone String   @map("receiver_phone") @db.VarChar(20)
+  province      String   @db.VarChar(50)
+  city          String   @db.VarChar(50)
+  district      String   @db.VarChar(50)
+  detail        String   @db.VarChar(255)
+  isDefault     Boolean  @default(false) @map("is_default") @db.TinyInt
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_addresses_user_id")
+  orders Order[]
+
+  @@map("addresses")
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(50)
+  parentId  Int?      @map("parent_id")
+  icon      String?   @db.VarChar(500)
+  sort      Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at") @db.DateTime
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.DateTime
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict, map: "fk_categories_parent_id")
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id              BigInt        @id @default(autoincrement())
+  userId          Int           @map("user_id")
+  name            String        @db.VarChar(100)
+  description     String?       @db.Text
+  categoryId      Int?          @map("category_id")
+  tags            Json?
+  images          Json?
+  detailImages    Json?         @map("detail_images")
+  originalPrice   Decimal?      @map("original_price") @db.Decimal(10, 2)
+  currentPrice    Decimal?      @map("current_price") @db.Decimal(10, 2)
+  bargain         Boolean       @default(false) @db.TinyInt
+  deliveryType    DeliveryType  @default(both) @map("delivery_type")
+  pickupAddress   String?       @map("pickup_address") @db.VarChar(255)
+  pickupTime      String?       @map("pickup_time") @db.VarChar(255)
+  itemCondition   ItemCondition @map("item_condition")
+  stock           Int           @default(1)
+  brand           String?       @db.VarChar(100)
+  specs           Json?
+  shippingAddress String?       @map("shipping_address") @db.VarChar(255)
+  validDays       Int?          @map("valid_days")
+  expireTime      DateTime?     @map("expire_time") @db.DateTime
+  status          ProductStatus @default(pending)
+  rejectReason    String?       @map("reject_reason") @db.Text
+  auditCount      Int           @default(0) @map("audit_count")
+  relistCount     Int           @default(0) @map("relist_count")
+  viewCount       Int           @default(0) @map("view_count")
+  favoriteCount   Int           @default(0) @map("favorite_count")
+  createdAt       DateTime      @default(now()) @map("created_at") @db.DateTime
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.DateTime
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_products_user_id")
+  category  Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict, map: "fk_products_category_id")
+  favorites Favorite[]
+  locks     ProductLock[]
+  orders    Order[]
+
+  @@map("products")
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  productId BigInt   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_favorites_user_id")
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "fk_favorites_product_id")
+
+  @@map("favorites")
+}
+
+model Order {
+  id                  BigInt            @id @default(autoincrement())
+  orderNo             String            @unique(map: "uk_order_no") @map("order_no") @db.VarChar(32)
+  productId           BigInt            @map("product_id")
+  buyerId             Int               @map("buyer_id")
+  sellerId            Int               @map("seller_id")
+  quantity            Int               @default(1)
+  price               Decimal?          @db.Decimal(10, 2)
+  totalPrice          Decimal?          @map("total_price") @db.Decimal(10, 2)
+  deliveryType        OrderDeliveryType? @map("delivery_type")
+  addressId           Int?              @map("address_id")
+  addressSnapshot     Json?             @map("address_snapshot")
+  pickupInfo          Json?             @map("pickup_info")
+  paymentMethod       PaymentMethod?    @map("payment_method")
+  status              OrderStatus       @default(pending_payment)
+  payTime             DateTime?         @map("pay_time") @db.DateTime
+  shipTime            DateTime?         @map("ship_time") @db.DateTime
+  receiveTime         DateTime?         @map("receive_time") @db.DateTime
+  confirmPickupTime   DateTime?         @map("confirm_pickup_time") @db.DateTime
+  confirmTime         DateTime?         @map("confirm_time") @db.DateTime
+  expressCompany      String?           @map("express_company") @db.VarChar(50)
+  expressNo           String?           @map("express_no") @db.VarChar(50)
+  productName         String?           @map("product_name") @db.VarChar(100)
+  productImage        String?           @map("product_image") @db.VarChar(500)
+  productSpecs        Json?             @map("product_specs")
+  cancelReason        String?           @map("cancel_reason") @db.VarChar(255)
+  returnStatus        ReturnStatus      @default(none) @map("return_status")
+  returnReason        String?           @map("return_reason") @db.VarChar(255)
+  returnRejectReason  String?           @map("return_reject_reason") @db.VarChar(255)
+  returnApplyTime     DateTime?         @map("return_apply_time") @db.DateTime
+  returnApprovedTime  DateTime?         @map("return_approved_time") @db.DateTime
+  returnReceivedTime  DateTime?         @map("return_received_time") @db.DateTime
+  returnCompany       String?           @map("return_company") @db.VarChar(50)
+  returnExpressNo     String?           @map("return_express_no") @db.VarChar(50)
+  returnApplyCount    Int               @default(0) @map("return_apply_count")
+  createdAt           DateTime          @default(now()) @map("created_at") @db.DateTime
+  updatedAt           DateTime          @updatedAt @map("updated_at") @db.DateTime
+
+  product    Product       @relation(fields: [productId], references: [id], onDelete: Restrict, map: "fk_orders_product_id")
+  buyer      User          @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict, map: "fk_orders_buyer_id")
+  seller     User          @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict, map: "fk_orders_seller_id")
+  address    Address?      @relation(fields: [addressId], references: [id], onDelete: SetNull, map: "fk_orders_address_id")
+  locks      ProductLock[]
+  reviews    Review[]
+  complaints Complaint[]
+
+  @@map("orders")
+}
+
+model ProductLock {
+  id          Int      @id @default(autoincrement())
+  productId   BigInt   @map("product_id")
+  orderId     BigInt   @map("order_id")
+  quantity    Int
+  lockedUntil DateTime @map("locked_until") @db.DateTime
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "fk_product_locks_product_id")
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "fk_product_locks_order_id")
+
+  @@map("product_locks")
+}
+
+model Review {
+  id               Int          @id @default(autoincrement())
+  orderId          BigInt       @map("order_id")
+  reviewerId       Int          @map("reviewer_id")
+  reviewedId       Int          @map("reviewed_id")
+  type             ReviewType
+  rating           Int          @db.TinyInt
+  content          String?      @db.Text
+  images           Json?
+  isAnonymous      Boolean      @default(false) @map("is_anonymous") @db.TinyInt
+  status           ReviewStatus @default(pending)
+  rejectReason     String?      @map("reject_reason") @db.Text
+  isAppend         Boolean      @default(false) @map("is_append") @db.TinyInt
+  appendContent    String?      @map("append_content") @db.Text
+  appendImages     Json?        @map("append_images")
+  appendStatus     AppendStatus? @map("append_status")
+  appendAt         DateTime?    @map("append_at") @db.DateTime
+  appendAuditCount Int?         @map("append_audit_count")
+  auditCount       Int          @default(0) @map("audit_count")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.DateTime
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.DateTime
+
+  order    Order @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "fk_reviews_order_id")
+  reviewer User  @relation("ReviewerReviews", fields: [reviewerId], references: [id], onDelete: Cascade, map: "fk_reviews_reviewer_id")
+  reviewed User  @relation("ReviewedReviews", fields: [reviewedId], references: [id], onDelete: Cascade, map: "fk_reviews_reviewed_id")
+
+  @@map("reviews")
+}
+
+model Notification {
+  id          Int             @id @default(autoincrement())
+  userId      Int             @map("user_id")
+  type        NotificationType
+  title       String          @db.VarChar(100)
+  content     String?         @db.Text
+  relatedId   BigInt?         @map("related_id")
+  relatedType RelatedType?    @map("related_type")
+  isRead      Boolean         @default(false) @map("is_read") @db.TinyInt
+  createdAt   DateTime        @default(now()) @map("created_at") @db.DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_notifications_user_id")
+
+  @@map("notifications")
+}
+
+model Report {
+  id          Int           @id @default(autoincrement())
+  reporterId  Int           @map("reporter_id")
+  targetType  ReportTargetType @map("target_type")
+  targetId    BigInt        @map("target_id")
+  reason      ReportReason
+  detail      String?       @db.Text
+  images      Json?
+  status      ReportStatus  @default(pending)
+  handlerId   Int?          @map("handler_id")
+  handlerNote String?       @map("handler_note") @db.Text
+  handledAt   DateTime?     @map("handled_at") @db.DateTime
+  createdAt   DateTime      @default(now()) @map("created_at") @db.DateTime
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.DateTime
+
+  reporter User  @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Cascade, map: "fk_reports_reporter_id")
+  handler  User?  @relation("HandlerReports", fields: [handlerId], references: [id], onDelete: SetNull, map: "fk_reports_handler_id")
+
+  @@map("reports")
+}
+
+model Complaint {
+  id            Int             @id @default(autoincrement())
+  orderId       BigInt          @map("order_id")
+  complainantId Int             @map("complainant_id")
+  respondentId  Int             @map("respondent_id")
+  type          ComplaintType
+  description   String?         @db.Text
+  images        Json?
+  status        ComplaintStatus @default(pending)
+  handlerId     Int?            @map("handler_id")
+  handlerNote   String?         @map("handler_note") @db.Text
+  result        String?         @db.Text
+  handledAt     DateTime?       @map("handled_at") @db.DateTime
+  createdAt     DateTime        @default(now()) @map("created_at") @db.DateTime
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.DateTime
+
+  order       Order @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "fk_complaints_order_id")
+  complainant User  @relation("ComplainantComplaints", fields: [complainantId], references: [id], onDelete: Cascade, map: "fk_complaints_complainant_id")
+  respondent  User  @relation("RespondentComplaints", fields: [respondentId], references: [id], onDelete: Cascade, map: "fk_complaints_respondent_id")
+  handler     User?  @relation("HandlerComplaints", fields: [handlerId], references: [id], onDelete: SetNull, map: "fk_complaints_handler_id")
+
+  @@map("complaints")
 }

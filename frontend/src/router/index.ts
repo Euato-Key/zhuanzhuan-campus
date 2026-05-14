@@ -1,97 +1,38 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw } from 'vue-router'
-
-const routes: RouteRecordRaw[] = [
-  {
-    path: '/',
-    name: 'Home',
-    component: () => import('@/views/home/index.vue')
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: () => import('@/views/user/login.vue')
-  },
-  {
-    path: '/register',
-    name: 'Register',
-    component: () => import('@/views/user/register.vue')
-  },
-  {
-    path: '/product/:id',
-    name: 'ProductDetail',
-    component: () => import('@/views/product/detail.vue')
-  },
-  {
-    path: '/products',
-    name: 'ProductList',
-    component: () => import('@/views/product/list.vue')
-  },
-  {
-    path: '/orders',
-    name: 'OrderList',
-    component: () => import('@/views/order/list.vue')
-  },
-  {
-    path: '/order/:id',
-    name: 'OrderDetail',
-    component: () => import('@/views/order/detail.vue')
-  },
-  {
-    path: '/chat',
-    name: 'ChatList',
-    component: () => import('@/views/chat/list.vue')
-  },
-  {
-    path: '/chat/:userId',
-    name: 'ChatRoom',
-    component: () => import('@/views/chat/room.vue')
-  },
-  {
-    path: '/want-buy',
-    name: 'WantBuyList',
-    component: () => import('@/views/home/wantBuyList.vue')
-  },
-  {
-    path: '/user/profile',
-    name: 'UserProfile',
-    component: () => import('@/views/user/profile.vue')
-  },
-  {
-    path: '/user/favorites',
-    name: 'UserFavorites',
-    component: () => import('@/views/user/favorites.vue')
-  },
-  {
-    path: '/user/addresses',
-    name: 'UserAddresses',
-    component: () => import('@/views/user/addresses.vue')
-  },
-  {
-    path: '/user/notifications',
-    name: 'UserNotifications',
-    component: () => import('@/views/user/notifications.vue')
-  },
-  {
-    path: '/admin',
-    name: 'Admin',
-    component: () => import('@/views/admin/index.vue'),
-    meta: { requiresAdmin: true }
-  }
-]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes: [
+    {
+      path: '/login',
+      name: 'Login',
+      component: () => import('@/views/user/login.vue'),
+      meta: { title: '登录', guest: true }
+    },
+    {
+      path: '/register',
+      name: 'Register',
+      component: () => import('@/views/user/register.vue'),
+      meta: { title: '注册', guest: true }
+    },
+    {
+      path: '/forgot-password',
+      name: 'ForgotPassword',
+      component: () => import('@/views/user/forgotPassword.vue'),
+      meta: { title: '找回密码', guest: true }
+    },
+    {
+      path: '/',
+      name: 'Home',
+      component: () => import('@/views/home/index.vue'),
+      meta: { title: '首页' }
+    }
+  ]
 })
 
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('access_token')
-  if (to.meta.requiresAdmin && !token) {
-    next('/login')
-  } else {
-    next()
-  }
+router.beforeEach((to, _from, next) => {
+  document.title = `${to.meta.title || '转转校园'} - 转转校园`
+  next()
 })
 
 export default router

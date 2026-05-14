@@ -11,7 +11,6 @@ const form = ref({
   username: '',
   password: ''
 })
-
 const loading = ref(false)
 
 async function handleLogin() {
@@ -19,7 +18,6 @@ async function handleLogin() {
     ElMessage.warning('请输入用户名和密码')
     return
   }
-
   loading.value = true
   try {
     await userStore.login(form.value.username, form.value.password)
@@ -34,23 +32,27 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="login-page">
-    <div class="login-card">
-      <h2>登录</h2>
-      <el-form :model="form" @submit.prevent="handleLogin">
-        <el-form-item>
-          <el-input v-model="form.username" placeholder="用户名/邮箱" />
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>欢迎回来</h2>
+        <p>登录转转校园，发现校园好物</p>
+      </div>
+      <el-form :model="form" @submit.prevent="handleLogin" label-position="top">
+        <el-form-item label="用户名 / 箱">
+          <el-input v-model="form.username" placeholder="请输入用户名或邮箱" size="large" prefix-icon="User" />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="form.password" type="password" placeholder="请输入密码" size="large" prefix-icon="Lock" show-password />
         </el-form-item>
         <el-form-item>
-          <el-input v-model="form.password" type="password" placeholder="密码" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :loading="loading" native-type="submit" style="width: 100%">
+          <el-button type="primary" :loading="loading" native-type="submit" size="large" class="auth-btn">
             登录
           </el-button>
         </el-form-item>
       </el-form>
-      <div class="links">
+      <div class="auth-links">
+        <RouterLink to="/forgot-password">忘记密码？</RouterLink>
         <RouterLink to="/register">还没有账号？立即注册</RouterLink>
       </div>
     </div>
@@ -58,33 +60,56 @@ async function handleLogin() {
 </template>
 
 <style scoped lang="scss">
-.login-page {
+@import '@/assets/styles/variables';
+
+.auth-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, $color-primary-light 0%, #E8F5E9 50%, #C8E6C9 100%);
 }
 
-.login-card {
+.auth-card {
   background: #fff;
-  padding: 40px;
-  border-radius: 12px;
-  width: 400px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: 40px 36px;
+  border-radius: $radius-lg;
+  width: 420px;
+  box-shadow: $shadow-primary;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
 
   h2 {
-    text-align: center;
-    margin-bottom: 30px;
+    color: $color-primary-dark;
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: $color-text-secondary;
+    font-size: 14px;
   }
 }
 
-.links {
-  text-align: center;
-  margin-top: 15px;
+.auth-btn {
+  width: 100%;
+  border-radius: $radius-md;
+}
+
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
 
   a {
-    color: #409eff;
+    color: $color-primary;
+    font-size: 14px;
+    &:hover {
+      color: $color-primary-dark;
+    }
   }
 }
 </style>

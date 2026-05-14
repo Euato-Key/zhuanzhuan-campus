@@ -21,6 +21,7 @@ zhuanzhuan-campus/
 │   ├── 需求.md              # 需求规格说明
 │   ├── backend/             # 后端项目文档
 │   ├── frontend/            # 前端项目文档
+│   ├── openapi/             # OpenAPI文档，每次写完后端API记得更新到这里
 │   └── 前后端技术选型.md    # 技术选型文档
 ├── Database/                # 数据库SQL脚本
 │   ├── 01-用户模块.sql
