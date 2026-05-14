@@ -43,7 +43,9 @@ zhuanzhuan-campus/
 │   │   ├── common/          # 公共代码
 │   │   └── main.ts          # 入口文件
 │   └── prisma/              # Prisma ORM
-└── .gitignore
+└── .gitignore                  # 忽略文件
+├── Experimental_code/        # 实验性代码目录（claude code可以在里面进行代码探索）
+├── CLAUDE.md                 # Claude Code 指南文件
 ```
 
 ---
@@ -98,7 +100,7 @@ frontend/src/assets/styles/
 ---
 
 ## 注意事项
-
+- 写TS代码时，要注意类型规范，尽量避免使用any类型
 - 前端使用ESM模块，后端使用CommonJS
 - 前端组件自动导入已配置Element Plus
 - 后端Prisma需要先配置 DATABASE_URL 环境变量

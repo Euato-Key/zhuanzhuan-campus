@@ -1,6 +1,7 @@
 # 依赖
 node_modules/
 
+
 # 构建输出
 dist/
 build/
@@ -32,6 +33,9 @@ coverage/
 # Prisma
 prisma/*.db
 prisma/migrations/
+
+# 实验性代码
+Experimental_code/
 
 # 后端
 backend/logs/

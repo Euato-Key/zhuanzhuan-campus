@@ -1,5 +1,6 @@
 -- =============================================
--- 求购社区模块
+-- 08 - 求购社区表
+-- 依赖：01-用户表, 02-商品分类表
 -- =============================================
 
 -- 求购贴表
@@ -15,15 +16,21 @@ CREATE TABLE `want_buys` (
     `quantity` INT DEFAULT 1 COMMENT '求购数量',
     `images` JSON DEFAULT NULL COMMENT '图片数组',
     `status` ENUM('active', 'found', 'closed', 'expired') DEFAULT 'active' COMMENT '状态',
-    `valid_days` INT DEFAULT 30 COMMENT '有效期(天)',
+    `valid_days` INT DEFAULT 30 COMMENT '有效期(天,可选7/15/30)',
     `expire_time` DATETIME DEFAULT NULL COMMENT '过期时间',
+    `view_count` INT DEFAULT 0 COMMENT '浏览次数',
+    `comment_count` INT DEFAULT 0 COMMENT '评论次数',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     KEY `idx_user_id` (`user_id`),
     KEY `idx_category_id` (`category_id`),
     KEY `idx_status` (`status`),
     KEY `idx_expire_time` (`expire_time`),
-    KEY `idx_created_at` (`created_at`)
+    KEY `idx_created_at` (`created_at`),
+    CONSTRAINT `chk_wb_valid_days` CHECK (`valid_days` IN (7, 15, 30)),
+    CONSTRAINT `chk_wb_budget` CHECK (`budget_min` IS NULL OR `budget_max` IS NULL OR `budget_min` <= `budget_max`),
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='求购贴表';
 
 -- 求购评论表
@@ -33,13 +40,16 @@ CREATE TABLE `want_buy_comments` (
     `user_id` INT NOT NULL COMMENT '评论人ID',
     `parent_id` INT DEFAULT NULL COMMENT '父评论ID(回复)',
     `content` TEXT NOT NULL COMMENT '评论内容',
-    `likes` INT DEFAULT 0 COMMENT '点赞数',
+    `like_count` INT DEFAULT 0 COMMENT '点赞数',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     KEY `idx_want_buy_id` (`want_buy_id`),
     KEY `idx_user_id` (`user_id`),
     KEY `idx_parent_id` (`parent_id`),
-    KEY `idx_created_at` (`created_at`)
+    KEY `idx_created_at` (`created_at`),
+    FOREIGN KEY (`want_buy_id`) REFERENCES `want_buys`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`parent_id`) REFERENCES `want_buy_comments`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='求购评论表';
 
 -- 求购评论点赞表
@@ -50,5 +60,7 @@ CREATE TABLE `want_buy_comment_likes` (
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     KEY `idx_comment_id` (`comment_id`),
     KEY `idx_user_id` (`user_id`),
-    UNIQUE KEY `uk_comment_user` (`comment_id`, `user_id`)
+    UNIQUE KEY `uk_comment_user` (`comment_id`, `user_id`),
+    FOREIGN KEY (`comment_id`) REFERENCES `want_buy_comments`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='求购评论点赞表';
