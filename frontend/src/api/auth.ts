@@ -8,8 +8,12 @@ export function register(data: { email: string; code: string; username: string; 
   return api.post('/auth/register', data)
 }
 
-export function login(username: string, password: string) {
-  return api.post('/auth/login', { username, password }, { withCredentials: true })
+export function loginByPassword(email: string, password: string) {
+  return api.post('/auth/login/password', { email, password }, { withCredentials: true })
+}
+
+export function loginByCode(email: string, code: string) {
+  return api.post('/auth/login/code', { email, code }, { withCredentials: true })
 }
 
 export function refreshToken() {

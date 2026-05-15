@@ -171,3 +171,18 @@
 .el-message {
   border-radius: 8px;
 }
+
+// 对话框
+.el-dialog {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+.el-dialog__header {
+  padding: 0 !important;
+  height: 0 !important;
+}
+
+.el-dialog__body {
+  padding: 32px 32px 24px !important;
+}

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login as loginApi, register as registerApi, refreshToken as refreshTokenApi, logout as logoutApi, getProfile as getProfileApi } from '@/api/auth'
+import { loginByPassword as loginByPasswordApi, loginByCode as loginByCodeApi, refreshToken as refreshTokenApi, logout as logoutApi, register as registerApi, getProfile as getProfileApi } from '@/api/auth'
 
 interface User {
   id: number
@@ -29,8 +29,16 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('access_token')
   }
 
-  async function login(identifier: string, password: string) {
-    const res = await loginApi(identifier, password)
+  async function loginByPassword(email: string, password: string) {
+    const res = await loginByPasswordApi(email, password)
+    const { access_token, user: userData } = res.data.data
+    setAccessToken(access_token)
+    user.value = userData
+    return userData
+  }
+
+  async function loginByCode(email: string, code: string) {
+    const res = await loginByCodeApi(email, code)
     const { access_token, user: userData } = res.data.data
     setAccessToken(access_token)
     user.value = userData
@@ -76,7 +84,8 @@ export const useUserStore = defineStore('user', () => {
     accessToken,
     isLoggedIn,
     isAdmin,
-    login,
+    loginByPassword,
+    loginByCode,
     register,
     fetchUser,
     refresh,

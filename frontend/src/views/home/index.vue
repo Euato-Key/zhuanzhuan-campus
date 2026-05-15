@@ -1,5 +1,27 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import { useAuthDialog } from '@/composables/useAuthDialog'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { User, SwitchButton, Star, Bell, ChatDotRound, ShoppingBag } from '@element-plus/icons-vue'
+
+const router = useRouter()
+const userStore = useUserStore()
+const authDialog = useAuthDialog()
+
+async function handleLogout() {
+  try {
+    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await userStore.logout()
+    ElMessage.success('已退出登录')
+  } catch {
+    // cancelled
+  }
+}
 </script>
 
 <template>
@@ -16,9 +38,54 @@ import { RouterLink } from 'vue-router'
             <RouterLink to="/products" class="nav-link">商品</RouterLink>
             <RouterLink to="/want-buy" class="nav-link">求购</RouterLink>
           </nav>
-          <div class="user-actions">
-            <RouterLink to="/login" class="btn-text">登录</RouterLink>
-            <RouterLink to="/register" class="btn btn-primary">注册</RouterLink>
+
+          <!-- Logged in -->
+          <div v-if="userStore.isLoggedIn" class="user-actions logged-in">
+            <RouterLink to="/chat" class="action-icon" title="消息">
+              <el-icon :size="20"><ChatDotRound /></el-icon>
+            </RouterLink>
+            <RouterLink to="/notifications" class="action-icon" title="通知">
+              <el-icon :size="20"><Bell /></el-icon>
+            </RouterLink>
+            <el-dropdown trigger="click" @command="(cmd: string) => {
+              if (cmd === 'profile') router.push('/profile')
+              else if (cmd === 'orders') router.push('/orders')
+              else if (cmd === 'favorites') router.push('/favorites')
+              else if (cmd === 'addresses') router.push('/addresses')
+              else if (cmd === 'logout') handleLogout()
+            }">
+              <div class="user-avatar-wrap">
+                <el-avatar :size="32" :src="userStore.user?.avatar || undefined">
+                  <el-icon :size="18"><User /></el-icon>
+                </el-avatar>
+                <span class="user-name">{{ userStore.user?.username }}</span>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="profile">
+                    <el-icon><User /></el-icon>个人主页
+                  </el-dropdown-item>
+                  <el-dropdown-item command="orders">
+                    <el-icon><ShoppingBag /></el-icon>我的订单
+                  </el-dropdown-item>
+                  <el-dropdown-item command="favorites">
+                    <el-icon><Star /></el-icon>我的收藏
+                  </el-dropdown-item>
+                  <el-dropdown-item command="addresses">
+                    <el-icon><ShoppingBag /></el-icon>收货地址
+                  </el-dropdown-item>
+                  <el-dropdown-item divided command="logout">
+                    <el-icon><SwitchButton /></el-icon>退出登录
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+
+          <!-- Not logged in -->
+          <div v-else class="user-actions">
+            <a class="btn-text" @click="authDialog.open('login')">登录</a>
+            <a class="btn btn-primary" @click="authDialog.open('register')">注册</a>
           </div>
         </div>
       </div>
@@ -32,7 +99,8 @@ import { RouterLink } from 'vue-router'
             <p class="hero-desc">买卖二手商品，就来转转校园 · 闲置物品再利用，环保又省钱</p>
             <div class="hero-actions">
               <RouterLink to="/products" class="btn btn-primary">浏览商品</RouterLink>
-              <RouterLink to="/publish" class="btn btn-secondary">发布商品</RouterLink>
+              <a v-if="userStore.isLoggedIn" class="btn btn-secondary" @click="router.push('/publish')">发布商品</a>
+              <a v-else class="btn btn-secondary" @click="authDialog.open('login')">发布商品</a>
             </div>
           </div>
           <div class="hero-stats">
@@ -128,7 +196,7 @@ import { RouterLink } from 'vue-router'
   flex-direction: column;
 }
 
-// 头部
+// ─── Header ───
 .header {
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -152,9 +220,7 @@ import { RouterLink } from 'vue-router'
   font-weight: 600;
   color: $color-primary;
 
-  .logo-icon {
-    font-size: 24px;
-  }
+  .logo-icon { font-size: 24px; }
 }
 
 .nav {
@@ -179,13 +245,9 @@ import { RouterLink } from 'vue-router'
       transition: width 0.2s ease;
     }
 
-    &:hover,
-    &.active {
+    &:hover, &.active {
       color: $color-primary;
-
-      &::after {
-        width: 100%;
-      }
+      &::after { width: 100%; }
     }
   }
 }
@@ -195,23 +257,55 @@ import { RouterLink } from 'vue-router'
   align-items: center;
   gap: 16px;
 
-  .btn-text {
-    color: $color-text-secondary;
+  &.logged-in { gap: 12px; }
+}
 
-    &:hover {
-      color: $color-primary;
-    }
+.action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: $radius-md;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &:hover {
+    color: $color-primary;
+    background: $color-primary-pale;
   }
 }
 
-// 主内容区
+.user-avatar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: $radius-full;
+  transition: background $transition-fast;
+
+  &:hover { background: $color-primary-pale; }
+
+  .user-name {
+    font-size: $font-size-body;
+    color: $color-text-primary;
+    font-weight: $font-weight-medium;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// ─── Main ───
 .main {
   flex: 1;
   padding: 40px 0;
   background: $color-bg-page;
 }
 
-// Hero 区域
+// ─── Hero ───
 .hero {
   background: linear-gradient(135deg, $color-primary-pale 0%, #fff 100%);
   border-radius: 16px;
@@ -224,10 +318,7 @@ import { RouterLink } from 'vue-router'
   gap: 40px;
 }
 
-.hero-content {
-  flex: 1;
-  min-width: 300px;
-}
+.hero-content { flex: 1; min-width: 300px; }
 
 .hero-title {
   font-size: 36px;
@@ -242,15 +333,9 @@ import { RouterLink } from 'vue-router'
   margin-bottom: 24px;
 }
 
-.hero-actions {
-  display: flex;
-  gap: 12px;
-}
+.hero-actions { display: flex; gap: 12px; }
 
-.hero-stats {
-  display: flex;
-  gap: 40px;
-}
+.hero-stats { display: flex; gap: 40px; }
 
 .stat-item {
   text-align: center;
@@ -269,10 +354,8 @@ import { RouterLink } from 'vue-router'
   }
 }
 
-// 分类区域
-.categories {
-  margin-bottom: 40px;
-}
+// ─── Categories ───
+.categories { margin-bottom: 40px; }
 
 .section-title {
   font-size: 20px;
@@ -305,19 +388,11 @@ import { RouterLink } from 'vue-router'
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   }
 
-  .category-icon {
-    font-size: 32px;
-    display: block;
-    margin-bottom: 8px;
-  }
-
-  .category-name {
-    font-size: 14px;
-    color: $color-text-primary;
-  }
+  .category-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+  .category-name { font-size: 14px; color: $color-text-primary; }
 }
 
-// 热门商品
+// ─── Hot products ───
 .hot-products {
   .section-header {
     display: flex;
@@ -329,10 +404,7 @@ import { RouterLink } from 'vue-router'
   .more-link {
     font-size: 14px;
     color: $color-primary;
-
-    &:hover {
-      text-decoration: underline;
-    }
+    &:hover { text-decoration: underline; }
   }
 }
 
@@ -341,13 +413,8 @@ import { RouterLink } from 'vue-router'
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 
-  @media (max-width: 992px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  @media (max-width: 992px) { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
 }
 
 .product-card {
@@ -368,9 +435,6 @@ import { RouterLink } from 'vue-router'
     aspect-ratio: 1;
     background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 
     .product-tag {
       position: absolute;
@@ -384,9 +448,7 @@ import { RouterLink } from 'vue-router'
     }
   }
 
-  .product-info {
-    padding: 12px;
-  }
+  .product-info { padding: 12px; }
 
   .product-price {
     font-size: 18px;
@@ -415,7 +477,7 @@ import { RouterLink } from 'vue-router'
   }
 }
 
-// 底部
+// ─── Footer ───
 .footer {
   background: #fff;
   padding: 24px 0;
@@ -423,9 +485,7 @@ import { RouterLink } from 'vue-router'
   margin-top: auto;
 }
 
-.footer-content {
-  text-align: center;
-}
+.footer-content { text-align: center; }
 
 .footer-brand {
   display: flex;
@@ -437,9 +497,7 @@ import { RouterLink } from 'vue-router'
   color: $color-primary;
   margin-bottom: 8px;
 
-  .logo-icon {
-    font-size: 20px;
-  }
+  .logo-icon { font-size: 20px; }
 }
 
 .footer-desc {
@@ -447,7 +505,7 @@ import { RouterLink } from 'vue-router'
   color: $color-text-placeholder;
 }
 
-// 按钮样式覆盖
+// ─── Buttons ───
 .btn {
   display: inline-flex;
   align-items: center;
@@ -463,20 +521,14 @@ import { RouterLink } from 'vue-router'
   &-primary {
     background: $color-primary;
     color: #fff;
-
-    &:hover {
-      background: $color-primary-dark;
-    }
+    &:hover { background: $color-primary-dark; }
   }
 
   &-secondary {
     background: #fff;
     color: $color-primary;
     border: 1px solid $color-primary;
-
-    &:hover {
-      background: $color-primary-pale;
-    }
+    &:hover { background: $color-primary-pale; }
   }
 }
 
