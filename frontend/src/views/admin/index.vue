@@ -186,7 +186,7 @@ const pendingReviews = ref([
   display: flex;
   gap: 16px;
   padding: 12px 0;
-  border-bottom: 1px solid $color-border-light;
+  border-bottom: 1px solid $color-border;
 
   &:last-child { border-bottom: none; }
 }
@@ -213,7 +213,7 @@ const pendingReviews = ref([
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid $color-border-light;
+  border-bottom: 1px solid $color-border;
 
   &:last-child { border-bottom: none; }
 }
