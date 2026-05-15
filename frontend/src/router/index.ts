@@ -70,6 +70,55 @@ const router = createRouter({
       name: 'Notifications',
       component: () => import('@/views/user/notifications.vue'),
       meta: { title: '通知中心', auth: true }
+    },
+    // Admin routes (hidden)
+    {
+      path: '/admin',
+      name: 'AdminDashboard',
+      component: () => import('@/views/admin/index.vue'),
+      meta: { title: '仪表盘', auth: true, admin: true }
+    },
+    {
+      path: '/admin/users',
+      name: 'AdminUsers',
+      component: () => import('@/views/admin/users.vue'),
+      meta: { title: '用户管理', auth: true, admin: true }
+    },
+    {
+      path: '/admin/products',
+      name: 'AdminProducts',
+      component: () => import('@/views/admin/products.vue'),
+      meta: { title: '商品管理', auth: true, admin: true }
+    },
+    {
+      path: '/admin/categories',
+      name: 'AdminCategories',
+      component: () => import('@/views/admin/categories.vue'),
+      meta: { title: '分类管理', auth: true, admin: true }
+    },
+    {
+      path: '/admin/orders',
+      name: 'AdminOrders',
+      component: () => import('@/views/admin/orders.vue'),
+      meta: { title: '订单管理', auth: true, admin: true }
+    },
+    {
+      path: '/admin/reports',
+      name: 'AdminReports',
+      component: () => import('@/views/admin/reports.vue'),
+      meta: { title: '举报管理', auth: true, admin: true }
+    },
+    {
+      path: '/admin/banners',
+      name: 'AdminBanners',
+      component: () => import('@/views/admin/banners.vue'),
+      meta: { title: 'Banner管理', auth: true, admin: true }
+    },
+    {
+      path: '/admin/settings',
+      name: 'AdminSettings',
+      component: () => import('@/views/admin/settings.vue'),
+      meta: { title: '系统设置', auth: true, admin: true, superAdmin: true }
     }
   ]
 })
@@ -94,6 +143,21 @@ router.beforeEach(async (to, _from, next) => {
     authDialog.open('login')
     next({ name: 'Home' })
     return
+  }
+
+  // Admin route - check admin permission
+  if (to.meta.admin && userStore.user) {
+    const isAdmin = userStore.user.role === 'admin' || userStore.user.role === 'super_admin'
+    if (!isAdmin) {
+      next({ name: 'Home' })
+      return
+    }
+
+    // Super admin only routes
+    if (to.meta.superAdmin && userStore.user.role !== 'super_admin') {
+      next({ name: 'AdminDashboard' })
+      return
+    }
   }
 
   next()
