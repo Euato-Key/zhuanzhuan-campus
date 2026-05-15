@@ -11,7 +11,11 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AppFooter: typeof import('./src/components/layout/AppFooter.vue')['default']
+    AppHeader: typeof import('./src/components/layout/AppHeader.vue')['default']
+    AppLayout: typeof import('./src/components/layout/AppLayout.vue')['default']
     AuthDialog: typeof import('./src/components/AuthDialog.vue')['default']
+    AvatarUpload: typeof import('./src/components/AvatarUpload.vue')['default']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElDialog: typeof import('element-plus/es')['ElDialog']

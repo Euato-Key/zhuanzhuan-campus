@@ -1,6 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { loginByPassword as loginByPasswordApi, loginByCode as loginByCodeApi, refreshToken as refreshTokenApi, logout as logoutApi, register as registerApi, getProfile as getProfileApi } from '@/api/auth'
+import {
+  loginByPassword as loginByPasswordApi,
+  loginByCode as loginByCodeApi,
+  refreshToken as refreshTokenApi,
+  logout as logoutApi,
+  register as registerApi,
+  getProfile as getProfileApi
+} from '@/api/auth'
+import {
+  updateProfile as updateProfileApi,
+  changePassword as changePasswordApi,
+  changeEmail as changeEmailApi,
+  updateAvatar as updateAvatarApi,
+  type UserProfile
+} from '@/api/user'
 
 interface User {
   id: number
@@ -79,6 +93,44 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // ─── Profile management ───
+
+  async function updateProfile(data: {
+    username?: string
+    school?: string
+    campus?: string
+    phone?: string
+    bio?: string
+  }): Promise<UserProfile> {
+    const res = await updateProfileApi(data)
+    // Update local user data
+    if (user.value) {
+      user.value = { ...user.value, ...res.data.data }
+    }
+    return res.data.data
+  }
+
+  async function changePassword(oldPassword: string, newPassword: string) {
+    await changePasswordApi(oldPassword, newPassword)
+    // Password changed - need to re-login, clear auth
+    clearAuth()
+  }
+
+  async function changeEmail(newEmail: string, code: string) {
+    await changeEmailApi(newEmail, code)
+    // Email changed - need to re-login, clear auth
+    clearAuth()
+  }
+
+  async function updateAvatar(tempPath: string): Promise<UserProfile> {
+    const res = await updateAvatarApi(tempPath)
+    // Update local user data
+    if (user.value) {
+      user.value = { ...user.value, avatar: res.data.data.avatar }
+    }
+    return res.data.data
+  }
+
   return {
     user,
     accessToken,
@@ -91,5 +143,9 @@ export const useUserStore = defineStore('user', () => {
     refresh,
     logout,
     clearAuth,
+    updateProfile,
+    changePassword,
+    changeEmail,
+    updateAvatar,
   }
 })
