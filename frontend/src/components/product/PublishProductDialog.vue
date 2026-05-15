@@ -342,7 +342,7 @@ watch(visible, (val) => {
   <el-dialog
     v-model="visible"
     :title="dialogTitle"
-    width="700px"
+    width="80%"
     top="5vh"
     :close-on-click-modal="false"
     destroy-on-close
