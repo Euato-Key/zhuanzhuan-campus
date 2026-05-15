@@ -23,6 +23,11 @@ interface User {
   avatar: string | null
   role: string
   creditScore: number
+  createdAt: string
+  school: string | null
+  campus: string | null
+  phone: string | null
+  bio: string | null
 }
 
 export const useUserStore = defineStore('user', () => {
