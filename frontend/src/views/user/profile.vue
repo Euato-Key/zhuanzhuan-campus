@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import AvatarUpload from '@/components/AvatarUpload.vue'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { sendCode } from '@/api/auth'
+import { getOssUrl } from '@/utils/oss'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, Lock, Message, School, Location, Phone, EditPen, Check } from '@element-plus/icons-vue'
+import { User, Lock, Message, School, Location, Phone, EditPen, Check, Calendar, Star } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
@@ -22,13 +23,11 @@ onMounted(() => {
   }
 })
 
-// ─── Tabs ───
-const activeTab = ref('profile')
-const tabs = [
-  { key: 'profile', label: '个人资料', icon: User },
-  { key: 'password', label: '修改密码', icon: Lock },
-  { key: 'email', label: '修改邮箱', icon: Message },
-]
+// ─── Edit mode ───
+const editingProfile = ref(false)
+const editingPassword = ref(false)
+const editingEmail = ref(false)
+const editingAvatar = ref(false)
 
 // ─── Profile form ───
 const profileFormRef = ref<FormInstance>()
@@ -54,13 +53,36 @@ const profileRules: FormRules = {
 // Initialize form with user data
 onMounted(() => {
   if (userStore.user) {
-    profileForm.username = userStore.user.username || ''
-    // Fetch full profile to get school, campus, phone, bio
-    userStore.fetchUser().then(() => {
-      // These fields might not be in the basic user object, need to fetch from profile API
-    })
+    initProfileForm()
   }
 })
+
+watch(() => userStore.user, () => {
+  if (userStore.user) {
+    initProfileForm()
+  }
+}, { deep: true })
+
+function initProfileForm() {
+  const user = userStore.user
+  if (!user) return
+  profileForm.username = user.username || ''
+  // These fields need to be fetched from profile API
+  profileForm.school = ''
+  profileForm.campus = ''
+  profileForm.phone = ''
+  profileForm.bio = ''
+}
+
+// Start editing profile
+function startEditProfile() {
+  initProfileForm()
+  editingProfile.value = true
+}
+
+function cancelEditProfile() {
+  editingProfile.value = false
+}
 
 // ─── Avatar upload ───
 const avatarTempPath = ref<string | null>(null)
@@ -77,12 +99,18 @@ async function saveAvatar() {
   try {
     await userStore.updateAvatar(avatarTempPath.value)
     avatarTempPath.value = null
+    editingAvatar.value = false
     ElMessage.success('头像已保存')
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || '保存头像失败')
   } finally {
     avatarSaving.value = false
   }
+}
+
+function cancelEditAvatar() {
+  avatarTempPath.value = null
+  editingAvatar.value = false
 }
 
 // ─── Profile save ───
@@ -100,6 +128,7 @@ async function handleSaveProfile() {
       bio: profileForm.bio || undefined,
     })
     ElMessage.success('资料已更新')
+    editingProfile.value = false
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || '更新失败')
   } finally {
@@ -136,6 +165,13 @@ const passwordRules: FormRules = {
     { required: true, message: '请确认新密码', trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
   ],
+}
+
+function startEditPassword() {
+  passwordForm.oldPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  editingPassword.value = true
 }
 
 async function handleChangePassword() {
@@ -194,6 +230,12 @@ function startCountdown() {
   }, 1000)
 }
 
+function startEditEmail() {
+  emailForm.newEmail = ''
+  emailForm.code = ''
+  editingEmail.value = true
+}
+
 async function handleSendCode() {
   if (!emailForm.newEmail) {
     ElMessage.warning('请先输入新邮箱')
@@ -234,115 +276,195 @@ async function handleChangeEmail() {
   }
 }
 
-// ─── Cleanup ───
-onMounted(() => {
-  // Cleanup countdown timer on unmount
-})
+// ─── Format date ───
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
 </script>
 
 <template>
   <AppLayout>
     <div class="profile-page">
-      <!-- Sidebar -->
-      <aside class="profile-sidebar">
-        <div class="user-card">
-          <AvatarUpload
-            :model-value="avatarTempPath || userStore.user?.avatar"
-            @success="handleAvatarSuccess"
-          />
-          <div v-if="avatarTempPath" class="save-avatar">
-            <el-button type="primary" size="small" :loading="avatarSaving" @click="saveAvatar">
-              保存头像
-            </el-button>
+      <!-- Profile Card -->
+      <div class="profile-card">
+        <!-- Avatar section -->
+        <div class="avatar-section">
+          <div v-if="!editingAvatar" class="avatar-wrap" @click="editingAvatar = true">
+            <img
+              :src="getOssUrl(userStore.user?.avatar)"
+              class="avatar-img"
+              alt="用户头像"
+            />
+            <div class="avatar-edit-btn">
+              <el-icon><EditPen /></el-icon>
+            </div>
           </div>
-          <h3 class="user-name">{{ userStore.user?.username }}</h3>
+          <template v-else>
+            <AvatarUpload
+              :model-value="avatarTempPath || userStore.user?.avatar"
+              @success="handleAvatarSuccess"
+            />
+            <div v-if="avatarTempPath" class="save-avatar">
+              <el-button type="primary" size="small" :loading="avatarSaving" @click="saveAvatar">
+                保存
+              </el-button>
+              <el-button size="small" @click="cancelEditAvatar">取消</el-button>
+            </div>
+            <div v-else class="save-avatar">
+              <el-button size="small" @click="cancelEditAvatar">取消</el-button>
+            </div>
+          </template>
+        </div>
+
+        <!-- User info -->
+        <div class="user-info">
+          <h1 class="user-name">{{ userStore.user?.username }}</h1>
           <p class="user-email">{{ userStore.user?.email }}</p>
+
           <div class="user-stats">
-            <div class="stat">
+            <div class="stat-item">
               <span class="stat-value">{{ userStore.user?.creditScore || 100 }}</span>
               <span class="stat-label">信用分</span>
             </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-value">{{ formatDate(userStore.user?.createdAt) }}</span>
+              <span class="stat-label">加入时间</span>
+            </div>
           </div>
         </div>
+      </div>
 
-        <nav class="sidebar-nav">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            :class="['nav-item', { active: activeTab === tab.key }]"
-            @click="activeTab = tab.key"
-          >
-            <el-icon><component :is="tab.icon" /></el-icon>
-            {{ tab.label }}
-          </button>
-        </nav>
-      </aside>
-
-      <!-- Content -->
-      <main class="profile-content">
-        <!-- Profile tab -->
-        <div v-show="activeTab === 'profile'" class="content-panel">
-          <div class="panel-header">
-            <h3>个人资料</h3>
-            <p>修改你的基本信息</p>
+      <!-- Settings sections -->
+      <div class="settings-sections">
+        <!-- Basic info section -->
+        <section class="settings-section">
+          <div class="section-header">
+            <h2>
+              <el-icon><User /></el-icon>
+              基本信息
+            </h2>
+            <el-button
+              v-if="!editingProfile"
+              type="primary"
+              text
+              @click="startEditProfile"
+            >
+              <el-icon><EditPen /></el-icon>
+              编辑
+            </el-button>
           </div>
 
+          <!-- View mode -->
+          <div v-if="!editingProfile" class="info-grid">
+            <div class="info-item">
+              <span class="info-label">用户名</span>
+              <span class="info-value">{{ userStore.user?.username || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">学校</span>
+              <span class="info-value">{{ userStore.user?.school || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">校区</span>
+              <span class="info-value">{{ userStore.user?.campus || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">手机号</span>
+              <span class="info-value">{{ userStore.user?.phone || '-' }}</span>
+            </div>
+            <div class="info-item full-width">
+              <span class="info-label">个人简介</span>
+              <span class="info-value bio">{{ userStore.user?.bio || '这个人很懒，什么都没写~' }}</span>
+            </div>
+          </div>
+
+          <!-- Edit mode -->
           <el-form
+            v-else
             ref="profileFormRef"
             :model="profileForm"
             :rules="profileRules"
             label-position="top"
-            size="large"
           >
-            <el-form-item label="用户名" prop="username">
-              <el-input v-model="profileForm.username" placeholder="请输入用户名" :prefix-icon="User" clearable />
-            </el-form-item>
+            <div class="form-grid">
+              <el-form-item label="用户名" prop="username">
+                <el-input v-model="profileForm.username" placeholder="请输入用户名" :prefix-icon="User" clearable />
+              </el-form-item>
 
-            <el-form-item label="学校">
-              <el-input v-model="profileForm.school" placeholder="请输入学校名称" :prefix-icon="School" clearable />
-            </el-form-item>
+              <el-form-item label="学校">
+                <el-input v-model="profileForm.school" placeholder="请输入学校名称" :prefix-icon="School" clearable />
+              </el-form-item>
 
-            <el-form-item label="校区">
-              <el-input v-model="profileForm.campus" placeholder="请输入校区名称" :prefix-icon="Location" clearable />
-            </el-form-item>
+              <el-form-item label="校区">
+                <el-input v-model="profileForm.campus" placeholder="请输入校区名称" :prefix-icon="Location" clearable />
+              </el-form-item>
 
-            <el-form-item label="手机号">
-              <el-input v-model="profileForm.phone" placeholder="请输入手机号" :prefix-icon="Phone" clearable />
-            </el-form-item>
+              <el-form-item label="手机号">
+                <el-input v-model="profileForm.phone" placeholder="请输入手机号" :prefix-icon="Phone" clearable />
+              </el-form-item>
 
-            <el-form-item label="个人简介">
-              <el-input
-                v-model="profileForm.bio"
-                type="textarea"
-                :rows="4"
-                placeholder="介绍一下自己吧..."
-                maxlength="500"
-                show-word-limit
-              />
-            </el-form-item>
+              <el-form-item label="个人简介" class="full-width">
+                <el-input
+                  v-model="profileForm.bio"
+                  type="textarea"
+                  :rows="4"
+                  placeholder="介绍一下自己吧..."
+                  maxlength="500"
+                  show-word-limit
+                />
+              </el-form-item>
+            </div>
 
-            <el-form-item>
+            <div class="form-actions">
+              <el-button @click="cancelEditProfile">取消</el-button>
               <el-button type="primary" :loading="profileLoading" @click="handleSaveProfile">
                 <el-icon><Check /></el-icon>
-                保存修改
+                保存
               </el-button>
-            </el-form-item>
+            </div>
           </el-form>
-        </div>
+        </section>
 
-        <!-- Password tab -->
-        <div v-show="activeTab === 'password'" class="content-panel">
-          <div class="panel-header">
-            <h3>修改密码</h3>
-            <p>修改密码后需要重新登录</p>
+        <!-- Password section -->
+        <section class="settings-section">
+          <div class="section-header">
+            <h2>
+              <el-icon><Lock /></el-icon>
+              账户安全
+            </h2>
+            <el-button
+              v-if="!editingPassword && !editingEmail"
+              type="primary"
+              text
+              @click="startEditPassword"
+            >
+              <el-icon><EditPen /></el-icon>
+              修改密码
+            </el-button>
           </div>
 
+          <!-- View mode -->
+          <div v-if="!editingPassword" class="security-info">
+            <div class="security-item">
+              <span class="security-label">登录密码</span>
+              <span class="security-value">已设置</span>
+            </div>
+          </div>
+
+          <!-- Edit mode -->
           <el-form
+            v-else
             ref="passwordFormRef"
             :model="passwordForm"
             :rules="passwordRules"
             label-position="top"
-            size="large"
           >
             <el-form-item label="旧密码" prop="oldPassword">
               <el-input
@@ -374,28 +496,48 @@ onMounted(() => {
               />
             </el-form-item>
 
-            <el-form-item>
+            <div class="form-actions">
+              <el-button @click="editingPassword = false">取消</el-button>
               <el-button type="primary" :loading="passwordLoading" @click="handleChangePassword">
-                <el-icon><Check /></el-icon>
-                修改密码
+                确认修改
               </el-button>
-            </el-form-item>
+            </div>
           </el-form>
-        </div>
+        </section>
 
-        <!-- Email tab -->
-        <div v-show="activeTab === 'email'" class="content-panel">
-          <div class="panel-header">
-            <h3>修改邮箱</h3>
-            <p>修改邮箱后需要重新登录</p>
+        <!-- Email section -->
+        <section class="settings-section">
+          <div class="section-header">
+            <h2>
+              <el-icon><Message /></el-icon>
+              邮箱设置
+            </h2>
+            <el-button
+              v-if="!editingEmail && !editingPassword"
+              type="primary"
+              text
+              @click="startEditEmail"
+            >
+              <el-icon><EditPen /></el-icon>
+              修改邮箱
+            </el-button>
           </div>
 
+          <!-- View mode -->
+          <div v-if="!editingEmail" class="security-info">
+            <div class="security-item">
+              <span class="security-label">绑定邮箱</span>
+              <span class="security-value">{{ userStore.user?.email }}</span>
+            </div>
+          </div>
+
+          <!-- Edit mode -->
           <el-form
+            v-else
             ref="emailFormRef"
             :model="emailForm"
             :rules="emailRules"
             label-position="top"
-            size="large"
           >
             <el-form-item label="新邮箱" prop="newEmail">
               <el-input v-model="emailForm.newEmail" placeholder="请输入新邮箱地址" :prefix-icon="Message" clearable />
@@ -410,15 +552,15 @@ onMounted(() => {
               </div>
             </el-form-item>
 
-            <el-form-item>
+            <div class="form-actions">
+              <el-button @click="editingEmail = false">取消</el-button>
               <el-button type="primary" :loading="emailLoading" @click="handleChangeEmail">
-                <el-icon><Check /></el-icon>
-                修改邮箱
+                确认修改
               </el-button>
-            </el-form-item>
+            </div>
           </el-form>
-        </div>
-      </main>
+        </section>
+      </div>
     </div>
   </AppLayout>
 </template>
@@ -427,128 +569,227 @@ onMounted(() => {
 @import '@/assets/styles/variables';
 
 .profile-page {
-  display: flex;
-  gap: 24px;
-  max-width: 900px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
-// ─── Sidebar ───
-.profile-sidebar {
-  width: 240px;
+// ─── Profile Card ───
+.profile-card {
+  background: #fff;
+  border-radius: $radius-lg;
+  padding: 32px;
+  box-shadow: $shadow-sm;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.avatar-section {
   flex-shrink: 0;
 }
 
-.user-card {
-  background: #fff;
-  border-radius: $radius-lg;
-  padding: 24px;
-  text-align: center;
-  box-shadow: $shadow-sm;
-  margin-bottom: 16px;
+.avatar-wrap {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
 
-  .save-avatar {
-    margin-top: 12px;
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: $radius-full;
+  object-fit: cover;
+  background: $color-bg-page;
+}
+
+.avatar-edit-btn {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  background: $color-primary;
+  color: #fff;
+  border-radius: $radius-full;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity $transition-fast;
+
+  .avatar-wrap:hover & {
+    opacity: 1;
   }
+}
 
-  .user-name {
+.save-avatar {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 28px;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: 4px;
+}
+
+.user-email {
+  font-size: 14px;
+  color: $color-text-secondary;
+  margin-bottom: 20px;
+}
+
+.user-stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.stat-item {
+  text-align: center;
+
+  .stat-value {
+    display: block;
     font-size: 18px;
     font-weight: $font-weight-semibold;
     color: $color-text-primary;
-    margin: 16px 0 4px;
   }
 
-  .user-email {
-    font-size: 14px;
-    color: $color-text-secondary;
-    margin-bottom: 16px;
-  }
-
-  .user-stats {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-
-    .stat {
-      text-align: center;
-
-      .stat-value {
-        font-size: 20px;
-        font-weight: $font-weight-bold;
-        color: $color-primary;
-      }
-
-      .stat-label {
-        font-size: 12px;
-        color: $color-text-placeholder;
-      }
-    }
+  .stat-label {
+    font-size: 12px;
+    color: $color-text-placeholder;
   }
 }
 
-.sidebar-nav {
-  background: #fff;
-  border-radius: $radius-lg;
-  padding: 8px;
-  box-shadow: $shadow-sm;
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 12px 16px;
-    border: none;
-    background: transparent;
-    border-radius: $radius-md;
-    font-size: 14px;
-    color: $color-text-secondary;
-    cursor: pointer;
-    transition: all $transition-fast;
-
-    &:hover {
-      color: $color-primary;
-      background: $color-primary-pale;
-    }
-
-    &.active {
-      color: $color-primary;
-      background: $color-primary-pale;
-      font-weight: $font-weight-medium;
-    }
-  }
+.stat-divider {
+  width: 1px;
+  height: 32px;
+  background: $color-border;
 }
 
-// ─── Content ───
-.profile-content {
-  flex: 1;
-  min-width: 0;
+// ─── Settings Sections ───
+.settings-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.content-panel {
+.settings-section {
   background: #fff;
   border-radius: $radius-lg;
   padding: 24px;
   box-shadow: $shadow-sm;
 }
 
-.panel-header {
-  margin-bottom: 24px;
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid $color-border;
 
-  h3 {
-    font-size: 20px;
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
     font-weight: $font-weight-semibold;
     color: $color-text-primary;
-    margin-bottom: 4px;
-  }
+    margin: 0;
 
-  p {
-    font-size: 14px;
-    color: $color-text-secondary;
+    .el-icon {
+      color: $color-primary;
+    }
   }
 }
 
-// ─── Code row ───
+// ─── Info Grid ───
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 32px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+.info-label {
+  font-size: 13px;
+  color: $color-text-placeholder;
+}
+
+.info-value {
+  font-size: 15px;
+  color: $color-text-primary;
+
+  &.bio {
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+}
+
+// ─── Security Info ───
+.security-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.security-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.security-label {
+  font-size: 14px;
+  color: $color-text-secondary;
+}
+
+.security-value {
+  font-size: 14px;
+  color: $color-text-primary;
+}
+
+// ─── Form ───
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 24px;
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid $color-border;
+}
+
+// ─── Code Row ───
 .code-row {
   display: flex;
   gap: 10px;
@@ -564,12 +805,18 @@ onMounted(() => {
 
 // ─── Responsive ───
 @media (max-width: 768px) {
-  .profile-page {
+  .profile-card {
     flex-direction: column;
+    text-align: center;
   }
 
-  .profile-sidebar {
-    width: 100%;
+  .user-stats {
+    justify-content: center;
+  }
+
+  .info-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
