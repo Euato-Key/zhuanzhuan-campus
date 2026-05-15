@@ -514,9 +514,9 @@ watch(visible, (val) => {
       <!-- 交易方式 -->
       <el-form-item label="交易方式" prop="deliveryType">
         <el-radio-group v-model="formData.deliveryType">
-          <el-radio value="self">仅自提</el-radio>
-          <el-radio value="express">仅快递</el-radio>
-          <el-radio value="both">自提/快递</el-radio>
+          <el-radio :value="'self'">仅自提</el-radio>
+          <el-radio :value="'express'">仅快递</el-radio>
+          <el-radio :value="'both'">自提/快递</el-radio>
         </el-radio-group>
       </el-form-item>
 
