@@ -1,4 +1,5 @@
 import api from './index'
+import { getOssUrl } from '@/utils/oss'
 
 // ─── Upload API ───
 
@@ -57,11 +58,12 @@ export async function uploadImage(file: File, type: UploadType = 'product'): Pro
     },
   })
 
-  // 返回结果，ossPath就是可访问的URL
+  // 返回完整的 OSS URL
+  const fullUrl = getOssUrl(ossPath)
   return {
     data: {
       code: 200,
-      data: { url: ossPath, ossPath },
+      data: { url: fullUrl, ossPath },
       message: 'success',
     },
   }

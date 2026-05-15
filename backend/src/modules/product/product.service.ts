@@ -4,6 +4,24 @@ import { Prisma, ItemCondition, DeliveryType, ProductStatus } from '@prisma/clie
 // 导出Prisma生成的枚举类型
 export type { ItemCondition, DeliveryType, ProductStatus };
 
+// 前端传来的值到Prisma枚举的映射
+const ITEM_CONDITION_MAP: Record<string, ItemCondition> = {
+  'new': ItemCondition.new,
+  '99new': ItemCondition.ninety_nine_new,
+  '95new': ItemCondition.ninety_five_new,
+  '90new': ItemCondition.ninety_new,
+  '80new': ItemCondition.eighty_new,
+};
+
+// 将前端传来的字符串转换为Prisma枚举
+function toItemCondition(value: string): ItemCondition {
+  const result = ITEM_CONDITION_MAP[value];
+  if (!result) {
+    throw Object.assign(new Error(`无效的新旧程度: ${value}`), { statusCode: 400 });
+  }
+  return result;
+}
+
 export interface ProductSpec {
   name: string;
   value: string;
@@ -22,7 +40,7 @@ export interface CreateProductData {
   deliveryType: DeliveryType;
   pickupAddress?: string;
   pickupTime?: string;
-  itemCondition: ItemCondition;
+  itemCondition: string; // 前端传字符串，如 '95new'
   stock?: number;
   brand?: string;
   specs?: ProductSpec[];
@@ -43,7 +61,7 @@ export interface UpdateProductData {
   deliveryType?: DeliveryType;
   pickupAddress?: string;
   pickupTime?: string;
-  itemCondition?: ItemCondition;
+  itemCondition?: string; // 前端传字符串，如 '95new'
   stock?: number;
   brand?: string;
   specs?: ProductSpec[];
@@ -147,7 +165,7 @@ export const ProductService = {
         deliveryType: data.deliveryType,
         pickupAddress: data.pickupAddress,
         pickupTime: data.pickupTime,
-        itemCondition: data.itemCondition,
+        itemCondition: toItemCondition(data.itemCondition),
         stock: data.stock ?? 1,
         brand: data.brand,
         specs: data.specs ? JSON.parse(JSON.stringify(data.specs)) : Prisma.JsonNull,
@@ -426,7 +444,7 @@ export const ProductService = {
     if (data.deliveryType !== undefined) updateData.deliveryType = data.deliveryType;
     if (data.pickupAddress !== undefined) updateData.pickupAddress = data.pickupAddress;
     if (data.pickupTime !== undefined) updateData.pickupTime = data.pickupTime;
-    if (data.itemCondition !== undefined) updateData.itemCondition = data.itemCondition;
+    if (data.itemCondition !== undefined) updateData.itemCondition = toItemCondition(data.itemCondition);
     if (data.stock !== undefined) updateData.stock = data.stock;
     if (data.brand !== undefined) updateData.brand = data.brand;
     if (data.specs !== undefined) updateData.specs = JSON.parse(JSON.stringify(data.specs));
