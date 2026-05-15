@@ -1,0 +1,1080 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "商品模块 API",
+    "description": "转转校园二手平台 - 商品模块接口文档",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "开发服务器"
+    }
+  ],
+  "tags": [
+    {
+      "name": "商品公开接口",
+      "description": "无需登录即可访问的商品接口"
+    },
+    {
+      "name": "商品用户接口",
+      "description": "需要登录的商品接口"
+    },
+    {
+      "name": "商品管理接口",
+      "description": "管理员商品审核管理接口"
+    }
+  ],
+  "paths": {
+    "/products": {
+      "get": {
+        "tags": ["商品公开接口"],
+        "summary": "获取商品列表",
+        "description": "获取上架商品列表，支持搜索、筛选、排序",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "schema": { "type": "integer", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页数量",
+            "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 50 }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "搜索关键词",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "description": "分类ID（支持子分类查询）",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "itemCondition",
+            "in": "query",
+            "description": "新旧程度",
+            "schema": {
+              "type": "string",
+              "enum": ["new", "99new", "95new", "90new", "80new"]
+            }
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "description": "最低价格",
+            "schema": { "type": "number", "minimum": 0 }
+          },
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "description": "最高价格",
+            "schema": { "type": "number", "minimum": 0 }
+          },
+          {
+            "name": "deliveryType",
+            "in": "query",
+            "description": "交易方式",
+            "schema": {
+              "type": "string",
+              "enum": ["self", "express", "both"]
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "排序字段",
+            "schema": {
+              "type": "string",
+              "enum": ["price", "time", "favorite"],
+              "default": "time"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "description": "排序方向",
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "list": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/ProductListItem" }
+                        },
+                        "total": { "type": "integer", "example": 100 },
+                        "page": { "type": "integer", "example": 1 },
+                        "pageSize": { "type": "integer", "example": 10 },
+                        "totalPages": { "type": "integer", "example": 10 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["商品用户接口"],
+        "summary": "发布商品",
+        "description": "发布新商品，提交后进入待审核状态",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateProductRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "发布成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 201 },
+                    "message": { "type": "string", "example": "商品发布成功，等待审核" },
+                    "data": { "$ref": "#/components/schemas/ProductDetail" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数错误",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/my/list": {
+      "get": {
+        "tags": ["商品用户接口"],
+        "summary": "获取我的商品列表",
+        "description": "获取当前用户发布的商品列表",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "商品状态筛选",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "active", "offline", "banned", "audit_failed"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "list": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/MyProductItem" }
+                        },
+                        "total": { "type": "integer" },
+                        "page": { "type": "integer" },
+                        "pageSize": { "type": "integer" },
+                        "totalPages": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "tags": ["商品公开接口"],
+        "summary": "获取商品详情",
+        "description": "获取商品详细信息，包含卖家信息、是否已收藏等",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "商品ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": { "$ref": "#/components/schemas/ProductDetail" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "商品不存在",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["商品用户接口"],
+        "summary": "更新商品",
+        "description": "更新商品信息，修改名称、描述、图片、价格等核心信息需要重新审核",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateProductRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "更新成功" },
+                    "data": { "$ref": "#/components/schemas/ProductDetail" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权修改",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "商品不存在",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["商品用户接口"],
+        "summary": "删除商品",
+        "description": "删除商品，存在未完成订单时无法删除",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "删除成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "删除成功" },
+                    "data": { "type": "null" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "存在未完成订单",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}/offline": {
+      "put": {
+        "tags": ["商品用户接口"],
+        "summary": "下架商品",
+        "description": "卖家主动下架商品",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "下架成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "商品已下架" },
+                    "data": { "$ref": "#/components/schemas/ProductDetail" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}/relist": {
+      "put": {
+        "tags": ["商品用户接口"],
+        "summary": "重新上架",
+        "description": "将已下架或审核失败的商品重新提交审核",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "提交成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "商品已重新提交审核" },
+                    "data": { "$ref": "#/components/schemas/ProductDetail" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/admin/list": {
+      "get": {
+        "tags": ["商品管理接口"],
+        "summary": "获取所有商品列表（管理员）",
+        "description": "管理员查看所有商品，支持按状态、卖家筛选",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "搜索关键词",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "商品状态",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "active", "offline", "banned", "audit_failed"]
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "description": "分类ID",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "sellerId",
+            "in": "query",
+            "description": "卖家ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "list": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/AdminProductItem" }
+                        },
+                        "total": { "type": "integer" },
+                        "page": { "type": "integer" },
+                        "pageSize": { "type": "integer" },
+                        "totalPages": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权限",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/admin/{id}/approve": {
+      "put": {
+        "tags": ["商品管理接口"],
+        "summary": "审核通过",
+        "description": "管理员审核通过商品",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "审核成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "审核通过" },
+                    "data": { "$ref": "#/components/schemas/ProductDetail" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/admin/{id}/reject": {
+      "put": {
+        "tags": ["商品管理接口"],
+        "summary": "审核拒绝",
+        "description": "管理员审核拒绝商品，需填写拒绝原因",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason"],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "拒绝原因",
+                    "example": "商品图片不清晰"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "已拒绝" },
+                    "data": { "$ref": "#/components/schemas/ProductDetail" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/admin/{id}/ban": {
+      "put": {
+        "tags": ["商品管理接口"],
+        "summary": "封禁商品",
+        "description": "管理员封禁商品，被封禁的商品无法重新上架",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason"],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "封禁原因",
+                    "example": "涉嫌虚假宣传"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "封禁成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "商品已封禁" },
+                    "data": { "$ref": "#/components/schemas/ProductDetail" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/admin/{id}/unban": {
+      "put": {
+        "tags": ["商品管理接口"],
+        "summary": "解封商品",
+        "description": "管理员解封商品，解封后进入待审核状态",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "解封成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "商品已解封" },
+                    "data": { "$ref": "#/components/schemas/ProductDetail" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/admin/{id}/force-offline": {
+      "put": {
+        "tags": ["商品管理接口"],
+        "summary": "强制下架",
+        "description": "管理员强制下架在售商品",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason"],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "下架原因",
+                    "example": "商品信息违规"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "下架成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "商品已下架" },
+                    "data": { "$ref": "#/components/schemas/ProductDetail" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ProductListItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "1" },
+          "name": { "type": "string", "example": "iPhone 14 Pro" },
+          "images": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["https://example.com/image1.jpg"]
+          },
+          "currentPrice": { "type": "number", "example": 5999 },
+          "originalPrice": { "type": "number", "example": 7999 },
+          "itemCondition": {
+            "type": "string",
+            "enum": ["new", "99new", "95new", "90new", "80new"],
+            "example": "95new"
+          },
+          "deliveryType": {
+            "type": "string",
+            "enum": ["self", "express", "both"],
+            "example": "both"
+          },
+          "bargain": { "type": "boolean", "example": true },
+          "viewCount": { "type": "integer", "example": 128 },
+          "favoriteCount": { "type": "integer", "example": 15 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "category": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "integer" },
+              "name": { "type": "string", "example": "手机数码" }
+            }
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "integer" },
+              "username": { "type": "string", "example": "张三" },
+              "avatar": { "type": "string", "example": "https://example.com/avatar.jpg" }
+            }
+          }
+        }
+      },
+      "MyProductItem": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ProductListItem" },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["pending", "active", "offline", "banned", "audit_failed"],
+                "example": "active"
+              },
+              "stock": { "type": "integer", "example": 5 },
+              "rejectReason": { "type": "string", "example": null },
+              "auditCount": { "type": "integer", "example": 1 },
+              "expireTime": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
+      },
+      "AdminProductItem": {
+        "allOf": [
+          { "$ref": "#/components/schemas/MyProductItem" },
+          {
+            "type": "object",
+            "properties": {
+              "user": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "integer" },
+                  "username": { "type": "string" },
+                  "email": { "type": "string" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ProductDetail": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "1" },
+          "name": { "type": "string", "example": "iPhone 14 Pro" },
+          "description": { "type": "string", "example": "自用手机，成色很新..." },
+          "categoryId": { "type": "integer", "example": 1 },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["苹果", "手机", "5G"]
+          },
+          "images": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["https://example.com/image1.jpg", "https://example.com/image2.jpg"]
+          },
+          "detailImages": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["https://example.com/detail1.jpg"]
+          },
+          "originalPrice": { "type": "number", "example": 7999 },
+          "currentPrice": { "type": "number", "example": 5999 },
+          "bargain": { "type": "boolean", "example": true },
+          "deliveryType": {
+            "type": "string",
+            "enum": ["self", "express", "both"],
+            "example": "both"
+          },
+          "pickupAddress": { "type": "string", "example": "北京大学东门" },
+          "pickupTime": { "type": "string", "example": "工作日18:00-21:00" },
+          "itemCondition": {
+            "type": "string",
+            "enum": ["new", "99new", "95new", "90new", "80new"],
+            "example": "95new"
+          },
+          "stock": { "type": "integer", "example": 1 },
+          "brand": { "type": "string", "example": "Apple" },
+          "specs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "example": "颜色" },
+                "value": { "type": "string", "example": "深空黑" }
+              }
+            },
+            "example": [
+              { "name": "颜色", "value": "深空黑" },
+              { "name": "容量", "value": "256GB" }
+            ]
+          },
+          "shippingAddress": { "type": "string", "example": "北京市海淀区" },
+          "validDays": { "type": "integer", "example": 30 },
+          "expireTime": { "type": "string", "format": "date-time" },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "active", "offline", "banned", "audit_failed"],
+            "example": "active"
+          },
+          "rejectReason": { "type": "string", "example": null },
+          "auditCount": { "type": "integer", "example": 1 },
+          "viewCount": { "type": "integer", "example": 128 },
+          "favoriteCount": { "type": "integer", "example": 15 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "isFavorited": { "type": "boolean", "example": false },
+          "category": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "integer" },
+              "name": { "type": "string" },
+              "parentId": { "type": "integer", "nullable": true }
+            }
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "integer" },
+              "username": { "type": "string" },
+              "avatar": { "type": "string", "nullable": true },
+              "school": { "type": "string", "nullable": true },
+              "campus": { "type": "string", "nullable": true },
+              "creditScore": { "type": "integer", "example": 100 }
+            }
+          }
+        }
+      },
+      "CreateProductRequest": {
+        "type": "object",
+        "required": ["name", "categoryId", "images", "currentPrice", "itemCondition", "deliveryType"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "iPhone 14 Pro"
+          },
+          "description": {
+            "type": "string",
+            "example": "自用手机，成色很新，无划痕"
+          },
+          "categoryId": {
+            "type": "integer",
+            "example": 1
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["苹果", "手机", "5G"]
+          },
+          "images": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 9,
+            "items": { "type": "string" },
+            "description": "商品主图，1-9张",
+            "example": ["https://example.com/image1.jpg"]
+          },
+          "detailImages": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "商品详情图",
+            "example": ["https://example.com/detail1.jpg"]
+          },
+          "originalPrice": {
+            "type": "number",
+            "minimum": 0,
+            "example": 7999
+          },
+          "currentPrice": {
+            "type": "number",
+            "minimum": 0,
+            "example": 5999
+          },
+          "bargain": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否支持议价"
+          },
+          "deliveryType": {
+            "type": "string",
+            "enum": ["self", "express", "both"],
+            "example": "both"
+          },
+          "pickupAddress": {
+            "type": "string",
+            "description": "自提地点（自提时必填）",
+            "example": "北京大学东门"
+          },
+          "pickupTime": {
+            "type": "string",
+            "description": "自提时间段",
+            "example": "工作日18:00-21:00"
+          },
+          "itemCondition": {
+            "type": "string",
+            "enum": ["new", "99new", "95new", "90new", "80new"],
+            "description": "新旧程度：全新/99新/95新/9成新/8成新及以下",
+            "example": "95new"
+          },
+          "stock": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "example": 1
+          },
+          "brand": {
+            "type": "string",
+            "example": "Apple"
+          },
+          "specs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "value": { "type": "string" }
+              }
+            },
+            "example": [
+              { "name": "颜色", "value": "深空黑" },
+              { "name": "容量", "value": "256GB" }
+            ]
+          },
+          "shippingAddress": {
+            "type": "string",
+            "description": "发货地址",
+            "example": "北京市海淀区"
+          },
+          "validDays": {
+            "type": "integer",
+            "enum": [7, 15, 30],
+            "description": "有效期（天），不填则永久有效",
+            "example": 30
+          }
+        }
+      },
+      "UpdateProductRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "maxLength": 100 },
+          "description": { "type": "string" },
+          "categoryId": { "type": "integer" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "images": { "type": "array", "minItems": 1, "maxItems": 9, "items": { "type": "string" } },
+          "detailImages": { "type": "array", "items": { "type": "string" } },
+          "originalPrice": { "type": "number", "minimum": 0 },
+          "currentPrice": { "type": "number", "minimum": 0 },
+          "bargain": { "type": "boolean" },
+          "deliveryType": { "type": "string", "enum": ["self", "express", "both"] },
+          "pickupAddress": { "type": "string" },
+          "pickupTime": { "type": "string" },
+          "itemCondition": { "type": "string", "enum": ["new", "99new", "95new", "90new", "80new"] },
+          "stock": { "type": "integer", "minimum": 1 },
+          "brand": { "type": "string" },
+          "specs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "value": { "type": "string" }
+              }
+            }
+          },
+          "shippingAddress": { "type": "string" },
+          "validDays": { "type": "integer", "enum": [7, 15, 30] }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 400 },
+          "message": { "type": "string", "example": "参数错误" },
+          "data": { "type": "null" }
+        }
+      }
+    }
+  }
+}
