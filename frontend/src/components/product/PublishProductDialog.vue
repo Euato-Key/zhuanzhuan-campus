@@ -62,6 +62,14 @@ const formData = ref<CreateProductData>({
   validDays: 30,
 })
 
+// 有效期选项映射
+const VALID_DAYS_OPTIONS = [
+  { label: '7天', value: 7 },
+  { label: '15天', value: 15 },
+  { label: '30天', value: 30 },
+  { label: '永久有效', value: 0 },
+]
+
 // 标签输入
 const tagInput = ref('')
 const tags = ref<string[]>([])
@@ -233,24 +241,21 @@ async function handleSubmit() {
 
   loading.value = true
   try {
+    const submitData = {
+      ...formData.value,
+      tags: tags.value,
+      specs: specs.value,
+      validDays: formData.value.validDays === 0 ? undefined : formData.value.validDays,
+    }
     if (isEdit.value && props.product) {
-      const updateData: UpdateProductData = {
-        ...formData.value,
-        tags: tags.value,
-        specs: specs.value,
-      }
-      const res = await updateProduct(props.product.id, updateData)
+      const res = await updateProduct(props.product.id, submitData)
       if (res.data.code === 200) {
         ElMessage.success('更新成功')
         visible.value = false
         emit('success')
       }
     } else {
-      const res = await createProduct({
-        ...formData.value,
-        tags: tags.value,
-        specs: specs.value,
-      })
+      const res = await createProduct(submitData)
       if (res.data.code === 201 || res.data.code === 200) {
         ElMessage.success('发布成功，等待审核')
         visible.value = false
@@ -275,7 +280,7 @@ function initEditData() {
       tags: props.product.tags || [],
       images: props.product.images,
       detailImages: props.product.detailImages || [],
-      originalPrice: props.product.originalPrice,
+      originalPrice: props.product.originalPrice ?? undefined,
       currentPrice: props.product.currentPrice,
       bargain: props.product.bargain,
       deliveryType: props.product.deliveryType,
@@ -286,7 +291,7 @@ function initEditData() {
       brand: props.product.brand || '',
       specs: props.product.specs || [],
       shippingAddress: props.product.shippingAddress || '',
-      validDays: props.product.validDays,
+      validDays: props.product.validDays || 0,
     }
     tags.value = props.product.tags || []
     specs.value = props.product.specs || []
@@ -337,9 +342,11 @@ watch(visible, (val) => {
   <el-dialog
     v-model="visible"
     :title="dialogTitle"
-    width="700px"
+    width="80vw"
+    top="5vh"
     :close-on-click-modal="false"
     destroy-on-close
+    class="publish-dialog"
   >
     <el-form
       ref="formRef"
@@ -539,10 +546,13 @@ watch(visible, (val) => {
       <!-- 有效期 -->
       <el-form-item label="有效期">
         <el-radio-group v-model="formData.validDays">
-          <el-radio :value="7">7天</el-radio>
-          <el-radio :value="15">15天</el-radio>
-          <el-radio :value="30">30天</el-radio>
-          <el-radio :value="undefined">永久有效</el-radio>
+          <el-radio
+            v-for="opt in VALID_DAYS_OPTIONS"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }}
+          </el-radio>
         </el-radio-group>
       </el-form-item>
     </el-form>
@@ -664,11 +674,20 @@ watch(visible, (val) => {
   gap: $spacing-xs;
 }
 
-.el-dialog {
+.publish-dialog {
+  :deep(.el-dialog) {
+    max-width: 900px;
+    height: 85vh;
+    margin-top: 7.5vh !important;
+    display: flex;
+    flex-direction: column;
+  }
+
   :deep(.el-dialog__body) {
     padding: $spacing-md $spacing-lg;
-    max-height: 60vh;
     overflow-y: auto;
+    flex: 1;
+    min-height: 0;
   }
 }
 </style>
