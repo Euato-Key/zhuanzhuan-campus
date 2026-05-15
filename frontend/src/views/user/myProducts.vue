@@ -14,6 +14,7 @@ import {
   type ProductStatus,
 } from '@/api/product'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
 
 const router = useRouter()
 
@@ -150,7 +151,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="my-products-page">
+  <AppLayout>
+    <div class="my-products-page">
     <div class="page-header">
       <h1>我的商品</h1>
       <el-button type="primary" @click="publishDialogVisible = true">
@@ -261,6 +263,7 @@ onMounted(() => {
       @success="handlePublishSuccess"
     />
   </div>
+  </AppLayout>
 </template>
 
 <style scoped lang="scss">

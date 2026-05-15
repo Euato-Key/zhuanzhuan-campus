@@ -11,6 +11,7 @@ import {
 } from '@/api/product'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
+import AppLayout from '@/components/layout/AppLayout.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -156,7 +157,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="product-detail-page" v-loading="loading">
+  <AppLayout>
+    <div class="product-detail-page" v-loading="loading">
     <template v-if="product">
       <!-- 商品状态提示 -->
       <div v-if="product.status !== 'active'" class="status-banner">
@@ -321,6 +323,7 @@ onMounted(() => {
       </div>
     </template>
   </div>
+  </AppLayout>
 </template>
 
 <style scoped lang="scss">

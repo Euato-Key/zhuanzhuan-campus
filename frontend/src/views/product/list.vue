@@ -14,6 +14,7 @@ import {
   type DeliveryType,
 } from '@/api/product'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -173,7 +174,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="product-list-page">
+  <AppLayout>
+    <div class="product-list-page">
     <!-- 搜索筛选区 -->
     <div class="filter-section">
       <div class="filter-row">
@@ -365,6 +367,7 @@ onMounted(() => {
       @success="handlePublishSuccess"
     />
   </div>
+  </AppLayout>
 </template>
 
 <style scoped lang="scss">
