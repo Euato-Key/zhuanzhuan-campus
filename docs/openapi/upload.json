@@ -1,0 +1,226 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "转转校园 - 文件上传 API",
+    "version": "1.0.0",
+    "description": "前端直传OSS所需的STS凭证和签名URL接口。所有文件上传均采用 temp → permanent 两步策略：前端先上传到temp目录，后端保存时移动到正式路径。"
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "开发环境" }
+  ],
+  "tags": [
+    { "name": "上传", "description": "文件上传相关接口" }
+  ],
+  "paths": {
+    "/api/upload/sts-token": {
+      "post": {
+        "tags": ["上传"],
+        "summary": "获取STS临时凭证",
+        "description": "获取阿里云STS临时凭证，用于前端直传OSS。凭证权限仅限 PutObject 到指定类型的 temp 目录下，且按用户ID隔离。凭证有效期1小时。",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["type"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["avatar", "product", "community", "chat"],
+                    "description": "上传类型"
+                  }
+                }
+              },
+              "example": { "type": "avatar" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/STSCredentials" } } }
+                  ]
+                },
+                "example": {
+                  "code": 200,
+                  "data": {
+                    "accessKeyId": "STS.NUxxxxx",
+                    "accessKeySecret": "xxxxx",
+                    "securityToken": "CAISxxxxx",
+                    "expiration": "2026-05-15T12:00:00Z",
+                    "region": "oss-cn-beijing",
+                    "bucket": "zhuanzhuan-campus",
+                    "uploadPath": "avatars/3/temp/",
+                    "uploadConfig": {
+                      "path": "avatars",
+                      "maxSize": 2097152,
+                      "maxCount": 1,
+                      "allowedMime": ["image/jpeg", "image/png", "image/gif", "image/webp"],
+                      "allowedExt": [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+                    }
+                  },
+                  "message": "获取STS凭证成功"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/upload/signed-url": {
+      "post": {
+        "tags": ["上传"],
+        "summary": "获取签名上传URL",
+        "description": "获取OSS预签名PUT URL，作为STS方式的备选方案。前端使用PUT请求直接上传文件到该URL。签名有效期15分钟。",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["type", "filename"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["avatar", "product", "community", "chat"],
+                    "description": "上传类型"
+                  },
+                  "filename": {
+                    "type": "string",
+                    "description": "文件名（含扩展名），用于确定文件类型和生成路径"
+                  }
+                }
+              },
+              "example": { "type": "avatar", "filename": "photo.jpg" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/SignedUrlResult" } } }
+                  ]
+                },
+                "example": {
+                  "code": 200,
+                  "data": {
+                    "url": "https://zhuanzhuan-campus.oss-cn-beijing.aliyuncs.com/avatars/3/temp/1747123456789_abc123.jpg?OSSAccessKeyId=...&Expires=...&Signature=...",
+                    "ossPath": "avatars/3/temp/1747123456789_abc123.jpg",
+                    "expires": 900,
+                    "uploadConfig": {
+                      "maxSize": 2097152,
+                      "maxCount": 1,
+                      "allowedMime": ["image/jpeg", "image/png", "image/gif", "image/webp"],
+                      "allowedExt": [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+                    }
+                  },
+                  "message": "获取签名URL成功"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "在请求头中携带 Access Token，格式：Bearer <token>"
+      }
+    },
+    "schemas": {
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 200 },
+          "data": { "description": "响应数据" },
+          "message": { "type": "string", "example": "success" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer" },
+          "data": { "type": "object", "nullable": true },
+          "message": { "type": "string" }
+        }
+      },
+      "UploadConfig": {
+        "type": "object",
+        "description": "上传限制配置，前端应据此进行客户端校验",
+        "properties": {
+          "path": { "type": "string", "description": "OSS路径前缀", "example": "avatars" },
+          "maxSize": { "type": "integer", "description": "最大文件大小（字节）", "example": 2097152 },
+          "maxCount": { "type": "integer", "description": "最大文件数量", "example": 1 },
+          "allowedMime": { "type": "array", "items": { "type": "string" }, "description": "允许的MIME类型" },
+          "allowedExt": { "type": "array", "items": { "type": "string" }, "description": "允许的文件扩展名" }
+        }
+      },
+      "STSCredentials": {
+        "type": "object",
+        "description": "STS临时凭证，前端使用这些凭证初始化OSS客户端进行直传",
+        "properties": {
+          "accessKeyId": { "type": "string", "description": "临时AccessKey ID" },
+          "accessKeySecret": { "type": "string", "description": "临时AccessKey Secret" },
+          "securityToken": { "type": "string", "description": "安全令牌" },
+          "expiration": { "type": "string", "format": "date-time", "description": "凭证过期时间" },
+          "region": { "type": "string", "description": "OSS区域", "example": "oss-cn-beijing" },
+          "bucket": { "type": "string", "description": "OSS Bucket名称", "example": "zhuanzhuan-campus" },
+          "uploadPath": { "type": "string", "description": "允许上传的路径前缀", "example": "avatars/3/temp/" },
+          "uploadConfig": { "$ref": "#/components/schemas/UploadConfig" }
+        }
+      },
+      "SignedUrlResult": {
+        "type": "object",
+        "description": "签名URL上传结果",
+        "properties": {
+          "url": { "type": "string", "format": "uri", "description": "预签名PUT URL" },
+          "ossPath": { "type": "string", "description": "文件在OSS中的相对路径（上传成功后传给后端保存）", "example": "avatars/3/temp/1747123456789_abc123.jpg" },
+          "expires": { "type": "integer", "description": "签名有效期（秒）", "example": 900 },
+          "uploadConfig": { "$ref": "#/components/schemas/UploadConfig" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "请求参数错误",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "code": 400, "data": null, "message": "上传类型不能为空" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未认证",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "code": 401, "data": null, "message": "未登录" }
+          }
+        }
+      }
+    }
+  }
+}

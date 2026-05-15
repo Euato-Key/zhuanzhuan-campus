@@ -16,4 +16,10 @@ export const env = {
 
   CLIENT_ORIGIN: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+
+  OSS_REGION: process.env.OSS_REGION || '',
+  OSS_BUCKET: process.env.OSS_BUCKET || '',
+  OSS_ACCESS_KEY_ID: process.env.OSS_ACCESS_KEY_ID || '',
+  OSS_ACCESS_KEY_SECRET: process.env.OSS_ACCESS_KEY_SECRET || '',
+  OSS_ROLE_ARN: process.env.OSS_ROLE_ARN || '',
 } as const;

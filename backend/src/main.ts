@@ -4,6 +4,8 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import { prisma } from './config/prisma';
 import authRoutes from './modules/auth/auth.routes';
+import userRoutes from './modules/user/user.routes';
+import uploadRoutes from './modules/upload/upload.routes';
 
 const app = express();
 
@@ -15,6 +17,8 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ code: 200, data: { status: 'ok' }, message: 'success' });
