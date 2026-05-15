@@ -342,19 +342,20 @@ watch(visible, (val) => {
   <el-dialog
     v-model="visible"
     :title="dialogTitle"
-    width="80vw"
+    width="700px"
     top="5vh"
     :close-on-click-modal="false"
     destroy-on-close
     class="publish-dialog"
   >
-    <el-form
-      ref="formRef"
-      :model="formData"
-      :rules="rules"
-      label-width="100px"
-      label-position="left"
-    >
+    <div class="form-scroll-container">
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="rules"
+        label-width="100px"
+        label-position="left"
+      >
       <!-- 基本信息 -->
       <el-form-item label="商品名称" prop="name">
         <el-input
@@ -556,6 +557,7 @@ watch(visible, (val) => {
         </el-radio-group>
       </el-form-item>
     </el-form>
+    </div>
 
     <template #footer>
       <el-button @click="visible = false">取消</el-button>
@@ -677,17 +679,24 @@ watch(visible, (val) => {
 .publish-dialog {
   :deep(.el-dialog) {
     max-width: 900px;
-    height: 85vh;
-    margin-top: 7.5vh !important;
+    max-height: 90vh;
+    margin-top: 5vh !important;
     display: flex;
     flex-direction: column;
   }
 
   :deep(.el-dialog__body) {
-    padding: $spacing-md $spacing-lg;
-    overflow-y: auto;
+    padding: 0;
+    overflow: hidden;
     flex: 1;
     min-height: 0;
   }
+}
+
+.form-scroll-container {
+  padding: $spacing-md $spacing-lg;
+  max-height: calc(90vh - 54px - 70px); // 90vh - 标题栏 - 底部按钮
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 </style>
