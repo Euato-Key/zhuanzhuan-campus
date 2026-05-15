@@ -6,6 +6,7 @@ import { prisma } from './config/prisma';
 import authRoutes from './modules/auth/auth.routes';
 import userRoutes from './modules/user/user.routes';
 import uploadRoutes from './modules/upload/upload.routes';
+import categoryRoutes from './modules/category/category.routes';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/categories', categoryRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ code: 200, data: { status: 'ok' }, message: 'success' });

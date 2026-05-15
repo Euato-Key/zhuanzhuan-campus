@@ -1,0 +1,476 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "转转校园 - 商品分类管理 API",
+    "version": "1.0.0",
+    "description": "商品分类的增删改查接口。支持两级分类结构。公开接口用于前端展示，管理接口需要管理员权限。"
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "开发环境" }
+  ],
+  "tags": [
+    { "name": "分类-公开", "description": "无需登录的分类查询接口" },
+    { "name": "分类-管理", "description": "需要管理员权限的分类管理接口" }
+  ],
+  "paths": {
+    "/api/categories/tree": {
+      "get": {
+        "tags": ["分类-公开"],
+        "summary": "获取分类树",
+        "description": "获取层级结构的分类树，一级分类下包含二级分类。按 sort 降序、id 升序排列。",
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/CategoryTree" }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "code": 200,
+                  "data": [
+                    {
+                      "id": 1,
+                      "name": "电子产品",
+                      "parentId": null,
+                      "icon": "https://example.com/icons/electronics.png",
+                      "sort": 100,
+                      "children": [
+                        { "id": 2, "name": "手机", "parentId": 1, "icon": null, "sort": 0, "children": [], "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-01T00:00:00.000Z" },
+                        { "id": 3, "name": "电脑", "parentId": 1, "icon": null, "sort": 0, "children": [], "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-01T00:00:00.000Z" }
+                      ],
+                      "createdAt": "2024-01-01T00:00:00.000Z",
+                      "updatedAt": "2024-01-01T00:00:00.000Z"
+                    }
+                  ],
+                  "message": "success"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/categories/list": {
+      "get": {
+        "tags": ["分类-公开"],
+        "summary": "获取分类列表（扁平）",
+        "description": "获取扁平化的分类列表，不包含层级结构。适用于下拉选择等场景。",
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/CategoryFlat" }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "code": 200,
+                  "data": [
+                    { "id": 1, "name": "电子产品", "parentId": null, "icon": "https://example.com/icons/electronics.png", "sort": 100 },
+                    { "id": 2, "name": "手机", "parentId": 1, "icon": null, "sort": 0 },
+                    { "id": 3, "name": "电脑", "parentId": 1, "icon": null, "sort": 0 }
+                  ],
+                  "message": "success"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/categories/{id}": {
+      "get": {
+        "tags": ["分类-公开"],
+        "summary": "获取分类详情",
+        "description": "获取单个分类的详细信息，包含子分类列表和关联商品数量。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "分类ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/CategoryDetail" }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "code": 200,
+                  "data": {
+                    "id": 1,
+                    "name": "电子产品",
+                    "parentId": null,
+                    "icon": "https://example.com/icons/electronics.png",
+                    "sort": 100,
+                    "children": [
+                      { "id": 2, "name": "手机", "parentId": 1, "icon": null, "sort": 0, "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-01T00:00:00.000Z" },
+                      { "id": 3, "name": "电脑", "parentId": 1, "icon": null, "sort": 0, "createdAt": "2024-01-01T00:00:00.000Z", "updatedAt": "2024-01-01T00:00:00.000Z" }
+                    ],
+                    "_count": { "products": 50 },
+                    "createdAt": "2024-01-01T00:00:00.000Z",
+                    "updatedAt": "2024-01-01T00:00:00.000Z"
+                  },
+                  "message": "success"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["分类-管理"],
+        "summary": "更新分类",
+        "description": "更新分类信息。需要管理员权限。注意：修改分类名称、父分类等可能影响已有商品的分类关联。",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "分类ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "minLength": 1, "maxLength": 50, "description": "分类名称" },
+                  "parentId": { "type": "integer", "nullable": true, "description": "父分类ID，null表示顶级分类" },
+                  "icon": { "type": "string", "maxLength": 500, "nullable": true, "description": "分类图标URL" },
+                  "sort": { "type": "integer", "description": "排序值，值越大越靠前" }
+                }
+              },
+              "example": {
+                "name": "数码产品",
+                "sort": 200
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Category" }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "code": 200,
+                  "data": {
+                    "id": 1,
+                    "name": "数码产品",
+                    "parentId": null,
+                    "icon": "https://example.com/icons/electronics.png",
+                    "sort": 200,
+                    "createdAt": "2024-01-01T00:00:00.000Z",
+                    "updatedAt": "2024-01-02T00:00:00.000Z"
+                  },
+                  "message": "更新成功"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      },
+      "delete": {
+        "tags": ["分类-管理"],
+        "summary": "删除分类",
+        "description": "删除分类。需要管理员权限。如果分类下有商品或子分类，则无法删除。",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "分类ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "删除成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" },
+                "example": {
+                  "code": 200,
+                  "data": null,
+                  "message": "删除成功"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/categories": {
+      "post": {
+        "tags": ["分类-管理"],
+        "summary": "创建分类",
+        "description": "创建新的商品分类。需要管理员权限。支持创建一级分类（parentId为null）或二级分类（parentId为一级分类ID）。最多支持两级分类。",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 1, "maxLength": 50, "description": "分类名称" },
+                  "parentId": { "type": "integer", "nullable": true, "description": "父分类ID，不传或null表示顶级分类" },
+                  "icon": { "type": "string", "maxLength": 500, "nullable": true, "description": "分类图标URL" },
+                  "sort": { "type": "integer", "default": 0, "description": "排序值，值越大越靠前" }
+                }
+              },
+              "examples": {
+                "一级分类": {
+                  "value": { "name": "电子产品", "icon": "https://example.com/icons/electronics.png", "sort": 100 }
+                },
+                "二级分类": {
+                  "value": { "name": "手机", "parentId": 1, "sort": 50 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Category" }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "code": 201,
+                  "data": {
+                    "id": 1,
+                    "name": "电子产品",
+                    "parentId": null,
+                    "icon": "https://example.com/icons/electronics.png",
+                    "sort": 100,
+                    "createdAt": "2024-01-01T00:00:00.000Z",
+                    "updatedAt": "2024-01-01T00:00:00.000Z"
+                  },
+                  "message": "创建成功"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "在请求头中携带 Access Token，格式：Bearer <token>"
+      }
+    },
+    "schemas": {
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 200 },
+          "data": { "description": "响应数据" },
+          "message": { "type": "string", "example": "success" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer" },
+          "data": { "type": "object", "nullable": true },
+          "message": { "type": "string" }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "parentId": { "type": "integer", "nullable": true },
+          "icon": { "type": "string", "nullable": true },
+          "sort": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CategoryTree": {
+        "type": "object",
+        "description": "树形结构的分类，包含子分类",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "parentId": { "type": "integer", "nullable": true },
+          "icon": { "type": "string", "nullable": true },
+          "sort": { "type": "integer" },
+          "children": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CategoryTree" }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CategoryFlat": {
+        "type": "object",
+        "description": "扁平化的分类，不包含子分类",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "parentId": { "type": "integer", "nullable": true },
+          "icon": { "type": "string", "nullable": true },
+          "sort": { "type": "integer" }
+        }
+      },
+      "CategoryDetail": {
+        "type": "object",
+        "description": "分类详情，包含子分类和统计信息",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "parentId": { "type": "integer", "nullable": true },
+          "icon": { "type": "string", "nullable": true },
+          "sort": { "type": "integer" },
+          "children": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Category" }
+          },
+          "_count": {
+            "type": "object",
+            "properties": {
+              "products": { "type": "integer", "description": "关联商品数量" }
+            }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "请求参数错误",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "code": 400, "data": null, "message": "分类名称不能为空" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未认证",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "code": 401, "data": null, "message": "未登录" }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "无权限",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "code": 403, "data": null, "message": "无权限访问" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "资源不存在",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "code": 404, "data": null, "message": "分类不存在" }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "资源冲突",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "code": 409, "data": null, "message": "该分类名称已存在" }
+          }
+        }
+      }
+    }
+  }
+}
