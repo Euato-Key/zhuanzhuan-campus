@@ -4,6 +4,7 @@ import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, SwitchButton, Star, Bell, ChatDotRound, ShoppingBag, Location } from '@element-plus/icons-vue'
+import { getOssUrl } from '@/utils/oss'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -55,7 +56,7 @@ async function handleLogout() {
             else if (cmd === 'logout') handleLogout()
           }">
             <div class="user-avatar-wrap">
-              <el-avatar :size="32" :src="userStore.user?.avatar || undefined">
+              <el-avatar :size="32" :src="getOssUrl(userStore.user?.avatar)">
                 <el-icon :size="18"><User /></el-icon>
               </el-avatar>
               <span class="user-name">{{ userStore.user?.username }}</span>

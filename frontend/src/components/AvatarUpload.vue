@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { getSTSToken, type UploadType } from '@/api/upload'
+import { getOssUrl } from '@/utils/oss'
 import { ElMessage } from 'element-plus'
 import { Plus, Loading } from '@element-plus/icons-vue'
 import OSS from 'ali-oss'
@@ -19,20 +20,16 @@ const uploadType = computed(() => props.type || 'avatar')
 const uploading = ref(false)
 const previewUrl = ref<string | null>(null)
 
-// OSS base URL for preview
-const ossBaseUrl = 'https://zhuanzhuan-campus.oss-cn-beijing.aliyuncs.com/'
-
-// Get full URL from relative path
-function getFullUrl(relativePath: string | null): string | null {
-  if (!relativePath) return null
-  if (relativePath.startsWith('http')) return relativePath
-  return ossBaseUrl + relativePath
-}
-
-// Initialize preview from modelValue
-if (props.modelValue) {
-  previewUrl.value = getFullUrl(props.modelValue)
-}
+// Watch modelValue changes to update preview
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) {
+      previewUrl.value = getOssUrl(newVal)
+    }
+  },
+  { immediate: true }
+)
 
 // Validate file before upload
 function validateFile(file: File): boolean {
@@ -91,7 +88,7 @@ async function handleUpload(event: Event) {
     await client.put(ossPath, file)
 
     // 5. Update preview
-    previewUrl.value = ossBaseUrl + ossPath
+    previewUrl.value = getOssUrl(ossPath)
 
     // 6. Emit the temp path (relative)
     emit('update:modelValue', ossPath)

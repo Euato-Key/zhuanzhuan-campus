@@ -206,7 +206,9 @@ async function moveFileToPermanent(tempPath: string, type: string, userId: numbe
   const permanentPath = generatePermanentPath(type, userId, ext);
   const client = getOSSClient();
 
-  await client.copy(permanentPath, tempPath);
+  // Copy from temp to permanent - source must be in format /bucket/objectKey
+  const source = `/${env.OSS_BUCKET}/${tempPath}`;
+  await client.copy(permanentPath, source);
 
   try {
     await client.delete(tempPath);

@@ -247,7 +247,7 @@ onMounted(() => {
       <aside class="profile-sidebar">
         <div class="user-card">
           <AvatarUpload
-            v-model="avatarTempPath"
+            :model-value="avatarTempPath || userStore.user?.avatar"
             @success="handleAvatarSuccess"
           />
           <div v-if="avatarTempPath" class="save-avatar">
