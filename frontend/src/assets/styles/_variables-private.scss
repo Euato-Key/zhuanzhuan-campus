@@ -1,0 +1,157 @@
+// 清新校园风 - 设计变量（内部文件）
+// 此文件包含所有变量定义，通过 _variables.scss 的 @forward 导出
+
+// ==================== 色彩系统 ====================
+
+// 品牌主色
+$color-primary-dark: #2E7D32;
+$color-primary: #4CAF50;
+$color-primary-light: #81C784;
+$color-primary-pale: #E8F5E9;
+
+// 辅助色
+$color-accent-orange: #FF9800;
+$color-accent-blue: #2196F3;
+$color-accent-purple: #9C27B0;
+
+// 功能色
+$color-success: #4CAF50;
+$color-warning: #FF9800;
+$color-error: #F44336;
+$color-info: #2196F3;
+
+// 中性色
+$color-text-primary: #212121;
+$color-text-secondary: #616161;
+$color-text-placeholder: #9E9E9E;
+$color-border: #E0E0E0;
+$color-bg-page: #F5F5F5;
+$color-bg-card: #FFFFFF;
+
+// ==================== 字体系统 ====================
+
+$font-family-cn: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+$font-family-en: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-family: $font-family-cn;
+$font-family-mono: "SF Mono", Consolas, "Courier New", monospace;
+
+// 字号
+$font-size-h1: 32px;
+$font-size-h2: 24px;
+$font-size-h3: 20px;
+$font-size-h4: 16px;
+$font-size-body: 14px;
+$font-size-small: 12px;
+$font-size-tiny: 11px;
+
+// 字重
+$font-weight-bold: 700;
+$font-weight-semibold: 600;
+$font-weight-medium: 500;
+$font-weight-regular: 400;
+
+// 行高
+$line-height-tight: 1.3;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.6;
+
+// ==================== 间距系统 ====================
+
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-xxl: 48px;
+
+// ==================== 圆角系统 ====================
+
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+$radius-full: 9999px;
+
+// ==================== 阴影系统 ====================
+
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+$shadow-primary: 0 4px 12px rgba(76, 175, 80, 0.3);
+$shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.15);
+
+// ==================== 动画 ====================
+
+$transition-fast: 150ms ease;
+$transition-normal: 250ms ease;
+$transition-slow: 400ms ease;
+
+// 缓动函数
+$ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+$ease-in: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+$ease-in-out: cubic-bezier(0.645, 0.045, 0.355, 1);
+
+// ==================== 响应式断点 ====================
+
+$breakpoint-xs: 576px;
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-xxl: 1400px;
+
+// 容器宽度
+$container-sm: 540px;
+$container-md: 720px;
+$container-lg: 960px;
+$container-xl: 1140px;
+$container-xxl: 1320px;
+
+// ==================== CSS 变量 ====================
+
+:root {
+  // 品牌主色
+  --color-primary-dark: #{$color-primary-dark};
+  --color-primary: #{$color-primary};
+  --color-primary-light: #{$color-primary-light};
+  --color-primary-pale: #{$color-primary-pale};
+
+  // 辅助色
+  --color-accent-orange: #{$color-accent-orange};
+  --color-accent-blue: #{$color-accent-blue};
+  --color-accent-purple: #{$color-accent-purple};
+
+  // 功能色
+  --color-success: #{$color-success};
+  --color-warning: #{$color-warning};
+  --color-error: #{$color-error};
+  --color-info: #{$color-info};
+
+  // 中性色
+  --color-text-primary: #{$color-text-primary};
+  --color-text-secondary: #{$color-text-secondary};
+  --color-text-placeholder: #{$color-text-placeholder};
+  --color-border: #{$color-border};
+  --color-bg-page: #{$color-bg-page};
+  --color-bg-card: #{$color-bg-card};
+
+  // 字体
+  --font-family: #{$font-family};
+
+  // 阴影
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+}
+
+// 暗色模式
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text-primary: #E0E0E0;
+    --color-text-secondary: #B0B0B0;
+    --color-text-placeholder: #808080;
+    --color-border: #404040;
+    --color-bg-page: #1A1A1A;
+    --color-bg-card: #2D2D2D;
+  }
+}

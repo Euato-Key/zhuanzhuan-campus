@@ -16,7 +16,7 @@
 </template>
 
 <style scoped lang="scss">
-@import '@/assets/styles/variables';
+@use '@/assets/styles/variables' as *;
 
 .footer {
   background: #fff;

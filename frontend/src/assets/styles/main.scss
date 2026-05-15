@@ -1,23 +1,13 @@
 // 转转校园二手平台 - 主样式入口
 // 清新校园风设计系统
 
-// 1. 变量定义（必须放最前）
-@import './variables';
-
-// 2. 混合宏
-@import './mixins';
-
-// 3. 重置样式
-@import './reset';
-
-// 4. 字体排版
-@import './typography';
-
-// 5. 通用组件样式
-@import './components';
-
-// 6. 动画定义
-@import './animations';
+// 使用新的 @use 语法替代 @import
+@use './variables' as *;
+@use './mixins' as *;
+@use './reset';
+@use './typography';
+@use './components';
+@use './animations';
 
 // ==================== 页面布局 ====================
 

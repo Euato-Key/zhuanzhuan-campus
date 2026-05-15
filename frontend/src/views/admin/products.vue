@@ -111,7 +111,7 @@ function handleView(product: any) {
 </template>
 
 <style scoped lang="scss">
-@import '@/assets/styles/variables';
+@use '@/assets/styles/variables' as *;
 
 .page-header {
   margin-bottom: 24px;

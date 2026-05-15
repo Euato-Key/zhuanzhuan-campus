@@ -100,7 +100,7 @@ function formatDate(dateStr: string | null | undefined): string {
 </template>
 
 <style scoped lang="scss">
-@import '@/assets/styles/variables';
+@use '@/assets/styles/variables' as *;
 
 .profile-card {
   background: #fff;

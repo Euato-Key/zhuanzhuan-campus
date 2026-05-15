@@ -138,7 +138,7 @@ async function handleSave() {
 </template>
 
 <style scoped lang="scss">
-@import '@/assets/styles/variables';
+@use '@/assets/styles/variables' as *;
 
 .settings-section {
   background: #fff;
