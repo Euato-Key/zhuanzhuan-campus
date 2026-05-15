@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, markRaw } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -13,24 +13,21 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
+// Use markRaw to avoid reactive overhead on component references
 const menuItems = [
-  { path: '/admin', icon: DataBoard, title: '仪表盘', exact: true },
-  { path: '/admin/users', icon: UserFilled, title: '用户管理' },
-  { path: '/admin/products', icon: Goods, title: '商品管理' },
-  { path: '/admin/categories', icon: Star, title: '分类管理' },
-  { path: '/admin/orders', icon: Document, title: '订单管理' },
-  { path: '/admin/reports', icon: ChatDotRound, title: '举报管理' },
-  { path: '/admin/banners', icon: Bell, title: 'Banner管理' },
-  { path: '/admin/settings', icon: Setting, title: '系统设置' },
+  { path: '/admin', icon: markRaw(DataBoard), title: '仪表盘', exact: true },
+  { path: '/admin/users', icon: markRaw(UserFilled), title: '用户管理' },
+  { path: '/admin/products', icon: markRaw(Goods), title: '商品管理' },
+  { path: '/admin/categories', icon: markRaw(Star), title: '分类管理' },
+  { path: '/admin/orders', icon: markRaw(Document), title: '订单管理' },
+  { path: '/admin/reports', icon: markRaw(ChatDotRound), title: '举报管理' },
+  { path: '/admin/banners', icon: markRaw(Bell), title: 'Banner管理' },
+  { path: '/admin/settings', icon: markRaw(Setting), title: '系统设置' },
 ]
 
 const isAdmin = computed(() =>
   userStore.user?.role === 'admin' || userStore.user?.role === 'super_admin'
 )
-
-function navigateTo(path: string) {
-  router.push(path)
-}
 
 async function handleLogout() {
   try {
