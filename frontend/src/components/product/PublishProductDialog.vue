@@ -44,7 +44,7 @@ const uploadLoading = ref(false)
 const formData = ref<CreateProductData>({
   name: '',
   description: '',
-  categoryId: 0,
+  categoryId: undefined as unknown as number,
   tags: [],
   images: [],
   detailImages: [],
@@ -303,7 +303,7 @@ function resetForm() {
   formData.value = {
     name: '',
     description: '',
-    categoryId: 0,
+    categoryId: undefined as unknown as number,
     tags: [],
     images: [],
     detailImages: [],
