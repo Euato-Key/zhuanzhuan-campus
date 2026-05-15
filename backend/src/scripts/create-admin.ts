@@ -14,7 +14,7 @@
  */
 
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import * as readline from 'readline';
 
 const prisma = new PrismaClient();
@@ -69,7 +69,7 @@ async function createSuperAdmin(options: CreateAdminOptions): Promise<void> {
 
   try {
     // 检查邮箱是否已存在
-    const existingByEmail = await prisma.users.findUnique({
+    const existingByEmail = await prisma.user.findUnique({
       where: { email },
     });
 
@@ -79,16 +79,16 @@ async function createSuperAdmin(options: CreateAdminOptions): Promise<void> {
         process.exit(0);
       }
       // 提升为超级管理员
-      await prisma.users.update({
+      await prisma.user.update({
         where: { email },
-        data: { role: 'super_admin' },
+        data: { role: UserRole.super_admin },
       });
       console.log(`✅ 用户 ${existingByEmail.username} 已提升为超级管理员`);
       process.exit(0);
     }
 
     // 检查用户名是否已存在
-    const existingByUsername = await prisma.users.findUnique({
+    const existingByUsername = await prisma.user.findUnique({
       where: { username },
     });
 
@@ -100,13 +100,13 @@ async function createSuperAdmin(options: CreateAdminOptions): Promise<void> {
     // 创建新超级管理员
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    const user = await prisma.users.create({
+    const user = await prisma.user.create({
       data: {
         email,
         username,
-        password_hash: passwordHash,
-        role: 'super_admin',
-        credit_score: 100,
+        passwordHash,
+        role: UserRole.super_admin,
+        creditScore: 100,
       },
     });
 
