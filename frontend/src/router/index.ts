@@ -48,6 +48,12 @@ const router = createRouter({
       meta: { title: '我的收藏', auth: true }
     },
     {
+      path: '/my-products',
+      name: 'MyProducts',
+      component: () => import('@/views/user/myProducts.vue'),
+      meta: { title: '我的商品', auth: true }
+    },
+    {
       path: '/orders',
       name: 'Orders',
       component: () => import('@/views/order/list.vue'),
