@@ -127,7 +127,9 @@ function handleSetAdmin(user: User) {
         </el-table-column>
       </el-table>
 
-      <div class="pagination-wrap">
+      <el-empty v-if="!loading && users.length === 0" description="暂无用户数据" />
+
+      <div class="pagination-wrap" v-if="users.length > 0">
         <el-pagination
           background
           layout="total, prev, pager, next"

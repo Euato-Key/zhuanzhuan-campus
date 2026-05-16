@@ -93,7 +93,9 @@ function handleView(order: Order) {
         </el-table-column>
       </el-table>
 
-      <div class="pagination-wrap">
+      <el-empty v-if="!loading && orders.length === 0" description="暂无订单数据" />
+
+      <div class="pagination-wrap" v-if="orders.length > 0">
         <el-pagination
           background
           layout="total, prev, pager, next"

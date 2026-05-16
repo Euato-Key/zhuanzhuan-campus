@@ -123,7 +123,9 @@ function handleReject(report: Report) {
         </el-table-column>
       </el-table>
 
-      <div class="pagination-wrap">
+      <el-empty v-if="!loading && reports.length === 0" description="暂无举报数据" />
+
+      <div class="pagination-wrap" v-if="reports.length > 0">
         <el-pagination
           background
           layout="total, prev, pager, next"

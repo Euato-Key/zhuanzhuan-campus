@@ -124,6 +124,19 @@ export interface MyProductItem {
   }
 }
 
+// 管理员商品项（包含卖家邮箱）
+export interface AdminProductItem extends MyProductItem {
+  user: {
+    id: number
+    username: string
+    avatar?: string | null
+    email: string  // 管理员视图包含卖家邮箱
+    school?: string | null
+    campus?: string | null
+    creditScore?: number
+  }
+}
+
 // 分页响应
 export interface PaginatedResponse<T> {
   list: T[]
@@ -295,7 +308,7 @@ export function deleteProduct(id: string) {
 
 // 获取所有商品列表（管理员）
 export function getAdminProductList(params: AdminProductQueryParams) {
-  return api.get<{ code: number; data: PaginatedResponse<MyProductItem>; message: string }>(
+  return api.get<{ code: number; data: PaginatedResponse<AdminProductItem>; message: string }>(
     '/products/admin/list',
     { params }
   )

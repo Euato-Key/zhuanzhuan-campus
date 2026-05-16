@@ -151,7 +151,7 @@ onMounted(() => {
         <el-table-column prop="name" label="商品名称" min-width="150">
           <template #default="{ row }">
             <div class="product-cell">
-              <img :src="row.images[0] || '/placeholder.png'" class="product-thumb" />
+              <img :src="row.images?.[0] || '/placeholder.png'" class="product-thumb" />
               <span class="product-name-text">{{ row.name }}</span>
             </div>
           </template>

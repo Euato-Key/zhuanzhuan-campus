@@ -2,7 +2,6 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Edit, Delete, Top, Bottom } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getMyProducts,
   offlineProduct as offlineProductApi,
@@ -14,10 +13,13 @@ import {
   PRODUCT_STATUS_TAG_TYPE,
   type ProductStatus,
 } from '@/api/product'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { showError, showSuccess } from '@/utils/error'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 
 const router = useRouter()
+const { confirmOffline, confirmRelist, confirmDelete } = useConfirmDialog()
 
 // 状态
 const loading = ref(false)
@@ -55,8 +57,7 @@ async function fetchProducts() {
       total.value = res.data.data.total
     }
   } catch (err) {
-    console.error('获取商品列表失败', err)
-    ElMessage.error('获取商品列表失败')
+    showError(err, '获取商品列表失败')
   } finally {
     loading.value = false
   }
@@ -87,49 +88,43 @@ async function editProduct(product: MyProductItem) {
 
 // 下架商品
 async function handleOffline(product: MyProductItem) {
+  if (!await confirmOffline()) return
   try {
-    await ElMessageBox.confirm('确定要下架该商品吗？', '提示', { type: 'warning' })
     const res = await offlineProductApi(product.id)
     if (res.data.code === 200) {
-      ElMessage.success('商品已下架')
+      showSuccess('商品已下架')
       fetchProducts()
     }
   } catch (err) {
-    if (err !== 'cancel') {
-      ElMessage.error('操作失败')
-    }
+    showError(err, '操作失败')
   }
 }
 
 // 重新上架
 async function handleRelist(product: MyProductItem) {
+  if (!await confirmRelist()) return
   try {
-    await ElMessageBox.confirm('确定要重新上架该商品吗？', '提示', { type: 'info' })
     const res = await relistProductApi(product.id)
     if (res.data.code === 200) {
-      ElMessage.success('已重新提交审核')
+      showSuccess('已重新提交审核')
       fetchProducts()
     }
   } catch (err) {
-    if (err !== 'cancel') {
-      ElMessage.error('操作失败')
-    }
+    showError(err, '操作失败')
   }
 }
 
 // 删除商品
 async function handleDelete(product: MyProductItem) {
+  if (!await confirmDelete()) return
   try {
-    await ElMessageBox.confirm('确定要删除该商品吗？删除后无法恢复', '警告', { type: 'warning' })
     const res = await deleteProductApi(product.id)
     if (res.data.code === 200) {
-      ElMessage.success('商品已删除')
+      showSuccess('商品已删除')
       fetchProducts()
     }
   } catch (err) {
-    if (err !== 'cancel') {
-      ElMessage.error('操作失败')
-    }
+    showError(err, '操作失败')
   }
 }
 
@@ -178,7 +173,7 @@ onMounted(() => {
     <div class="product-list" v-loading="loading">
       <div v-for="product in products" :key="product.id" class="product-item">
         <div class="product-image" @click="goToDetail(product)">
-          <img :src="product.images[0] || '/placeholder.png'" :alt="product.name" />
+          <img :src="product.images?.[0] || '/placeholder.png'" :alt="product.name" />
         </div>
 
         <div class="product-info" @click="goToDetail(product)">
