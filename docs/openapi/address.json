@@ -27,7 +27,7 @@
         "description": "获取当前用户的所有收货地址，按默认地址优先排序",
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -70,7 +70,7 @@
         "description": "创建新的收货地址，最多20个。设为默认地址时自动取消其他默认地址",
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "requestBody": {
@@ -125,7 +125,7 @@
         "description": "获取指定收货地址的详细信息",
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "parameters": [
@@ -182,7 +182,7 @@
         "description": "更新指定收货地址的信息。设为默认地址时自动取消其他默认地址",
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "parameters": [
@@ -252,7 +252,7 @@
         "description": "删除指定的收货地址",
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "parameters": [
@@ -311,7 +311,7 @@
         "description": "将指定地址设为默认收货地址，自动取消其他默认地址",
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "parameters": [
@@ -364,7 +364,7 @@
   },
   "components": {
     "securitySchemes": {
-      "bearerAuth": {
+      "BearerAuth": {
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
@@ -491,33 +491,15 @@
             "description": "省份",
             "example": "北京市"
           },
-          "provinceCode": {
-            "type": "string",
-            "nullable": true,
-            "description": "省份行政区划代码",
-            "example": "110000"
-          },
           "city": {
             "type": "string",
             "description": "城市",
             "example": "北京市"
           },
-          "cityCode": {
-            "type": "string",
-            "nullable": true,
-            "description": "城市行政区划代码",
-            "example": "110100"
-          },
           "district": {
             "type": "string",
             "description": "区县",
             "example": "海淀区"
-          },
-          "districtCode": {
-            "type": "string",
-            "nullable": true,
-            "description": "区县行政区划代码",
-            "example": "110108"
           },
           "street": {
             "type": "string",
@@ -559,7 +541,7 @@
             "type": "string",
             "description": "收货人姓名",
             "minLength": 2,
-            "maxLength": 20,
+            "maxLength": 50,
             "example": "张三"
           },
           "receiverPhone": {
@@ -573,30 +555,15 @@
             "description": "省份",
             "example": "北京市"
           },
-          "provinceCode": {
-            "type": "string",
-            "description": "省份行政区划代码（选填）",
-            "example": "110000"
-          },
           "city": {
             "type": "string",
             "description": "城市",
             "example": "北京市"
           },
-          "cityCode": {
-            "type": "string",
-            "description": "城市行政区划代码（选填）",
-            "example": "110100"
-          },
           "district": {
             "type": "string",
             "description": "区县",
             "example": "海淀区"
-          },
-          "districtCode": {
-            "type": "string",
-            "description": "区县行政区划代码（选填）",
-            "example": "110108"
           },
           "street": {
             "type": "string",
@@ -607,8 +574,7 @@
           "detail": {
             "type": "string",
             "description": "详细地址",
-            "minLength": 5,
-            "maxLength": 100,
+            "maxLength": 255,
             "example": "清华大学紫荆公寓6号楼"
           },
           "isDefault": {
@@ -625,7 +591,7 @@
             "type": "string",
             "description": "收货人姓名",
             "minLength": 2,
-            "maxLength": 20
+            "maxLength": 50
           },
           "receiverPhone": {
             "type": "string",
@@ -636,25 +602,13 @@
             "type": "string",
             "description": "省份"
           },
-          "provinceCode": {
-            "type": "string",
-            "description": "省份行政区划代码"
-          },
           "city": {
             "type": "string",
             "description": "城市"
           },
-          "cityCode": {
-            "type": "string",
-            "description": "城市行政区划代码"
-          },
           "district": {
             "type": "string",
             "description": "区县"
-          },
-          "districtCode": {
-            "type": "string",
-            "description": "区县行政区划代码"
           },
           "street": {
             "type": "string",
@@ -664,8 +618,7 @@
           "detail": {
             "type": "string",
             "description": "详细地址",
-            "minLength": 5,
-            "maxLength": 100
+            "maxLength": 255
           },
           "isDefault": {
             "type": "boolean",

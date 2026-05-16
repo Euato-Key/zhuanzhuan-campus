@@ -23,7 +23,7 @@
         "tags": ["订单接口"],
         "summary": "获取我的订单列表",
         "description": "获取当前用户的订单列表，可通过角色和状态筛选",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "page",
@@ -91,7 +91,7 @@
         "tags": ["订单接口"],
         "summary": "创建订单",
         "description": "创建新订单，锁定库存",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -127,7 +127,7 @@
         "tags": ["订单接口"],
         "summary": "获取订单详情",
         "description": "获取订单详细信息",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -164,7 +164,7 @@
         "tags": ["订单接口"],
         "summary": "支付订单",
         "description": "模拟支付订单，支付成功后扣减库存",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -220,7 +220,7 @@
         "tags": ["订单接口"],
         "summary": "取消订单",
         "description": "取消订单，释放库存锁",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -274,7 +274,7 @@
         "tags": ["订单接口"],
         "summary": "卖家发货",
         "description": "卖家填写快递信息并发货",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -335,7 +335,7 @@
         "tags": ["订单接口"],
         "summary": "卖家确认买家取货",
         "description": "自提订单：卖家确认买家已取货",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -373,7 +373,7 @@
         "tags": ["订单接口"],
         "summary": "买家确认收货",
         "description": "买家确认收货，订单完成",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -411,7 +411,7 @@
         "tags": ["订单接口"],
         "summary": "申请退货",
         "description": "买家申请退货（确认收货后14天内）",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -467,7 +467,7 @@
         "tags": ["订单接口"],
         "summary": "卖家审核退货申请",
         "description": "卖家同意或拒绝退货申请",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -526,7 +526,7 @@
         "tags": ["订单接口"],
         "summary": "买家填写退货快递信息",
         "description": "买家填写退货快递公司和单号",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -587,7 +587,7 @@
         "tags": ["订单接口"],
         "summary": "卖家确认收到退货",
         "description": "卖家确认收到退货商品，订单变为已退款",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -623,7 +623,7 @@
   },
   "components": {
     "securitySchemes": {
-      "bearerAuth": {
+      "BearerAuth": {
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
@@ -721,6 +721,7 @@
           "province": { "type": "string", "description": "省份" },
           "city": { "type": "string", "description": "城市" },
           "district": { "type": "string", "description": "区县" },
+          "street": { "type": "string", "description": "街道", "nullable": true },
           "detail": { "type": "string", "description": "详细地址" }
         }
       },
@@ -757,11 +758,6 @@
           "pickupInfo": {
             "$ref": "#/components/schemas/PickupInfo",
             "description": "自提信息（自提方式必填）"
-          },
-          "remark": {
-            "type": "string",
-            "description": "订单备注",
-            "maxLength": 255
           }
         }
       },
@@ -774,8 +770,8 @@
           "buyerId": { "type": "integer", "description": "买家ID" },
           "sellerId": { "type": "integer", "description": "卖家ID" },
           "quantity": { "type": "integer", "description": "购买数量" },
-          "price": { "type": "number", "description": "成交单价", "nullable": true },
-          "totalPrice": { "type": "number", "description": "订单总价", "nullable": true },
+          "price": { "type": "number", "description": "成交单价" },
+          "totalPrice": { "type": "number", "description": "订单总价" },
           "deliveryType": { "$ref": "#/components/schemas/OrderDeliveryType" },
           "addressSnapshot": { "$ref": "#/components/schemas/AddressSnapshot", "nullable": true },
           "pickupInfo": { "$ref": "#/components/schemas/PickupInfo", "nullable": true },
@@ -788,7 +784,7 @@
           "confirmTime": { "type": "string", "format": "date-time", "nullable": true },
           "expressCompany": { "type": "string", "nullable": true },
           "expressNo": { "type": "string", "nullable": true },
-          "productName": { "type": "string", "description": "商品名称快照", "nullable": true },
+          "productName": { "type": "string", "description": "商品名称快照" },
           "productImage": { "type": "string", "description": "商品主图快照", "nullable": true },
           "productSpecs": { "type": "object", "nullable": true },
           "cancelReason": { "type": "string", "nullable": true },
@@ -842,8 +838,8 @@
           "buyerId": { "type": "integer", "description": "买家ID" },
           "sellerId": { "type": "integer", "description": "卖家ID" },
           "quantity": { "type": "integer", "description": "购买数量" },
-          "price": { "type": "number", "description": "成交单价", "nullable": true },
-          "totalPrice": { "type": "number", "description": "订单总价", "nullable": true },
+          "price": { "type": "number", "description": "成交单价" },
+          "totalPrice": { "type": "number", "description": "订单总价" },
           "deliveryType": { "$ref": "#/components/schemas/OrderDeliveryType" },
           "addressSnapshot": { "$ref": "#/components/schemas/AddressSnapshot", "nullable": true },
           "pickupInfo": { "$ref": "#/components/schemas/PickupInfo", "nullable": true },
@@ -856,7 +852,7 @@
           "confirmTime": { "type": "string", "format": "date-time", "nullable": true },
           "expressCompany": { "type": "string", "nullable": true },
           "expressNo": { "type": "string", "nullable": true },
-          "productName": { "type": "string", "description": "商品名称快照", "nullable": true },
+          "productName": { "type": "string", "description": "商品名称快照" },
           "productImage": { "type": "string", "description": "商品主图快照", "nullable": true },
           "productSpecs": { "type": "object", "nullable": true },
           "cancelReason": { "type": "string", "nullable": true },
@@ -923,6 +919,7 @@
                   "province": { "type": "string" },
                   "city": { "type": "string" },
                   "district": { "type": "string" },
+                  "street": { "type": "string", "nullable": true },
                   "detail": { "type": "string" }
                 }
               }

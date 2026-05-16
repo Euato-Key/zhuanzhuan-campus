@@ -12,30 +12,6 @@
     { "name": "用户", "description": "用户信息管理接口" }
   ],
   "paths": {
-    "/api/users/me": {
-      "get": {
-        "tags": ["用户"],
-        "summary": "获取当前用户资料",
-        "description": "获取当前登录用户的完整资料信息，包含邮箱、手机号等私密字段。",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "获取成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/UserProfile" } } }
-                  ]
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Unauthorized" }
-        }
-      }
-    },
     "/api/users/profile": {
       "put": {
         "tags": ["用户"],
@@ -205,7 +181,6 @@
                     "campus": null,
                     "phone": null,
                     "role": "user",
-                    "status": "active",
                     "creditScore": 100,
                     "createdAt": "2026-05-14T00:00:00.000Z"
                   },
@@ -293,7 +268,6 @@
           "campus": { "type": "string", "nullable": true },
           "phone": { "type": "string", "nullable": true },
           "role": { "type": "string", "enum": ["user", "admin", "super_admin"], "description": "用户角色" },
-          "status": { "type": "string", "enum": ["active", "blocked"], "description": "账号状态（根据isBlocked/blockedUntil派生）" },
           "creditScore": { "type": "integer", "description": "信用分" },
           "createdAt": { "type": "string", "format": "date-time" }
         }
