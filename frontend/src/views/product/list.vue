@@ -14,6 +14,7 @@ import {
   type DeliveryType,
 } from '@/api/product'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
+import ProductCard from '@/components/product/ProductCard.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 
 const route = useRoute()
@@ -45,24 +46,39 @@ const priceRange = ref<[number | undefined, number | undefined]>([undefined, und
 // 发布弹窗
 const publishDialogVisible = ref(false)
 
-// 计算分类选项（扁平化）
-const flatCategories = computed(() => {
-  const result: { id: number; name: string; parentId: number | null }[] = []
-  const flatten = (cats: Category[], level = 0) => {
-    cats.forEach(cat => {
-      result.push({
-        id: cat.id,
-        name: level > 0 ? `${'　'.repeat(level)}├ ${cat.name}` : cat.name,
-        parentId: cat.parentId,
-      })
-      if (cat.children?.length) {
-        flatten(cat.children, level + 1)
-      }
-    })
-  }
-  flatten(categories.value)
-  return result
+// 计算一级分类
+const levelOneCategories = computed(() => {
+  return categories.value.filter(cat => !cat.parentId)
 })
+
+// 当前选中的一级分类
+const selectedLevelOne = ref<number | undefined>(undefined)
+
+// 根据一级分类筛选二级分类
+const levelTwoCategories = computed(() => {
+  if (!selectedLevelOne.value) return []
+  const parent = categories.value.find(cat => cat.id === selectedLevelOne.value)
+  return parent?.children || []
+})
+
+// 选择一级分类
+function selectLevelOne(id: number | undefined) {
+  selectedLevelOne.value = id
+  // 如果选中的二级分类不属于当前一级分类，清空
+  if (queryParams.categoryId) {
+    const belongsToCurrentLevelOne = levelTwoCategories.value.some(cat => cat.id === queryParams.categoryId)
+    if (!belongsToCurrentLevelOne) {
+      queryParams.categoryId = undefined
+    }
+  }
+  handleSearch()
+}
+
+// 选择二级分类
+function selectLevelTwo(id: number | undefined) {
+  queryParams.categoryId = id
+  handleSearch()
+}
 
 // 获取分类
 async function fetchCategories() {
@@ -70,6 +86,9 @@ async function fetchCategories() {
     const res = await getCategoryTree()
     if (res.data.code === 200) {
       categories.value = res.data.data
+      // 分类加载完成后初始化URL参数
+      initFromUrl()
+      fetchProducts()
     }
   } catch (err) {
     console.error('获取分类失败', err)
@@ -103,6 +122,7 @@ function handleSearch() {
 function handleReset() {
   queryParams.keyword = ''
   queryParams.categoryId = undefined
+  selectedLevelOne.value = undefined
   queryParams.itemCondition = undefined
   queryParams.minPrice = undefined
   queryParams.maxPrice = undefined
@@ -138,11 +158,6 @@ function handlePageChange(page: number) {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-// 跳转商品详情
-function goToDetail(product: ProductListItem) {
-  router.push({ name: 'ProductDetail', params: { id: product.id } })
-}
-
 // 发布成功
 function handlePublishSuccess() {
   ElMessage.success('商品发布成功，等待审核')
@@ -153,7 +168,18 @@ function handlePublishSuccess() {
 function initFromUrl() {
   const { keyword, categoryId, itemCondition, deliveryType, sortBy, sortOrder } = route.query
   if (keyword) queryParams.keyword = keyword as string
-  if (categoryId) queryParams.categoryId = Number(categoryId)
+  if (categoryId) {
+    queryParams.categoryId = Number(categoryId)
+    // 根据categoryId找到对应的一级分类
+    const cat = categories.value.find(c => c.id === Number(categoryId))
+    if (cat?.parentId) {
+      selectedLevelOne.value = cat.parentId
+    } else if (cat && !cat.parentId) {
+      // 如果选中的是一级分类，设置selectedLevelOne但不设置categoryId
+      selectedLevelOne.value = cat.id
+      queryParams.categoryId = undefined
+    }
+  }
   if (itemCondition) queryParams.itemCondition = itemCondition as ItemCondition
   if (deliveryType) queryParams.deliveryType = deliveryType as DeliveryType
   if (sortBy) queryParams.sortBy = sortBy as 'price' | 'time' | 'favorite'
@@ -168,8 +194,6 @@ watch(() => route.query, () => {
 
 onMounted(() => {
   fetchCategories()
-  initFromUrl()
-  fetchProducts()
 })
 </script>
 
@@ -193,70 +217,124 @@ onMounted(() => {
       </div>
         
       <div class="filter-row">
-        <el-select
-          v-model="queryParams.categoryId"
-          placeholder="全部分类"
-          clearable
-          class="filter-select"
-          @change="handleSearch"
-        >
-          <el-option
-            v-for="cat in flatCategories"
-            :key="cat.id"
-            :label="cat.name"
-            :value="cat.id"
-          />
-        </el-select>
+        <!-- 分类选择器 -->
+        <div class="category-selector">
+          <div class="category-level-one">
+            <el-button
+              :type="!selectedLevelOne ? 'primary' : 'default'"
+              size="small"
+              @click="selectLevelOne(undefined)"
+            >
+              全部分类
+            </el-button>
+            <el-button
+              v-for="cat in levelOneCategories"
+              :key="cat.id"
+              :type="selectedLevelOne === cat.id ? 'primary' : 'default'"
+              size="small"
+              @click="selectLevelOne(cat.id)"
+            >
+              {{ cat.name }}
+            </el-button>
+          </div>
+          <div class="category-level-two" v-if="selectedLevelOne && levelTwoCategories.length > 0">
+            <el-button
+              :type="!queryParams.categoryId ? 'primary' : 'default'"
+              size="small"
+              plain
+              @click="selectLevelTwo(undefined)"
+            >
+              全部
+            </el-button>
+            <el-button
+              v-for="cat in levelTwoCategories"
+              :key="cat.id"
+              :type="queryParams.categoryId === cat.id ? 'primary' : 'default'"
+              size="small"
+              plain
+              @click="selectLevelTwo(cat.id)"
+            >
+              {{ cat.name }}
+            </el-button>
+          </div>
+        </div>
+      </div>
 
-        <el-select
-          v-model="queryParams.itemCondition"
-          placeholder="新旧程度"
-          clearable
-          class="filter-select"
-          @change="handleSearch"
-        >
-          <el-option
-            v-for="(label, value) in ITEM_CONDITION_LABELS"
-            :key="value"
-            :label="label"
-            :value="value"
-          />
-        </el-select>
+      <!-- 新旧程度 -->
+      <div class="filter-row filter-options">
+        <div class="filter-group">
+          <span class="filter-label">新旧程度：</span>
+          <div class="filter-buttons">
+            <el-button
+              :type="!queryParams.itemCondition ? 'primary' : 'default'"
+              size="small"
+              @click="queryParams.itemCondition = undefined; handleSearch()"
+            >
+              全部
+            </el-button>
+            <el-button
+              v-for="(label, value) in ITEM_CONDITION_LABELS"
+              :key="value"
+              :type="queryParams.itemCondition === value ? 'primary' : 'default'"
+              size="small"
+              @click="queryParams.itemCondition = value as ItemCondition; handleSearch()"
+            >
+              {{ label }}
+            </el-button>
+          </div>
+        </div>
+      </div>
 
-        <el-select
-          v-model="queryParams.deliveryType"
-          placeholder="交易方式"
-          clearable
-          class="filter-select"
-          @change="handleSearch"
-        >
-          <el-option
-            v-for="(label, value) in DELIVERY_TYPE_LABELS"
-            :key="value"
-            :label="label"
-            :value="value"
-          />
-        </el-select>
+      <!-- 交易方式 + 价格 -->
+      <div class="filter-row filter-options">
+        <!-- 交易方式 -->
+        <div class="filter-group">
+          <span class="filter-label">交易方式：</span>
+          <div class="filter-buttons">
+            <el-button
+              :type="!queryParams.deliveryType ? 'primary' : 'default'"
+              size="small"
+              @click="queryParams.deliveryType = undefined; handleSearch()"
+            >
+              全部
+            </el-button>
+            <el-button
+              v-for="(label, value) in DELIVERY_TYPE_LABELS"
+              :key="value"
+              :type="queryParams.deliveryType === value ? 'primary' : 'default'"
+              size="small"
+              @click="queryParams.deliveryType = value as DeliveryType; handleSearch()"
+            >
+              {{ label }}
+            </el-button>
+          </div>
+        </div>
 
-        <div class="price-filter">
-          <el-input-number
-            v-model="priceRange[0]"
-            :min="0"
-            :precision="0"
-            placeholder="最低价"
-            controls-position="right"
-            class="price-input"
-          />
-          <span class="price-separator">-</span>
-          <el-input-number
-            v-model="priceRange[1]"
-            :min="0"
-            :precision="0"
-            placeholder="最高价"
-            controls-position="right"
-            class="price-input"
-          />
-          <el-button type="primary" link @click="applyPriceFilter">确定</el-button>
+        <!-- 价格筛选 -->
+        <div class="filter-group price-group">
+          <span class="filter-label">价格：</span>
+          <div class="price-inputs">
+            <el-input-number
+              v-model="priceRange[0]"
+              :min="0"
+              :precision="0"
+              placeholder="最低"
+              controls-position="right"
+              size="small"
+              class="price-input"
+            />
+            <span class="price-separator">-</span>
+            <el-input-number
+              v-model="priceRange[1]"
+              :min="0"
+              :precision="0"
+              placeholder="最高"
+              controls-position="right"
+              size="small"
+              class="price-input"
+            />
+            <el-button type="primary" size="small" @click="applyPriceFilter">确定</el-button>
+          </div>
         </div>
       </div>
 
@@ -297,42 +375,11 @@ onMounted(() => {
 
     <!-- 商品列表 -->
     <div class="product-grid" v-loading="loading">
-      <div
+      <ProductCard
         v-for="product in products"
         :key="product.id"
-        class="product-card"
-        @click="goToDetail(product)"
-      >
-        <div class="product-image">
-          <img :src="product.images[0] || '/placeholder.png'" :alt="product.name" />
-          <div v-if="product.bargain" class="bargain-tag">可议价</div>
-        </div>
-        <div class="product-info">
-          <h3 class="product-name">{{ product.name }}</h3>
-          <div class="product-meta">
-            <span class="condition-tag">{{ ITEM_CONDITION_LABELS[product.itemCondition] }}</span>
-            <span class="delivery-tag">{{ DELIVERY_TYPE_LABELS[product.deliveryType] }}</span>
-          </div>
-          <div class="product-price">
-            <span class="current-price">¥{{ product.currentPrice }}</span>
-            <span v-if="product.originalPrice" class="original-price">
-              ¥{{ product.originalPrice }}
-            </span>
-          </div>
-          <div class="product-footer">
-            <div class="seller-info">
-              <el-avatar :size="20" :src="product.user.avatar || undefined">
-                {{ product.user.username.charAt(0) }}
-              </el-avatar>
-              <span class="seller-name">{{ product.user.username }}</span>
-            </div>
-            <div class="stats">
-              <span>{{ product.viewCount }}浏览</span>
-              <span>{{ product.favoriteCount }}收藏</span>
-            </div>
-          </div>
-        </div>
-      </div>
+        :product="product"
+      />
 
       <el-empty v-if="!loading && products.length === 0" description="暂无商品">
         <el-button type="primary" @click="publishDialogVisible = true">发布商品</el-button>
@@ -398,24 +445,77 @@ onMounted(() => {
   }
 }
 
+// 分类选择器样式
+.category-selector {
+  width: 100%;
+  background: $color-bg-page;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+}
+
+.category-level-one {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.category-level-two {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  padding-top: $spacing-sm;
+  border-top: 1px dashed $color-border;
+
+  .el-button {
+    font-size: $font-size-small;
+  }
+}
+
 .search-input {
   flex: 1;
   min-width: 300px;
   max-width: 500px;
 }
 
-.filter-select {
-  width: 140px;
+// 筛选条件行
+.filter-options {
+  background: $color-bg-page;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  gap: $spacing-lg;
 }
 
-.price-filter {
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.filter-label {
+  font-size: $font-size-small;
+  color: $color-text-secondary;
+  white-space: nowrap;
+}
+
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.price-group {
+  margin-left: auto;
+}
+
+.price-inputs {
   display: flex;
   align-items: center;
   gap: $spacing-xs;
 }
 
 .price-input {
-  width: 100px;
+  width: 90px;
 }
 
 .price-separator {
@@ -440,113 +540,6 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: $spacing-lg;
   min-height: 200px;
-}
-
-.product-card {
-  background: $color-bg-card;
-  border-radius: $radius-lg;
-  overflow: hidden;
-  cursor: pointer;
-  transition: transform $transition-fast, box-shadow $transition-fast;
-  box-shadow: $shadow-sm;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: $shadow-hover;
-  }
-}
-
-.product-image {
-  position: relative;
-  aspect-ratio: 1;
-  background: $color-bg-page;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .bargain-tag {
-    position: absolute;
-    top: $spacing-sm;
-    right: $spacing-sm;
-    background: $color-accent-orange;
-    color: #fff;
-    font-size: $font-size-tiny;
-    padding: 2px 6px;
-    border-radius: $radius-sm;
-  }
-}
-
-.product-info {
-  padding: $spacing-md;
-}
-
-.product-name {
-  font-size: $font-size-body;
-  font-weight: $font-weight-medium;
-  color: $color-text-primary;
-  margin: 0 0 $spacing-sm;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.product-meta {
-  display: flex;
-  gap: $spacing-xs;
-  margin-bottom: $spacing-sm;
-}
-
-.condition-tag,
-.delivery-tag {
-  font-size: $font-size-tiny;
-  padding: 2px 6px;
-  border-radius: $radius-sm;
-  background: $color-primary-pale;
-  color: $color-primary-dark;
-}
-
-.product-price {
-  margin-bottom: $spacing-sm;
-
-  .current-price {
-    font-size: $font-size-h3;
-    font-weight: $font-weight-bold;
-    color: $color-error;
-  }
-
-  .original-price {
-    font-size: $font-size-small;
-    color: $color-text-placeholder;
-    text-decoration: line-through;
-    margin-left: $spacing-xs;
-  }
-}
-
-.product-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.seller-info {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-}
-
-.seller-name {
-  font-size: $font-size-small;
-  color: $color-text-secondary;
-}
-
-.stats {
-  font-size: $font-size-tiny;
-  color: $color-text-placeholder;
-  display: flex;
-  gap: $spacing-sm;
 }
 
 .pagination-wrap {
@@ -574,16 +567,35 @@ onMounted(() => {
     max-width: none;
   }
 
-  .filter-select {
+  .filter-options {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-group {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .price-group {
+    margin-left: 0;
     width: 100%;
   }
 
-  .price-filter {
+  .price-inputs {
     width: 100%;
   }
 
   .price-input {
     flex: 1;
+  }
+
+  .category-level-one {
+    justify-content: center;
+  }
+
+  .category-level-two {
+    justify-content: center;
   }
 }
 </style>
