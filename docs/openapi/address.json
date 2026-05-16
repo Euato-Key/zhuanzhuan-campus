@@ -20,10 +20,16 @@
   "paths": {
     "/api/addresses": {
       "get": {
-        "tags": ["地址接口"],
+        "tags": [
+          "地址接口"
+        ],
         "summary": "获取地址列表",
         "description": "获取当前用户的所有收货地址，按默认地址优先排序",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功",
@@ -32,30 +38,48 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 200 },
-                    "message": { "type": "string", "example": "success" },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
                     "data": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/Address" }
+                      "items": {
+                        "$ref": "#/components/schemas/Address"
+                      }
                     }
                   }
                 }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthorized" }
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
         }
       },
       "post": {
-        "tags": ["地址接口"],
+        "tags": [
+          "地址接口"
+        ],
         "summary": "创建收货地址",
         "description": "创建新的收货地址，最多20个。设为默认地址时自动取消其他默认地址",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateAddressRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateAddressRequest"
+              }
             }
           }
         },
@@ -67,32 +91,52 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 200 },
-                    "message": { "type": "string", "example": "地址创建成功" },
-                    "data": { "$ref": "#/components/schemas/Address" }
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "地址创建成功"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Address"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "401": { "$ref": "#/components/responses/Unauthorized" }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
         }
       }
     },
     "/api/addresses/{id}": {
       "get": {
-        "tags": ["地址接口"],
+        "tags": [
+          "地址接口"
+        ],
         "summary": "获取地址详情",
         "description": "获取指定收货地址的详细信息",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "description": "地址ID",
-            "schema": { "type": "integer" }
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -103,38 +147,62 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 200 },
-                    "message": { "type": "string", "example": "success" },
-                    "data": { "$ref": "#/components/schemas/Address" }
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Address"
+                    }
                   }
                 }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "put": {
-        "tags": ["地址接口"],
+        "tags": [
+          "地址接口"
+        ],
         "summary": "更新收货地址",
         "description": "更新指定收货地址的信息。设为默认地址时自动取消其他默认地址",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "description": "地址ID",
-            "schema": { "type": "integer" }
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateAddressRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAddressRequest"
+              }
             }
           }
         },
@@ -146,32 +214,56 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 200 },
-                    "message": { "type": "string", "example": "地址更新成功" },
-                    "data": { "$ref": "#/components/schemas/Address" }
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "地址更新成功"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Address"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "delete": {
-        "tags": ["地址接口"],
+        "tags": [
+          "地址接口"
+        ],
         "summary": "删除收货地址",
         "description": "删除指定的收货地址",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "description": "地址ID",
-            "schema": { "type": "integer" }
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -182,33 +274,55 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 200 },
-                    "message": { "type": "string", "example": "地址删除成功" },
-                    "data": { "type": "null" }
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "地址删除成功"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
                   }
                 }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/api/addresses/{id}/default": {
       "put": {
-        "tags": ["地址接口"],
+        "tags": [
+          "地址接口"
+        ],
         "summary": "设为默认地址",
         "description": "将指定地址设为默认收货地址，自动取消其他默认地址",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "description": "地址ID",
-            "schema": { "type": "integer" }
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -219,17 +333,31 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 200 },
-                    "message": { "type": "string", "example": "已设置为默认地址" },
-                    "data": { "$ref": "#/components/schemas/Address" }
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "已设置为默认地址"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Address"
+                    }
                   }
                 }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     }
@@ -250,9 +378,17 @@
             "schema": {
               "type": "object",
               "properties": {
-                "code": { "type": "integer", "example": 400 },
-                "message": { "type": "string", "example": "请求参数错误" },
-                "data": { "type": "null" }
+                "code": {
+                  "type": "integer",
+                  "example": 400
+                },
+                "message": {
+                  "type": "string",
+                  "example": "请求参数错误"
+                },
+                "data": {
+                  "type": "null"
+                }
               }
             }
           }
@@ -265,9 +401,17 @@
             "schema": {
               "type": "object",
               "properties": {
-                "code": { "type": "integer", "example": 401 },
-                "message": { "type": "string", "example": "未授权" },
-                "data": { "type": "null" }
+                "code": {
+                  "type": "integer",
+                  "example": 401
+                },
+                "message": {
+                  "type": "string",
+                  "example": "未授权"
+                },
+                "data": {
+                  "type": "null"
+                }
               }
             }
           }
@@ -280,9 +424,17 @@
             "schema": {
               "type": "object",
               "properties": {
-                "code": { "type": "integer", "example": 403 },
-                "message": { "type": "string", "example": "无权限" },
-                "data": { "type": "null" }
+                "code": {
+                  "type": "integer",
+                  "example": 403
+                },
+                "message": {
+                  "type": "string",
+                  "example": "无权限"
+                },
+                "data": {
+                  "type": "null"
+                }
               }
             }
           }
@@ -295,9 +447,17 @@
             "schema": {
               "type": "object",
               "properties": {
-                "code": { "type": "integer", "example": 404 },
-                "message": { "type": "string", "example": "资源不存在" },
-                "data": { "type": "null" }
+                "code": {
+                  "type": "integer",
+                  "example": 404
+                },
+                "message": {
+                  "type": "string",
+                  "example": "资源不存在"
+                },
+                "data": {
+                  "type": "null"
+                }
               }
             }
           }
@@ -308,23 +468,92 @@
       "Address": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer", "description": "地址ID" },
-          "userId": { "type": "integer", "description": "用户ID" },
-          "receiverName": { "type": "string", "description": "收货人姓名", "example": "张三" },
-          "receiverPhone": { "type": "string", "description": "收货人手机号", "example": "13800138000" },
-          "province": { "type": "string", "description": "省份", "example": "北京市" },
-          "city": { "type": "string", "description": "城市", "example": "北京市" },
-          "district": { "type": "string", "description": "区县", "example": "海淀区" },
-          "street": { "type": "string", "nullable": true, "description": "街道/镇", "example": "中关村街道" },
-          "detail": { "type": "string", "description": "详细地址", "example": "清华大学紫荆公寓6号楼" },
-          "isDefault": { "type": "boolean", "description": "是否为默认地址" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer",
+            "description": "地址ID"
+          },
+          "userId": {
+            "type": "integer",
+            "description": "用户ID"
+          },
+          "receiverName": {
+            "type": "string",
+            "description": "收货人姓名",
+            "example": "张三"
+          },
+          "receiverPhone": {
+            "type": "string",
+            "description": "收货人手机号",
+            "example": "13800138000"
+          },
+          "province": {
+            "type": "string",
+            "description": "省份",
+            "example": "北京市"
+          },
+          "provinceCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "省份行政区划代码",
+            "example": "110000"
+          },
+          "city": {
+            "type": "string",
+            "description": "城市",
+            "example": "北京市"
+          },
+          "cityCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "城市行政区划代码",
+            "example": "110100"
+          },
+          "district": {
+            "type": "string",
+            "description": "区县",
+            "example": "海淀区"
+          },
+          "districtCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "区县行政区划代码",
+            "example": "110108"
+          },
+          "street": {
+            "type": "string",
+            "nullable": true,
+            "description": "街道/镇",
+            "example": "中关村街道"
+          },
+          "detail": {
+            "type": "string",
+            "description": "详细地址",
+            "example": "清华大学紫荆公寓6号楼"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "是否为默认地址"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "CreateAddressRequest": {
         "type": "object",
-        "required": ["receiverName", "receiverPhone", "province", "city", "district", "detail"],
+        "required": [
+          "receiverName",
+          "receiverPhone",
+          "province",
+          "city",
+          "district",
+          "detail"
+        ],
         "properties": {
           "receiverName": {
             "type": "string",
@@ -344,15 +573,30 @@
             "description": "省份",
             "example": "北京市"
           },
+          "provinceCode": {
+            "type": "string",
+            "description": "省份行政区划代码（选填）",
+            "example": "110000"
+          },
           "city": {
             "type": "string",
             "description": "城市",
             "example": "北京市"
           },
+          "cityCode": {
+            "type": "string",
+            "description": "城市行政区划代码（选填）",
+            "example": "110100"
+          },
           "district": {
             "type": "string",
             "description": "区县",
             "example": "海淀区"
+          },
+          "districtCode": {
+            "type": "string",
+            "description": "区县行政区划代码（选填）",
+            "example": "110108"
           },
           "street": {
             "type": "string",
@@ -392,13 +636,25 @@
             "type": "string",
             "description": "省份"
           },
+          "provinceCode": {
+            "type": "string",
+            "description": "省份行政区划代码"
+          },
           "city": {
             "type": "string",
             "description": "城市"
           },
+          "cityCode": {
+            "type": "string",
+            "description": "城市行政区划代码"
+          },
           "district": {
             "type": "string",
             "description": "区县"
+          },
+          "districtCode": {
+            "type": "string",
+            "description": "区县行政区划代码"
           },
           "street": {
             "type": "string",

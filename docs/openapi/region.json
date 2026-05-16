@@ -18,9 +18,11 @@
     }
   ],
   "paths": {
-    "/api/region/provinces": {
+    "/api/regions/provinces": {
       "get": {
-        "tags": ["地区接口"],
+        "tags": [
+          "地区接口"
+        ],
         "summary": "获取所有省份",
         "description": "获取中国所有省级行政区划列表",
         "responses": {
@@ -31,11 +33,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 200 },
-                    "message": { "type": "string", "example": "success" },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
                     "data": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/RegionItem" }
+                      "items": {
+                        "$ref": "#/components/schemas/RegionItem"
+                      }
                     }
                   }
                 }
@@ -45,9 +55,11 @@
         }
       }
     },
-    "/api/region/cities": {
+    "/api/regions/cities": {
       "get": {
-        "tags": ["地区接口"],
+        "tags": [
+          "地区接口"
+        ],
         "summary": "获取某省的城市",
         "description": "根据省份adcode获取该省所有城市列表",
         "parameters": [
@@ -56,7 +68,10 @@
             "in": "query",
             "required": true,
             "description": "省份adcode（行政区划代码）",
-            "schema": { "type": "string", "example": "110000" }
+            "schema": {
+              "type": "string",
+              "example": "110000"
+            }
           }
         ],
         "responses": {
@@ -67,11 +82,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 200 },
-                    "message": { "type": "string", "example": "success" },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
                     "data": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/RegionItem" }
+                      "items": {
+                        "$ref": "#/components/schemas/RegionItem"
+                      }
                     }
                   }
                 }
@@ -85,9 +108,17 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 400 },
-                    "message": { "type": "string", "example": "请提供省份adcode" },
-                    "data": { "type": "null" }
+                    "code": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "请提供省份adcode"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
                   }
                 }
               }
@@ -96,9 +127,11 @@
         }
       }
     },
-    "/api/region/districts": {
+    "/api/regions/districts": {
       "get": {
-        "tags": ["地区接口"],
+        "tags": [
+          "地区接口"
+        ],
         "summary": "获取某市的区县",
         "description": "根据城市adcode获取该市所有区县列表",
         "parameters": [
@@ -107,7 +140,10 @@
             "in": "query",
             "required": true,
             "description": "城市adcode（行政区划代码）",
-            "schema": { "type": "string", "example": "110100" }
+            "schema": {
+              "type": "string",
+              "example": "110100"
+            }
           }
         ],
         "responses": {
@@ -118,11 +154,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 200 },
-                    "message": { "type": "string", "example": "success" },
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
                     "data": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/RegionItem" }
+                      "items": {
+                        "$ref": "#/components/schemas/RegionItem"
+                      }
                     }
                   }
                 }
@@ -136,9 +180,17 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 400 },
-                    "message": { "type": "string", "example": "请提供城市adcode" },
-                    "data": { "type": "null" }
+                    "code": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "请提供城市adcode"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
                   }
                 }
               }
@@ -152,7 +204,7 @@
     "schemas": {
       "RegionItem": {
         "type": "object",
-        "description": "行政区划项",
+        "description": "行政区划项（后端返回字段名与高德API不同：adcode而非code）",
         "properties": {
           "name": {
             "type": "string",
@@ -161,7 +213,7 @@
           },
           "adcode": {
             "type": "string",
-            "description": "行政区划代码",
+            "description": "行政区划代码（高德adcode）",
             "example": "110000"
           }
         }
