@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { prisma } from '../../config/prisma';
 import { Prisma, OrderStatus, OrderDeliveryType, PaymentMethod, ReturnStatus, ProductStatus } from '@prisma/client';
 import { badRequest, notFound, forbidden, conflict } from '../../common/errors';
@@ -99,7 +100,7 @@ function generateOrderNo(): string {
   const hour = String(now.getHours()).padStart(2, '0');
   const minute = String(now.getMinutes()).padStart(2, '0');
   const second = String(now.getSeconds()).padStart(2, '0');
-  const random = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+  const random = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
   return `${year}${month}${day}${hour}${minute}${second}${random}`;
 }
 
@@ -462,6 +463,8 @@ export const OrderService = {
 
     // 如果是待支付状态，需要释放库存锁
     const shouldReleaseLock = order.status === OrderStatus.pending_payment && order.locks.length > 0;
+    // 如果是已支付状态，需要恢复库存
+    const shouldRestoreStock = order.status === OrderStatus.pending_ship || order.status === OrderStatus.pending_pickup;
 
     const updated = await prisma.$transaction(async (tx) => {
       const updatedOrder = await tx.order.update({
@@ -476,6 +479,16 @@ export const OrderService = {
       if (shouldReleaseLock) {
         await tx.productLock.deleteMany({
           where: { orderId },
+        });
+      }
+
+      // 恢复已扣减的库存
+      if (shouldRestoreStock) {
+        await tx.product.update({
+          where: { id: order.productId },
+          data: {
+            stock: { increment: order.quantity },
+          },
         });
       }
 
