@@ -36,16 +36,20 @@ async function cleanupExpiredEmailCodes(): Promise<number> {
 
 async function cleanupAllOssTempFiles(): Promise<number> {
   const uploadTypes = Object.keys(FileService.UPLOAD_TYPES);
-  let totalDeleted = 0;
 
-  for (const type of uploadTypes) {
-    try {
-      const deleted = await cleanupOssTempFilesByType(type);
-      totalDeleted += deleted;
-    } catch (error) {
-      console.error(`[Cleanup] Failed to cleanup OSS temp files for type ${type}:`, error);
-    }
-  }
+  const results = await Promise.allSettled(
+    uploadTypes.map(type => cleanupOssTempFilesByType(type))
+  );
+
+  const totalDeleted = results
+    .filter((r): r is PromiseFulfilledResult<number> => r.status === 'fulfilled')
+    .reduce((sum, r) => sum + r.value, 0);
+
+  results
+    .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    .forEach((r, i) => {
+      console.error(`[Cleanup] Failed to cleanup OSS temp files for type ${uploadTypes[i]}:`, r.reason);
+    });
 
   console.log(`[Cleanup] Deleted ${totalDeleted} OSS temp files`);
   return totalDeleted;
@@ -84,30 +88,13 @@ async function cleanupOssTempFilesByType(type: string): Promise<number> {
   return totalDeleted;
 }
 
-let ossClient: any = null;
-
-function getOSSClient() {
-  if (!ossClient) {
-    const OSS = require('ali-oss');
-    const { env } = require('../config/env');
-    ossClient = new OSS({
-      region: env.OSS_REGION,
-      accessKeyId: env.OSS_ACCESS_KEY_ID,
-      accessKeySecret: env.OSS_ACCESS_KEY_SECRET,
-      bucket: env.OSS_BUCKET,
-      secure: true,
-    });
-  }
-  return ossClient;
-}
-
 async function listOssObjects(prefix: string, marker?: string): Promise<any> {
-  const client = getOSSClient();
+  const client = FileService.getOSSClient();
   return client.list({ prefix, 'max-keys': 1000, marker }, {});
 }
 
 async function deleteOssObjects(names: string[]): Promise<void> {
-  const client = getOSSClient();
+  const client = FileService.getOSSClient();
   await client.deleteMulti(names, {});
 }
 

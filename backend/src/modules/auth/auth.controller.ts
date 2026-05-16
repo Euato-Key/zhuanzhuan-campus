@@ -5,21 +5,17 @@ import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 
 const REFRESH_TOKEN_MAX_AGE_DAYS = 30;
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-  path: '/api/auth',
-  maxAge: REFRESH_TOKEN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000,
-};
 
-const CLEAR_COOKIE_OPTIONS = {
+const getCookieOptions = (maxAge: number) => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
   path: '/api/auth',
-  maxAge: 0,
-};
+  maxAge,
+});
+
+const COOKIE_OPTIONS = getCookieOptions(REFRESH_TOKEN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
+const CLEAR_COOKIE_OPTIONS = getCookieOptions(0);
 
 export const AuthController = {
   sendCode: asyncHandler(async (req: Request, res: Response) => {

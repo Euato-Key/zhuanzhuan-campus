@@ -241,6 +241,7 @@ async function cleanupTempFiles(type: string, userId: number, olderThanDays = 30
 }
 
 export const FileService = {
+  getOSSClient,
   getSTSCredentials,
   getSignedUrl,
   moveFileToPermanent,

@@ -103,14 +103,14 @@ export const AuthService = {
       throw badRequest('无效的验证码类型');
     }
 
-    if (emailCodeType === EmailCodeType.REGISTER) {
-      const exists = await prisma.user.findUnique({ where: { email } });
-      if (exists) throw conflict('该邮箱已注册');
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+
+    if (emailCodeType === EmailCodeType.REGISTER && existingUser) {
+      throw conflict('该邮箱已注册');
     }
 
-    if (emailCodeType === EmailCodeType.RESET_PASSWORD) {
-      const exists = await prisma.user.findUnique({ where: { email } });
-      if (!exists) throw notFound('该邮箱未注册');
+    if (emailCodeType === EmailCodeType.RESET_PASSWORD && !existingUser) {
+      throw notFound('该邮箱未注册');
     }
 
     const oneMinuteAgo = new Date(Date.now() - 60_000);
@@ -201,37 +201,38 @@ export const AuthService = {
   async refreshToken(oldRefreshToken: string, userAgent?: string, ipAddress?: string) {
     const tokenHash = hashToken(oldRefreshToken);
 
-    const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
+    const stored = await prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { user: { select: { id: true, role: true } } },
+    });
     if (!stored) throw unauthorized('无效的Refresh Token');
     if (stored.isRevoked) throw unauthorized('Refresh Token已被吊销');
     if (stored.expiresAt < new Date()) throw unauthorized('Refresh Token已过期');
 
-    await prisma.refreshToken.update({
-      where: { id: stored.id },
-      data: { isRevoked: true },
-    });
-
-    const user = await prisma.user.findUnique({ where: { id: stored.userId } });
-    if (!user) throw notFound('用户不存在');
-
-    const payload: JwtPayload = { userId: user.id, role: user.role };
+    const payload: JwtPayload = { userId: stored.user.id, role: stored.user.role };
     const accessToken = signAccessToken(payload);
-    const refreshToken = signRefreshToken(payload);
+    const newRefreshToken = signRefreshToken(payload);
+    const newTokenHash = hashToken(newRefreshToken);
 
-    const newTokenHash = hashToken(refreshToken);
-    await prisma.refreshToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: newTokenHash,
-        expiresAt: getRefreshExpiry(),
-        userAgent: userAgent || null,
-        ipAddress: ipAddress || null,
-      },
-    });
+    await Promise.all([
+      prisma.refreshToken.update({
+        where: { id: stored.id },
+        data: { isRevoked: true },
+      }),
+      prisma.refreshToken.create({
+        data: {
+          userId: stored.user.id,
+          tokenHash: newTokenHash,
+          expiresAt: getRefreshExpiry(),
+          userAgent: userAgent || null,
+          ipAddress: ipAddress || null,
+        },
+      }),
+    ]);
 
     return {
       access_token: accessToken,
-      refresh_token: refreshToken,
+      refresh_token: newRefreshToken,
     };
   },
 

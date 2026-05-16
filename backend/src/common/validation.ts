@@ -5,6 +5,7 @@ const PASSWORD_MIN_LENGTH = 6;
 const USERNAME_MIN_LENGTH = 2;
 const USERNAME_MAX_LENGTH = 50;
 const CATEGORY_NAME_MAX_LENGTH = 50;
+const PHONE_REGEX = /^1[3-9]\d{9}$/;
 
 export const ValidationUtil = {
   validatePassword(password: string): void {
@@ -29,6 +30,12 @@ export const ValidationUtil = {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
       throw badRequest('邮箱格式不正确');
+    }
+  },
+
+  validatePhone(phone: string): void {
+    if (!phone || !PHONE_REGEX.test(phone)) {
+      throw badRequest('手机号格式不正确');
     }
   },
 

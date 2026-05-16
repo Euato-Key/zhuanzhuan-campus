@@ -4,6 +4,7 @@ import { badRequest, unauthorized, notFound, conflict } from '../../common/error
 import { PasswordUtil } from '../../common/password';
 import { VerificationUtil, EmailCodeType } from '../../common/verification';
 import { TokenUtil } from '../../common/token';
+import { ValidationUtil } from '../../common/validation';
 import { USER_PROFILE_SELECT, USER_PUBLIC_PROFILE_SELECT } from '../../common/selects';
 
 export const UserService = {
@@ -15,17 +16,15 @@ export const UserService = {
     bio?: string;
   }) {
     if (data.username) {
-      if (data.username.length < 2 || data.username.length > 50) {
-        throw badRequest('用户名长度需在2-50之间');
-      }
+      ValidationUtil.validateUsername(data.username);
       const existing = await prisma.user.findUnique({ where: { username: data.username } });
       if (existing && existing.id !== userId) {
         throw conflict('该用户名已被使用');
       }
     }
 
-    if (data.phone && !/^1[3-9]\d{9}$/.test(data.phone)) {
-      throw badRequest('手机号格式不正确');
+    if (data.phone) {
+      ValidationUtil.validatePhone(data.phone);
     }
 
     const user = await prisma.user.update({
@@ -41,9 +40,7 @@ export const UserService = {
     if (!oldPassword || !newPassword) {
       throw badRequest('旧密码和新密码不能为空');
     }
-    if (newPassword.length < 6) {
-      throw badRequest('新密码长度不能少于6位');
-    }
+    ValidationUtil.validatePassword(newPassword);
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw notFound('用户不存在');
