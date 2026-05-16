@@ -11,6 +11,7 @@ CREATE TABLE `addresses` (
     `province` VARCHAR(50) DEFAULT NULL COMMENT '省份',
     `city` VARCHAR(50) DEFAULT NULL COMMENT '城市',
     `district` VARCHAR(50) DEFAULT NULL COMMENT '区县',
+    `street` VARCHAR(50) DEFAULT NULL COMMENT '街道/镇',
     `detail` VARCHAR(255) NOT NULL COMMENT '详细地址',
     `is_default` TINYINT DEFAULT 0 COMMENT '是否默认',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

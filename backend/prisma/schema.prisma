@@ -224,6 +224,7 @@ model Address {
   province      String   @db.VarChar(50)
   city          String   @db.VarChar(50)
   district      String   @db.VarChar(50)
+  street        String?  @db.VarChar(50)
   detail        String   @db.VarChar(255)
   isDefault     Boolean  @default(false) @map("is_default") @db.TinyInt
   createdAt     DateTime @default(now()) @map("created_at") @db.DateTime

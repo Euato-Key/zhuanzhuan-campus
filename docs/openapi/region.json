@@ -1,0 +1,171 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "地区模块 API",
+    "description": "转转校园二手平台 - 地区行政区划接口文档（基于高德地图API）",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "地区接口",
+      "description": "行政区划查询接口（无需登录）"
+    }
+  ],
+  "paths": {
+    "/api/region/provinces": {
+      "get": {
+        "tags": ["地区接口"],
+        "summary": "获取所有省份",
+        "description": "获取中国所有省级行政区划列表",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/RegionItem" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/region/cities": {
+      "get": {
+        "tags": ["地区接口"],
+        "summary": "获取某省的城市",
+        "description": "根据省份adcode获取该省所有城市列表",
+        "parameters": [
+          {
+            "name": "adcode",
+            "in": "query",
+            "required": true,
+            "description": "省份adcode（行政区划代码）",
+            "schema": { "type": "string", "example": "110000" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/RegionItem" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 400 },
+                    "message": { "type": "string", "example": "请提供省份adcode" },
+                    "data": { "type": "null" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/region/districts": {
+      "get": {
+        "tags": ["地区接口"],
+        "summary": "获取某市的区县",
+        "description": "根据城市adcode获取该市所有区县列表",
+        "parameters": [
+          {
+            "name": "adcode",
+            "in": "query",
+            "required": true,
+            "description": "城市adcode（行政区划代码）",
+            "schema": { "type": "string", "example": "110100" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/RegionItem" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 400 },
+                    "message": { "type": "string", "example": "请提供城市adcode" },
+                    "data": { "type": "null" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RegionItem": {
+        "type": "object",
+        "description": "行政区划项",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "行政区划名称",
+            "example": "北京市"
+          },
+          "adcode": {
+            "type": "string",
+            "description": "行政区划代码",
+            "example": "110000"
+          }
+        }
+      }
+    }
+  }
+}
