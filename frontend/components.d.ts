@@ -20,6 +20,7 @@ declare module 'vue' {
     AvatarUpload: typeof import('./src/components/AvatarUpload.vue')['default']
     CreateOrderDialog: typeof import('./src/components/order/CreateOrderDialog.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
+    ElAutocomplete: typeof import('element-plus/es')['ElAutocomplete']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCheckbox: typeof import('element-plus/es')['ElCheckbox']

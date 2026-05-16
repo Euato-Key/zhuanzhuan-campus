@@ -446,6 +446,24 @@ model Report {
   @@map("reports")
 }
 
+model University {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  code      String   @unique(map: "uk_code") @db.Char(10)
+  authority String   @db.VarChar(50)
+  province  String   @db.VarChar(30)
+  city      String   @db.VarChar(50)
+  level     String   @db.VarChar(10)
+  remark    String?  @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime
+
+  @@index([province], map: "idx_province")
+  @@index([level], map: "idx_level")
+  @@index([name], map: "idx_name")
+  @@map("university")
+}
+
 model Complaint {
   id            Int             @id @default(autoincrement())
   orderId       BigInt          @map("order_id")

@@ -12,6 +12,7 @@ import productRoutes from './modules/product/product.routes';
 import orderRoutes from './modules/order/order.routes';
 import addressRoutes from './modules/address/address.routes';
 import regionRoutes from './modules/region/region.routes';
+import universityRoutes from './modules/university/university.routes';
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/regions', regionRoutes);
+app.use('/api/universities', universityRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ code: 200, data: { status: 'ok' }, message: 'success' });

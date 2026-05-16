@@ -4,6 +4,7 @@ import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { User, School, Location, Phone, EditPen, Check } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import { searchUniversities } from '@/api/university'
 
 const userStore = useUserStore()
 
@@ -72,6 +73,29 @@ async function handleSave() {
     loading.value = false
   }
 }
+
+// ─── 学校自动完成 ───
+const schoolFetching = ref(false)
+
+async function handleSchoolSearch(query: string, cb: (results: { value: string }[]) => void) {
+  if (!query) {
+    cb([])
+    return
+  }
+  schoolFetching.value = true
+  try {
+    const res = await searchUniversities({ keyword: query, pageSize: 20 })
+    cb(res.data.data.list.map((u) => ({ value: u.name })))
+  } catch {
+    cb([])
+  } finally {
+    schoolFetching.value = false
+  }
+}
+
+function handleSchoolSelect(item: { value: string }) {
+  form.school = item.value
+}
 </script>
 
 <template>
@@ -125,7 +149,19 @@ async function handleSave() {
         </el-form-item>
 
         <el-form-item label="学校">
-          <el-input v-model="form.school" placeholder="请输入学校名称" :prefix-icon="School" clearable />
+          <el-autocomplete
+            v-model="form.school"
+            :fetch-suggestions="handleSchoolSearch"
+            placeholder="搜索或输入学校名称"
+            :prefix-icon="School"
+            clearable
+            :trigger-on-focus="false"
+            @select="handleSchoolSelect"
+          >
+            <template #default="{ item }">
+              <span>{{ item.value }}</span>
+            </template>
+          </el-autocomplete>
         </el-form-item>
 
         <el-form-item label="校区">
