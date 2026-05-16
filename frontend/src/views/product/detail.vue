@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Back } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getProductById,
   type ProductDetail,
-  ITEM_CONDITION_LABELS,
   DELIVERY_TYPE_LABELS,
   PRODUCT_STATUS_LABELS,
+  getItemConditionLabel,
 } from '@/api/product'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
+import { getOssUrl } from '@/utils/oss'
 import AppLayout from '@/components/layout/AppLayout.vue'
 
 const route = useRoute()
@@ -47,6 +49,12 @@ const canRelist = computed(() => {
 const canDelete = computed(() => {
   if (!isOwner.value || !product.value) return false
   return ['offline', 'audit_failed', 'banned'].includes(product.value.status)
+})
+
+// 卖家头像URL
+const sellerAvatar = computed(() => {
+  if (!product.value?.user?.avatar) return undefined
+  return getOssUrl(product.value.user.avatar)
 })
 
 // 获取商品详情
@@ -151,6 +159,21 @@ async function deleteProduct() {
   }
 }
 
+// 返回上一页
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push({ name: 'Products' })
+  }
+}
+
+// 查看卖家主页
+function viewSellerProfile() {
+  if (!product.value) return
+  router.push({ name: 'UserProfile', params: { id: product.value.user.id } })
+}
+
 onMounted(() => {
   fetchProduct()
 })
@@ -160,6 +183,14 @@ onMounted(() => {
   <AppLayout>
     <div class="product-detail-page" v-loading="loading">
     <template v-if="product">
+      <!-- 返回按钮 -->
+      <div class="back-nav">
+        <el-button link class="back-btn" @click="goBack">
+          <el-icon><Back /></el-icon>
+          返回
+        </el-button>
+      </div>
+
       <!-- 商品状态提示 -->
       <div v-if="product.status !== 'active'" class="status-banner">
         <el-alert
@@ -169,6 +200,36 @@ onMounted(() => {
           show-icon
           :closable="false"
         />
+      </div>
+
+      <!-- 卖家信息卡片（顶部） -->
+      <div class="seller-card-top">
+        <div class="seller-avatar" @click="viewSellerProfile">
+          <el-avatar :size="56" :src="sellerAvatar">
+            {{ product.user.username.charAt(0) }}
+          </el-avatar>
+        </div>
+        <div class="seller-details">
+          <div class="seller-name-row">
+            <span class="seller-name">{{ product.user.username }}</span>
+            <el-tag v-if="product.user.school" size="small" type="info">{{ product.user.school }}</el-tag>
+          </div>
+          <div class="seller-meta-row">
+            <span v-if="product.user.campus" class="meta-item">
+              <el-icon><i class="el-icon-location"></i></el-icon>
+              {{ product.user.campus }}
+            </span>
+            <span class="meta-item credit">
+              <el-icon><i class="el-icon-star"></i></el-icon>
+              信用 {{ product.user.creditScore }}
+            </span>
+          </div>
+        </div>
+        <div class="seller-actions">
+          <el-button size="default" @click="viewSellerProfile">
+            查看主页
+          </el-button>
+        </div>
       </div>
 
       <div class="detail-container">
@@ -194,7 +255,28 @@ onMounted(() => {
 
         <!-- 右侧：信息区 -->
         <div class="info-section">
+          <!-- 分类 -->
+          <div class="category-row">
+            <el-tag class="category-tag" effect="plain">
+              {{ product.category.name }}
+            </el-tag>
+          </div>
+
           <h1 class="product-name">{{ product.name }}</h1>
+
+          <!-- 标签 -->
+          <div v-if="product.tags?.length" class="tags-row">
+            <span class="label">标签：</span>
+            <el-tag
+              v-for="tag in product.tags"
+              :key="tag"
+              size="small"
+              type="info"
+              effect="plain"
+            >
+              {{ tag }}
+            </el-tag>
+          </div>
 
           <div class="price-row">
             <span class="current-price">¥{{ product.currentPrice }}</span>
@@ -204,47 +286,46 @@ onMounted(() => {
             <el-tag v-if="product.bargain" type="warning" size="small">可议价</el-tag>
           </div>
 
-          <div class="meta-row">
-            <span class="meta-item">
+          <div class="meta-grid">
+            <div class="meta-item">
               <span class="label">新旧程度</span>
-              <span class="value">{{ ITEM_CONDITION_LABELS[product.itemCondition] }}</span>
-            </span>
-            <span class="meta-item">
+              <span class="value">{{ getItemConditionLabel(product.itemCondition) }}</span>
+            </div>
+            <div class="meta-item">
               <span class="label">交易方式</span>
               <span class="value">{{ DELIVERY_TYPE_LABELS[product.deliveryType] }}</span>
-            </span>
-            <span class="meta-item">
+            </div>
+            <div class="meta-item">
               <span class="label">库存</span>
               <span class="value">{{ product.stock }}件</span>
-            </span>
-          </div>
-
-          <div v-if="product.brand" class="brand-row">
-            <span class="label">品牌</span>
-            <span class="value">{{ product.brand }}</span>
+            </div>
+            <div v-if="product.brand" class="meta-item">
+              <span class="label">品牌</span>
+              <span class="value">{{ product.brand }}</span>
+            </div>
           </div>
 
           <!-- 规格 -->
           <div v-if="product.specs?.length" class="specs-row">
             <span class="label">规格</span>
             <div class="specs-list">
-              <span v-for="(spec, index) in product.specs" :key="index" class="spec-item">
+              <el-tag v-for="(spec, index) in product.specs" :key="index" size="small">
                 {{ spec.name }}: {{ spec.value }}
-              </span>
+              </el-tag>
             </div>
           </div>
 
           <!-- 自提信息 -->
           <div v-if="product.pickupAddress" class="pickup-row">
-            <span class="label">自提地点</span>
-            <span class="value">{{ product.pickupAddress }}</span>
-            <span v-if="product.pickupTime" class="time">({{ product.pickupTime }})</span>
+            <el-icon><i class="el-icon-location"></i></el-icon>
+            <span>自提：{{ product.pickupAddress }}</span>
+            <span v-if="product.pickupTime" class="time">（{{ product.pickupTime }}）</span>
           </div>
 
           <!-- 统计 -->
           <div class="stats-row">
-            <span>{{ product.viewCount }}人浏览</span>
-            <span>{{ product.favoriteCount }}人收藏</span>
+            <span><el-icon><i class="el-icon-view"></i></el-icon> {{ product.viewCount }} 浏览</span>
+            <span><el-icon><i class="el-icon-star"></i></el-icon> {{ product.favoriteCount }} 收藏</span>
           </div>
 
           <!-- 操作按钮 -->
@@ -271,24 +352,6 @@ onMounted(() => {
               </el-button>
             </template>
           </div>
-
-          <!-- 卖家信息 -->
-          <div class="seller-section">
-            <div class="seller-header">卖家信息</div>
-            <div class="seller-card" @click="router.push({ name: 'Profile', params: { id: product.user.id } })">
-              <el-avatar :size="48" :src="product.user.avatar || undefined">
-                {{ product.user.username.charAt(0) }}
-              </el-avatar>
-              <div class="seller-info">
-                <div class="seller-name">{{ product.user.username }}</div>
-                <div class="seller-meta">
-                  <span v-if="product.user.school">{{ product.user.school }}</span>
-                  <span v-if="product.user.campus">{{ product.user.campus }}</span>
-                </div>
-                <div class="seller-credit">信用分: {{ product.user.creditScore }}</div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -307,20 +370,6 @@ onMounted(() => {
           />
         </div>
       </div>
-
-      <!-- 分类和标签 -->
-      <div class="category-section">
-        <div class="category-info">
-          <span class="label">分类：</span>
-          <el-tag>{{ product.category.name }}</el-tag>
-        </div>
-        <div v-if="product.tags?.length" class="tags-info">
-          <span class="label">标签：</span>
-          <el-tag v-for="tag in product.tags" :key="tag" type="info" size="small">
-            {{ tag }}
-          </el-tag>
-        </div>
-      </div>
     </template>
   </div>
   </AppLayout>
@@ -335,8 +384,84 @@ onMounted(() => {
   padding: $spacing-lg;
 }
 
+.back-nav {
+  margin-bottom: $spacing-md;
+
+  .back-btn {
+    color: $color-text-secondary;
+    font-size: $font-size-body;
+
+    &:hover {
+      color: $color-primary;
+    }
+
+    .el-icon {
+      margin-right: $spacing-xs;
+    }
+  }
+}
+
 .status-banner {
   margin-bottom: $spacing-lg;
+}
+
+// 卖家信息卡片（顶部）
+.seller-card-top {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md $spacing-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-sm;
+}
+
+.seller-avatar {
+  cursor: pointer;
+  transition: transform $transition-fast;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.seller-details {
+  flex: 1;
+}
+
+.seller-name-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.seller-name {
+  font-size: $font-size-h4;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.seller-meta-row {
+  display: flex;
+  gap: $spacing-md;
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: $font-size-small;
+    color: $color-text-secondary;
+
+    &.credit {
+      color: $color-primary;
+    }
+  }
+}
+
+.seller-actions {
+  flex-shrink: 0;
 }
 
 .detail-container {
@@ -396,12 +521,33 @@ onMounted(() => {
   min-width: 0;
 }
 
+.category-row {
+  margin-bottom: $spacing-sm;
+
+  .category-tag {
+    color: $color-primary;
+    border-color: $color-primary;
+  }
+}
+
 .product-name {
   font-size: $font-size-h2;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
-  margin: 0 0 $spacing-md;
+  margin: 0 0 $spacing-sm;
   line-height: $line-height-tight;
+}
+
+.tags-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-md;
+
+  .label {
+    font-size: $font-size-small;
+    color: $color-text-secondary;
+  }
 }
 
 .price-row {
@@ -425,9 +571,10 @@ onMounted(() => {
   text-decoration: line-through;
 }
 
-.meta-row {
-  display: flex;
-  gap: $spacing-xl;
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
   margin-bottom: $spacing-md;
 }
 
@@ -448,27 +595,15 @@ onMounted(() => {
   }
 }
 
-.brand-row,
-.specs-row,
-.pickup-row {
+.specs-row {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-  margin-bottom: $spacing-sm;
+  margin-bottom: $spacing-md;
 
   .label {
     font-size: $font-size-small;
     color: $color-text-secondary;
-    min-width: 70px;
-  }
-
-  .value {
-    color: $color-text-primary;
-  }
-
-  .time {
-    color: $color-text-secondary;
-    font-size: $font-size-small;
   }
 }
 
@@ -478,12 +613,21 @@ onMounted(() => {
   gap: $spacing-xs;
 }
 
-.spec-item {
-  padding: $spacing-xs $spacing-sm;
+.pickup-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+  padding: $spacing-sm $spacing-md;
   background: $color-primary-pale;
-  border-radius: $radius-sm;
-  font-size: $font-size-small;
+  border-radius: $radius-md;
   color: $color-primary-dark;
+  font-size: $font-size-body;
+
+  .time {
+    font-size: $font-size-small;
+    color: $color-text-secondary;
+  }
 }
 
 .stats-row {
@@ -492,64 +636,17 @@ onMounted(() => {
   color: $color-text-secondary;
   font-size: $font-size-small;
   margin-bottom: $spacing-lg;
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
 }
 
 .action-row {
   display: flex;
   gap: $spacing-md;
-  margin-bottom: $spacing-xl;
-}
-
-.seller-section {
-  background: $color-bg-page;
-  border-radius: $radius-lg;
-  padding: $spacing-md;
-}
-
-.seller-header {
-  font-size: $font-size-small;
-  color: $color-text-secondary;
-  margin-bottom: $spacing-sm;
-}
-
-.seller-card {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  cursor: pointer;
-  padding: $spacing-sm;
-  border-radius: $radius-md;
-  transition: background $transition-fast;
-
-  &:hover {
-    background: $color-bg-card;
-  }
-}
-
-.seller-info {
-  flex: 1;
-}
-
-.seller-name {
-  font-weight: $font-weight-medium;
-  color: $color-text-primary;
-  margin-bottom: $spacing-xs;
-}
-
-.seller-meta {
-  font-size: $font-size-small;
-  color: $color-text-secondary;
-  margin-bottom: $spacing-xs;
-
-  span:not(:last-child)::after {
-    content: '·';
-    margin: 0 $spacing-xs;
-  }
-}
-
-.seller-credit {
-  font-size: $font-size-small;
-  color: $color-primary;
 }
 
 .description-section {
@@ -584,36 +681,31 @@ onMounted(() => {
   }
 }
 
-.category-section {
-  background: $color-bg-card;
-  border-radius: $radius-lg;
-  padding: $spacing-lg;
-  box-shadow: $shadow-sm;
+@media (max-width: $breakpoint-md) {
+  .seller-card-top {
+    flex-wrap: wrap;
+    text-align: center;
 
-  .category-info,
-  .tags-info {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
+    .seller-details {
+      width: 100%;
+    }
 
-    &:not(:last-child) {
-      margin-bottom: $spacing-sm;
+    .seller-actions {
+      width: 100%;
+      margin-top: $spacing-sm;
     }
   }
 
-  .label {
-    color: $color-text-secondary;
-    font-size: $font-size-small;
-  }
-}
-
-@media (max-width: $breakpoint-md) {
   .detail-container {
     flex-direction: column;
   }
 
   .image-section {
     width: 100%;
+  }
+
+  .meta-grid {
+    grid-template-columns: 1fr;
   }
 
   .action-row {
