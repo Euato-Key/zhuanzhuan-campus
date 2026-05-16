@@ -248,6 +248,7 @@ model Category {
   children Category[] @relation("CategoryHierarchy")
   products Product[]
 
+  @@index([parentId], map: "idx_category_parent")
   @@map("categories")
 }
 
@@ -288,6 +289,13 @@ model Product {
   locks     ProductLock[]
   orders    Order[]
 
+  @@index([userId], map: "idx_product_user_id")
+  @@index([status], map: "idx_product_status")
+  @@index([categoryId], map: "idx_product_category_id")
+  @@index([userId, status], map: "idx_product_user_status")
+  @@index([createdAt], map: "idx_product_created_at")
+  @@index([currentPrice], map: "idx_product_price")
+  @@index([expireTime], map: "idx_product_expire")
   @@map("products")
 }
 
@@ -300,6 +308,7 @@ model Favorite {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_favorites_user_id")
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "fk_favorites_product_id")
 
+  @@index([userId, productId], map: "idx_favorite_user_product")
   @@map("favorites")
 }
 
@@ -349,6 +358,10 @@ model Order {
   reviews    Review[]
   complaints Complaint[]
 
+  @@index([productId], map: "idx_order_product")
+  @@index([buyerId], map: "idx_order_buyer")
+  @@index([sellerId], map: "idx_order_seller")
+  @@index([status], map: "idx_order_status")
   @@map("orders")
 }
 

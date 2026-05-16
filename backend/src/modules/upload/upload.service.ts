@@ -1,6 +1,6 @@
 import { FileService } from '../../services/file.service';
 
-const uploadService = {
+export const UploadService = {
   async getSTSToken(type: string, userId: number) {
     return FileService.getSTSCredentials(type, userId);
   },
@@ -9,5 +9,3 @@ const uploadService = {
     return FileService.getSignedUrl(type, userId, filename);
   },
 };
-
-export { uploadService };

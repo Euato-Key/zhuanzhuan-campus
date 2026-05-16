@@ -2,6 +2,16 @@ import OSS from 'ali-oss';
 import { env } from '../config/env';
 import { badRequest, forbidden } from '../common/errors';
 
+// 文件上传配置常量
+const MAX_AVATAR_SIZE_MB = 2;
+const MAX_IMAGE_SIZE_MB = 5;
+const MAX_AVATAR_COUNT = 1;
+const MAX_PRODUCT_IMAGE_COUNT = 9;
+const SIGNED_URL_EXPIRES_SECONDS = 900;
+const STS_CREDENTIAL_EXPIRES_SECONDS = 3600;
+
+const MB = 1024 * 1024;
+
 interface UploadTypeConfig {
   path: string;
   maxSize: number;
@@ -13,29 +23,29 @@ interface UploadTypeConfig {
 const UPLOAD_TYPES: Record<string, UploadTypeConfig> = {
   avatar: {
     path: 'avatars',
-    maxSize: 2 * 1024 * 1024,
-    maxCount: 1,
+    maxSize: MAX_AVATAR_SIZE_MB * MB,
+    maxCount: MAX_AVATAR_COUNT,
     allowedMime: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     allowedExt: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
   },
   product: {
     path: 'products',
-    maxSize: 5 * 1024 * 1024,
-    maxCount: 9,
+    maxSize: MAX_IMAGE_SIZE_MB * MB,
+    maxCount: MAX_PRODUCT_IMAGE_COUNT,
     allowedMime: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     allowedExt: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
   },
   community: {
     path: 'community',
-    maxSize: 5 * 1024 * 1024,
-    maxCount: 9,
+    maxSize: MAX_IMAGE_SIZE_MB * MB,
+    maxCount: MAX_PRODUCT_IMAGE_COUNT,
     allowedMime: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     allowedExt: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
   },
   chat: {
     path: 'chat',
-    maxSize: 5 * 1024 * 1024,
-    maxCount: 1,
+    maxSize: MAX_IMAGE_SIZE_MB * MB,
+    maxCount: MAX_AVATAR_COUNT,
     allowedMime: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     allowedExt: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
   },
@@ -132,7 +142,7 @@ async function getSTSCredentials(type: string, userId: number) {
       accessKeyId: env.OSS_ACCESS_KEY_ID,
       accessKeySecret: env.OSS_ACCESS_KEY_SECRET,
       securityToken: '',
-      expiration: new Date(Date.now() + 3600 * 1000).toISOString(),
+      expiration: new Date(Date.now() + STS_CREDENTIAL_EXPIRES_SECONDS * 1000).toISOString(),
       region: env.OSS_REGION,
       bucket: env.OSS_BUCKET,
       uploadPath,
@@ -148,7 +158,7 @@ async function getSTSCredentials(type: string, userId: number) {
 
   const sts = getSTSClient();
   const sessionName = `zz-campus-${type}-${userId}`;
-  const result = await sts.assumeRole(roleArn, policy, 3600, sessionName);
+  const result = await sts.assumeRole(roleArn, policy, STS_CREDENTIAL_EXPIRES_SECONDS, sessionName);
   const credentials = result.credentials;
 
   return {
@@ -183,14 +193,14 @@ async function getSignedUrl(type: string, userId: number, filename: string) {
 
   const url = client.signatureUrl(ossPath, {
     method: 'PUT',
-    expires: 900,
+    expires: SIGNED_URL_EXPIRES_SECONDS,
     'Content-Type': MIME_MAP[ext] || 'application/octet-stream',
   });
 
   return {
     url,
     ossPath,
-    expires: 900,
+    expires: SIGNED_URL_EXPIRES_SECONDS,
     uploadConfig: {
       maxSize: config.maxSize,
       maxCount: config.maxCount,

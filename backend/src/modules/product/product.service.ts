@@ -561,7 +561,7 @@ export const ProductService = {
     return PaginationUtil.buildResponse(list, total, page, pageSize);
   },
 
-  async approve(adminId: number, productId: bigint) {
+  async approve(_adminId: number, productId: bigint) {
     const product = await findProductOrThrow(productId, {
       allowedStatuses: [ProductStatus.pending],
     });
@@ -578,7 +578,7 @@ export const ProductService = {
     return updated;
   },
 
-  async reject(adminId: number, productId: bigint, reason: string) {
+  async reject(_adminId: number, productId: bigint, reason: string) {
     const product = await findProductOrThrow(productId, {
       allowedStatuses: [ProductStatus.pending],
     });
@@ -598,7 +598,7 @@ export const ProductService = {
     return updated;
   },
 
-  async ban(adminId: number, productId: bigint, reason: string) {
+  async ban(_adminId: number, productId: bigint, reason: string) {
     const product = await findProductOrThrow(productId);
 
     if (product.status === ProductStatus.banned) {
@@ -616,7 +616,7 @@ export const ProductService = {
     return updated;
   },
 
-  async unban(adminId: number, productId: bigint) {
+  async unban(_adminId: number, productId: bigint) {
     await findProductOrThrow(productId, {
       allowedStatuses: [ProductStatus.banned],
     });
@@ -632,7 +632,7 @@ export const ProductService = {
     return updated;
   },
 
-  async forceOffline(adminId: number, productId: bigint, reason: string) {
+  async forceOffline(_adminId: number, productId: bigint, reason: string) {
     await findProductOrThrow(productId, {
       allowedStatuses: [ProductStatus.active],
     });
