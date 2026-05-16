@@ -156,9 +156,9 @@ export const ProductService = {
         name: data.name.trim(),
         description: data.description?.trim(),
         categoryId: data.categoryId,
-        tags: data.tags ? JSON.parse(JSON.stringify(data.tags)) : Prisma.JsonNull,
-        images: JSON.parse(JSON.stringify(data.images)),
-        detailImages: data.detailImages ? JSON.parse(JSON.stringify(data.detailImages)) : Prisma.JsonNull,
+        tags: data.tags ?? Prisma.JsonNull,
+        images: data.images,
+        detailImages: data.detailImages ?? Prisma.JsonNull,
         originalPrice: data.originalPrice,
         currentPrice: data.currentPrice,
         bargain: data.bargain ?? false,
@@ -168,7 +168,7 @@ export const ProductService = {
         itemCondition: toItemCondition(data.itemCondition),
         stock: data.stock ?? 1,
         brand: data.brand,
-        specs: data.specs ? JSON.parse(JSON.stringify(data.specs)) : Prisma.JsonNull,
+        specs: data.specs ?? Prisma.JsonNull,
         shippingAddress: data.shippingAddress,
         validDays: data.validDays,
         expireTime,
@@ -299,8 +299,9 @@ export const ProductService = {
 
     // 非上架状态，只有卖家和管理员可见
     if (product.status !== 'active') {
-      if (!userId || (userId !== product.userId)) {
-        // TODO: 检查是否是管理员
+      // TODO: 需要从请求中获取管理员角色信息进行判断
+      // 当前方案：仅卖家可见非上架商品
+      if (!userId || userId !== product.userId) {
         throw Object.assign(new Error('商品不存在或已下架'), { statusCode: 404 });
       }
     }
@@ -371,14 +372,11 @@ export const ProductService = {
     const pageSize = Math.min(query.pageSize ?? 12, 50);
     const skip = (page - 1) * pageSize;
 
-    const where: Prisma.ProductWhereInput = { userId };
-
     // 公开接口只显示在售商品
-    if (query.status === 'active') {
-      where.status = 'active';
-    } else {
-      where.status = 'active';
-    }
+    const where: Prisma.ProductWhereInput = {
+      userId,
+      status: 'active',
+    };
 
     const [total, list] = await Promise.all([
       prisma.product.count({ where }),
@@ -476,9 +474,9 @@ export const ProductService = {
     if (data.categoryId !== undefined) {
       updateData.category = { connect: { id: data.categoryId } };
     }
-    if (data.tags !== undefined) updateData.tags = JSON.parse(JSON.stringify(data.tags));
-    if (data.images !== undefined) updateData.images = JSON.parse(JSON.stringify(data.images));
-    if (data.detailImages !== undefined) updateData.detailImages = JSON.parse(JSON.stringify(data.detailImages));
+    if (data.tags !== undefined) updateData.tags = data.tags ?? Prisma.JsonNull;
+    if (data.images !== undefined) updateData.images = data.images;
+    if (data.detailImages !== undefined) updateData.detailImages = data.detailImages ?? Prisma.JsonNull;
     if (data.originalPrice !== undefined) updateData.originalPrice = data.originalPrice;
     if (data.currentPrice !== undefined) updateData.currentPrice = data.currentPrice;
     if (data.bargain !== undefined) updateData.bargain = data.bargain;
@@ -488,7 +486,7 @@ export const ProductService = {
     if (data.itemCondition !== undefined) updateData.itemCondition = toItemCondition(data.itemCondition);
     if (data.stock !== undefined) updateData.stock = data.stock;
     if (data.brand !== undefined) updateData.brand = data.brand;
-    if (data.specs !== undefined) updateData.specs = JSON.parse(JSON.stringify(data.specs));
+    if (data.specs !== undefined) updateData.specs = data.specs ?? Prisma.JsonNull;
     if (data.shippingAddress !== undefined) updateData.shippingAddress = data.shippingAddress;
     if (data.validDays !== undefined) {
       updateData.validDays = data.validDays;
