@@ -42,7 +42,10 @@ export const UserService = {
     }
     ValidationUtil.validatePassword(newPassword);
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { passwordHash: true },
+    });
     if (!user) throw notFound('用户不存在');
 
     const valid = await PasswordUtil.verify(oldPassword, user.passwordHash);

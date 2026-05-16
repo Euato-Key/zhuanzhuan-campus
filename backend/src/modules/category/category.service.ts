@@ -94,24 +94,19 @@ export const CategoryService = {
   },
 
   async create(data: CreateCategoryData) {
-    if (data.parentId) {
-      const parent = await prisma.category.findUnique({
-        where: { id: data.parentId },
-      });
-      if (!parent) {
-        throw notFound('父分类不存在');
-      }
-      if (parent.parentId !== null) {
-        throw badRequest('最多支持两级分类');
-      }
-    }
+    const [parent, existing] = await Promise.all([
+      data.parentId ? prisma.category.findUnique({ where: { id: data.parentId } }) : null,
+      prisma.category.findFirst({
+        where: { name: data.name, parentId: data.parentId ?? null },
+      }),
+    ]);
 
-    const existing = await prisma.category.findFirst({
-      where: {
-        name: data.name,
-        parentId: data.parentId ?? null,
-      },
-    });
+    if (data.parentId && !parent) {
+      throw notFound('父分类不存在');
+    }
+    if (parent && parent.parentId !== null) {
+      throw badRequest('最多支持两级分类');
+    }
     if (existing) {
       throw conflict('该分类名称已存在');
     }
@@ -134,40 +129,37 @@ export const CategoryService = {
       throw notFound('分类不存在');
     }
 
-    if (data.parentId !== undefined) {
-      if (data.parentId === id) {
-        throw badRequest('不能将自己设为父分类');
-      }
-      if (data.parentId !== null) {
-        const parent = await prisma.category.findUnique({
-          where: { id: data.parentId },
-        });
-        if (!parent) {
-          throw notFound('父分类不存在');
-        }
-        if (parent.parentId !== null) {
-          throw badRequest('最多支持两级分类');
-        }
-        const children = await prisma.category.count({
-          where: { parentId: id },
-        });
-        if (children > 0) {
-          throw badRequest('该分类下有子分类，不能变为子分类');
-        }
-      }
-    }
+    const needParentCheck = data.parentId !== undefined && data.parentId !== null && data.parentId !== id;
+    const needNameCheck = data.name !== undefined;
 
-    if (data.name !== undefined) {
-      const existing = await prisma.category.findFirst({
+    const [parent, childrenCount, existingName] = await Promise.all([
+      needParentCheck ? prisma.category.findUnique({ where: { id: data.parentId! } }) : null,
+      needParentCheck ? prisma.category.count({ where: { parentId: id } }) : 0,
+      needNameCheck ? prisma.category.findFirst({
         where: {
           name: data.name,
           parentId: data.parentId ?? category.parentId ?? null,
           NOT: { id },
         },
-      });
-      if (existing) {
-        throw conflict('该分类名称已存在');
+      }) : null,
+    ]);
+
+    if (data.parentId === id) {
+      throw badRequest('不能将自己设为父分类');
+    }
+    if (needParentCheck) {
+      if (!parent) {
+        throw notFound('父分类不存在');
       }
+      if (parent.parentId !== null) {
+        throw badRequest('最多支持两级分类');
+      }
+      if (childrenCount > 0) {
+        throw badRequest('该分类下有子分类，不能变为子分类');
+      }
+    }
+    if (needNameCheck && existingName) {
+      throw conflict('该分类名称已存在');
     }
 
     return prisma.category.update({

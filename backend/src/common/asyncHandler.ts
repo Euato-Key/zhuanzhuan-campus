@@ -17,19 +17,3 @@ export function asyncHandler(
     }
   };
 }
-
-/**
- * 类型安全的异步处理器（不使用 next）
- */
-export function handleAsync(
-  fn: (req: Request, res: Response) => Promise<any>
-) {
-  return async (req: Request, res: Response) => {
-    try {
-      await fn(req, res);
-    } catch (err: unknown) {
-      const error = err as Error & { statusCode?: number };
-      return fail(res, error.message, error.statusCode || 500);
-    }
-  };
-}

@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { prisma } from '../config/prisma';
 import { FileService } from '../services/file.service';
+import { TokenUtil } from './token';
 
 const CLEANUP_CONFIG = {
   refreshToken: { enabled: true, schedule: '0 3 * * *' },
@@ -9,16 +10,9 @@ const CLEANUP_CONFIG = {
 };
 
 async function cleanupExpiredRefreshTokens(): Promise<number> {
-  const result = await prisma.refreshToken.deleteMany({
-    where: {
-      OR: [
-        { expiresAt: { lt: new Date() } },
-        { isRevoked: true },
-      ],
-    },
-  });
-  console.log(`[Cleanup] Deleted ${result.count} expired/revoked refresh tokens`);
-  return result.count;
+  const count = await TokenUtil.cleanupExpiredTokens();
+  console.log(`[Cleanup] Deleted ${count} expired/revoked refresh tokens`);
+  return count;
 }
 
 async function cleanupExpiredEmailCodes(): Promise<number> {
