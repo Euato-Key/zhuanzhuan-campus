@@ -5,6 +5,11 @@ import { Back } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getProductById,
+  offlineProduct as offlineProductApi,
+  relistProduct as relistProductApi,
+  deleteProduct as deleteProductApi,
+  addFavorite,
+  removeFavorite,
   type ProductDetail,
   DELIVERY_TYPE_LABELS,
   PRODUCT_STATUS_LABELS,
@@ -13,8 +18,10 @@ import {
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { getOssUrl } from '@/utils/oss'
+import { showError, showSuccess } from '@/utils/error'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateOrderDialog from '@/components/order/CreateOrderDialog.vue'
+import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -26,6 +33,8 @@ const product = ref<ProductDetail | null>(null)
 
 // 下单弹窗
 const createOrderDialogVisible = ref(false)
+const editDialogVisible = ref(false)
+const favoriteLoading = ref(false)
 
 // 是否是卖家
 const isOwner = computed(() => {
@@ -99,8 +108,29 @@ async function toggleFavorite() {
     authDialog.open('login')
     return
   }
-  // TODO: 实现收藏功能
-  ElMessage.info('收藏功能开发中')
+  if (!product.value) return
+  favoriteLoading.value = true
+  try {
+    if (product.value.isFavorited) {
+      const res = await removeFavorite(product.value.id)
+      if (res.data.code === 200) {
+        product.value.isFavorited = false
+        product.value.favoriteCount -= 1
+        showSuccess('已取消收藏')
+      }
+    } else {
+      const res = await addFavorite(product.value.id)
+      if (res.data.code === 200) {
+        product.value.isFavorited = true
+        product.value.favoriteCount += 1
+        showSuccess('收藏成功')
+      }
+    }
+  } catch (err) {
+    showError(err, '操作失败')
+  } finally {
+    favoriteLoading.value = false
+  }
 }
 
 // 联系卖家
@@ -134,9 +164,7 @@ function handleOrderSuccess(orderId: string) {
 
 // 编辑商品
 function editProduct() {
-  if (!product.value) return
-  // TODO: 打开编辑弹窗
-  ElMessage.info('编辑功能开发中')
+  editDialogVisible.value = true
 }
 
 // 下架商品
@@ -144,11 +172,13 @@ async function offlineProduct() {
   if (!product.value) return
   try {
     await ElMessageBox.confirm('确定要下架该商品吗？', '提示', { type: 'warning' })
-    // TODO: 调用下架API
-    ElMessage.success('商品已下架')
-    fetchProduct()
-  } catch {
-    // 用户取消
+    const res = await offlineProductApi(product.value.id)
+    if (res.data.code === 200) {
+      showSuccess('商品已下架')
+      fetchProduct()
+    }
+  } catch (err) {
+    if (err !== 'cancel') showError(err, '操作失败')
   }
 }
 
@@ -157,11 +187,13 @@ async function relistProduct() {
   if (!product.value) return
   try {
     await ElMessageBox.confirm('确定要重新上架该商品吗？', '提示', { type: 'info' })
-    // TODO: 调用重新上架API
-    ElMessage.success('已重新提交审核')
-    fetchProduct()
-  } catch {
-    // 用户取消
+    const res = await relistProductApi(product.value.id)
+    if (res.data.code === 200) {
+      showSuccess('已重新提交审核')
+      fetchProduct()
+    }
+  } catch (err) {
+    if (err !== 'cancel') showError(err, '操作失败')
   }
 }
 
@@ -170,11 +202,13 @@ async function deleteProduct() {
   if (!product.value) return
   try {
     await ElMessageBox.confirm('确定要删除该商品吗？删除后无法恢复', '警告', { type: 'warning' })
-    // TODO: 调用删除API
-    ElMessage.success('商品已删除')
-    router.push({ name: 'Products' })
-  } catch {
-    // 用户取消
+    const res = await deleteProductApi(product.value.id)
+    if (res.data.code === 200) {
+      showSuccess('商品已删除')
+      router.push({ name: 'Products' })
+    }
+  } catch (err) {
+    if (err !== 'cancel') showError(err, '操作失败')
   }
 }
 
@@ -350,7 +384,7 @@ onMounted(() => {
           <!-- 操作按钮 -->
           <div class="action-row">
             <template v-if="!isOwner">
-              <el-button type="default" size="large" @click="toggleFavorite">
+              <el-button :type="product.isFavorited ? 'warning' : 'default'" size="large" :loading="favoriteLoading" @click="toggleFavorite">
                 {{ product.isFavorited ? '已收藏' : '收藏' }}
               </el-button>
               <el-button type="primary" size="large" @click="contactSeller">
@@ -397,6 +431,14 @@ onMounted(() => {
       v-model="createOrderDialogVisible"
       :product="product"
       @success="handleOrderSuccess"
+    />
+
+    <!-- 编辑弹窗 -->
+    <PublishProductDialog
+      v-if="product"
+      v-model="editDialogVisible"
+      :product="product"
+      @success="fetchProduct"
     />
   </div>
   </AppLayout>
