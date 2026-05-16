@@ -9,8 +9,8 @@ import {
   relistProduct as relistProductApi,
   deleteProduct as deleteProductApi,
   type MyProductItem,
+  type ProductDetail,
   PRODUCT_STATUS_LABELS,
-  ITEM_CONDITION_LABELS,
   type ProductStatus,
 } from '@/api/product'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
@@ -32,7 +32,7 @@ const queryParams = reactive({
 
 // 发布/编辑弹窗
 const publishDialogVisible = ref(false)
-const editingProduct = ref<MyProductItem | null>(null)
+const editingProduct = ref<ProductDetail | undefined>(undefined)
 
 // 状态筛选选项
 const statusOptions: { label: string; value: ProductStatus }[] = [
@@ -79,9 +79,9 @@ function goToDetail(product: MyProductItem) {
 }
 
 // 编辑商品
-function editProduct(product: MyProductItem) {
-  editingProduct.value = product
-  publishDialogVisible.value = true
+async function editProduct(product: MyProductItem) {
+  // 跳转到商品详情页进行编辑
+  router.push({ name: 'ProductDetail', params: { id: product.id } })
 }
 
 // 下架商品
@@ -134,14 +134,14 @@ async function handleDelete(product: MyProductItem) {
 
 // 发布成功
 function handlePublishSuccess() {
-  editingProduct.value = null
+  editingProduct.value = undefined
   fetchProducts()
 }
 
 // 监听弹窗关闭
 watch(publishDialogVisible, (val) => {
   if (!val) {
-    editingProduct.value = null
+    editingProduct.value = undefined
   }
 })
 

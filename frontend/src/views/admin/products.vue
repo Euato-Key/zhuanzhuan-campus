@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { Search, Check, Close, View, Lock, Unlock, Bottom } from '@element-plus/icons-vue'
+import { Search, Check, Close, View, Unlock } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ProductAuditDialog from '@/components/admin/ProductAuditDialog.vue'
@@ -182,7 +182,7 @@ onMounted(() => {
               "
               size="small"
             >
-              {{ PRODUCT_STATUS_LABELS[row.status] }}
+              {{ PRODUCT_STATUS_LABELS[row.status as ProductStatus] }}
             </el-tag>
           </template>
         </el-table-column>

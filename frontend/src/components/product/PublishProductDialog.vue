@@ -8,11 +8,8 @@ import {
   getCategoryTree,
   type Category,
   type CreateProductData,
-  type UpdateProductData,
   type ProductDetail,
   ITEM_CONDITION_LABELS,
-  type ItemCondition,
-  type DeliveryType,
   type ProductSpec,
 } from '@/api/product'
 import { uploadImage } from '@/api/upload'

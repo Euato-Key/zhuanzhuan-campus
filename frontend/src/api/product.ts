@@ -40,6 +40,15 @@ export interface ProductListItem {
   }
 }
 
+// 用户主页商品项（简化版，仅展示在售商品）
+export interface UserProductItem {
+  id: string
+  name: string
+  images: string[]
+  currentPrice: number
+  status: 'active'
+}
+
 // 商品详情
 export interface ProductDetail extends ProductListItem {
   description: string | null
@@ -57,6 +66,7 @@ export interface ProductDetail extends ProductListItem {
   status: ProductStatus
   rejectReason: string | null
   auditCount: number
+  relistCount: number
   updatedAt: string
   isFavorited: boolean
   category: {
@@ -74,8 +84,19 @@ export interface ProductDetail extends ProductListItem {
   }
 }
 
-// 我的商品项
-export interface MyProductItem extends ProductListItem {
+// 我的商品项（独立定义，不继承 ProductListItem）
+export interface MyProductItem {
+  id: string
+  name: string
+  images: string[]
+  currentPrice: number
+  originalPrice: number | null
+  itemCondition: ItemCondition
+  deliveryType: DeliveryType
+  bargain: boolean
+  viewCount: number
+  favoriteCount: number
+  createdAt: string
   status: ProductStatus
   stock: number
   rejectReason: string | null
@@ -87,17 +108,19 @@ export interface MyProductItem extends ProductListItem {
   pickupAddress: string | null
   pickupTime: string | null
   brand: string | null
-  bargain: boolean
   description: string | null
-  originalPrice: number | null
-  user?: {
-    id: number
-    username: string
-    email?: string
-  }
   category?: {
     id: number
     name: string
+  }
+  user?: {
+    id: number
+    username: string
+    avatar?: string | null
+    email?: string
+    school?: string | null
+    campus?: string | null
+    creditScore?: number
   }
 }
 
@@ -214,6 +237,14 @@ export function getProductList(params: ProductQueryParams) {
 // 获取商品详情
 export function getProductById(id: string) {
   return api.get<{ code: number; data: ProductDetail; message: string }>(`/products/${id}`)
+}
+
+// 获取用户发布的商品列表（公开接口）
+export function getUserProducts(userId: number, params?: { page?: number; pageSize?: number }) {
+  return api.get<{ code: number; data: PaginatedResponse<UserProductItem>; message: string }>(
+    `/products/user/${userId}`,
+    { params }
+  )
 }
 
 // ========== 用户接口 ==========

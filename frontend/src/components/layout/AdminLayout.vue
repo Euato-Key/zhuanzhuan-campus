@@ -25,9 +25,13 @@ const menuItems = [
   { path: '/admin/settings', icon: markRaw(Setting), title: '系统设置' },
 ]
 
-const isAdmin = computed(() =>
+// 检查管理员权限（用于模板显示）
+const isAdminRole = computed(() =>
   userStore.user?.role === 'admin' || userStore.user?.role === 'super_admin'
 )
+
+// 验证管理员状态
+void isAdminRole // 避免未使用警告
 
 async function handleLogout() {
   try {

@@ -1,12 +1,42 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import ProductCard from '@/components/product/ProductCard.vue'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
+import { getProductList, getCategoryTree, type ProductListItem, type Category } from '@/api/product'
 
 const router = useRouter()
 const userStore = useUserStore()
 const authDialog = useAuthDialog()
+
+const categories = ref<Category[]>([])
+const hotProducts = ref<ProductListItem[]>([])
+const loading = ref(false)
+
+async function fetchData() {
+  loading.value = true
+  try {
+    // 获取分类
+    const catRes = await getCategoryTree()
+    if (catRes.data.code === 200) {
+      categories.value = catRes.data.data.slice(0, 6)
+    }
+
+    // 获取热门商品（按收藏数排序）
+    const prodRes = await getProductList({ sortBy: 'favorite', sortOrder: 'desc', pageSize: 8 })
+    if (prodRes.data.code === 200) {
+      hotProducts.value = prodRes.data.data.list
+    }
+  } catch (err) {
+    console.error('获取数据失败', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchData)
 </script>
 
 <template>
@@ -37,32 +67,21 @@ const authDialog = useAuthDialog()
       </div>
     </section>
 
-    <section class="categories">
+    <section class="categories" v-loading="loading">
       <h3 class="section-title">商品分类</h3>
       <div class="category-grid">
-        <RouterLink to="/products?category=books" class="category-item">
-          <span class="category-icon">📚</span>
-          <span class="category-name">书籍</span>
+        <RouterLink
+          v-for="cat in categories"
+          :key="cat.id"
+          :to="`/products?categoryId=${cat.id}`"
+          class="category-item"
+        >
+          <span class="category-icon">{{ cat.icon || '📦' }}</span>
+          <span class="category-name">{{ cat.name }}</span>
         </RouterLink>
-        <RouterLink to="/products?category=electronics" class="category-item">
-          <span class="category-icon">📱</span>
-          <span class="category-name">电子产品</span>
-        </RouterLink>
-        <RouterLink to="/products?category=daily" class="category-item">
-          <span class="category-icon">🛋️</span>
-          <span class="category-name">生活用品</span>
-        </RouterLink>
-        <RouterLink to="/products?category=fashion" class="category-item">
-          <span class="category-icon">👕</span>
-          <span class="category-name">服饰鞋包</span>
-        </RouterLink>
-        <RouterLink to="/products?category=sports" class="category-item">
-          <span class="category-icon">⚽</span>
-          <span class="category-name">运动户外</span>
-        </RouterLink>
-        <RouterLink to="/products?category=stationery" class="category-item">
-          <span class="category-icon">✏️</span>
-          <span class="category-name">文具办公</span>
+        <RouterLink v-if="categories.length === 0" to="/products" class="category-item">
+          <span class="category-icon">📦</span>
+          <span class="category-name">全部商品</span>
         </RouterLink>
       </div>
     </section>
@@ -72,20 +91,13 @@ const authDialog = useAuthDialog()
         <h3 class="section-title">热门商品</h3>
         <RouterLink to="/products" class="more-link">查看更多 →</RouterLink>
       </div>
-      <div class="product-grid">
-        <div class="product-card" v-for="i in 8" :key="i">
-          <div class="product-image">
-            <span class="product-tag">热门</span>
-          </div>
-          <div class="product-info">
-            <div class="product-price">¥{{ (Math.random() * 500 + 20).toFixed(0) }}</div>
-            <div class="product-title">商品名称商品名称商品名称</div>
-            <div class="product-meta">
-              <span class="product-school">清华大学</span>
-              <span class="product-time">2小时前</span>
-            </div>
-          </div>
-        </div>
+      <div class="product-grid" v-loading="loading">
+        <ProductCard
+          v-for="product in hotProducts"
+          :key="product.id"
+          :product="product"
+        />
+        <el-empty v-if="!loading && hotProducts.length === 0" description="暂无热门商品" />
       </div>
     </section>
   </AppLayout>
@@ -204,66 +216,6 @@ const authDialog = useAuthDialog()
 
   @media (max-width: 992px) { grid-template-columns: repeat(3, 1fr); }
   @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
-}
-
-.product-card {
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  }
-
-  .product-image {
-    width: 100%;
-    aspect-ratio: 1;
-    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-    position: relative;
-
-    .product-tag {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      background: $color-accent-orange;
-      color: #fff;
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 4px;
-    }
-  }
-
-  .product-info { padding: 12px; }
-
-  .product-price {
-    font-size: 18px;
-    font-weight: 600;
-    color: $color-error;
-    font-family: $font-family-mono;
-    margin-bottom: 6px;
-  }
-
-  .product-title {
-    font-size: 14px;
-    color: $color-text-primary;
-    line-height: 1.4;
-    margin-bottom: 8px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .product-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: $color-text-placeholder;
-  }
 }
 
 // ─── Buttons ───

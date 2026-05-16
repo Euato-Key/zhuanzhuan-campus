@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { Search, Plus, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
@@ -18,7 +18,6 @@ import ProductCard from '@/components/product/ProductCard.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 
 const route = useRoute()
-const router = useRouter()
 
 // 状态
 const loading = ref(false)

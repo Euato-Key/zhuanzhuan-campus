@@ -13,13 +13,18 @@ const router = useRouter()
 
 // 商品图片
 const productImage = computed(() => {
-  return props.product.images[0] || '/placeholder.png'
+  return props.product.images?.[0] || '/placeholder.png'
 })
 
 // 用户头像
 const userAvatar = computed(() => {
-  if (!props.product.user.avatar) return undefined
+  if (!props.product.user?.avatar) return undefined
   return getOssUrl(props.product.user.avatar)
+})
+
+// 用户名首字母（安全处理空值）
+const userInitial = computed(() => {
+  return props.product.user?.username?.charAt(0) || '?'
 })
 
 // 新旧程度显示
@@ -59,9 +64,9 @@ function goToDetail() {
       <div class="product-footer">
         <div class="seller-info">
           <el-avatar :size="20" :src="userAvatar">
-            {{ product.user.username.charAt(0) }}
+            {{ userInitial }}
           </el-avatar>
-          <span class="seller-name">{{ product.user.username }}</span>
+          <span class="seller-name">{{ product.user?.username || '匿名用户' }}</span>
         </div>
         <div class="stats">
           <span>{{ product.viewCount }}浏览</span>

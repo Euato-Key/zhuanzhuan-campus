@@ -57,6 +57,11 @@ const sellerAvatar = computed(() => {
   return getOssUrl(product.value.user.avatar)
 })
 
+// 卖家用户名首字母（安全处理空值）
+const sellerInitial = computed(() => {
+  return product.value?.user?.username?.charAt(0) || '?'
+})
+
 // 获取商品详情
 async function fetchProduct() {
   loading.value = true
@@ -206,22 +211,22 @@ onMounted(() => {
       <div class="seller-card-top">
         <div class="seller-avatar" @click="viewSellerProfile">
           <el-avatar :size="56" :src="sellerAvatar">
-            {{ product.user.username.charAt(0) }}
+            {{ sellerInitial }}
           </el-avatar>
         </div>
         <div class="seller-details">
           <div class="seller-name-row">
-            <span class="seller-name">{{ product.user.username }}</span>
-            <el-tag v-if="product.user.school" size="small" type="info">{{ product.user.school }}</el-tag>
+            <span class="seller-name">{{ product.user?.username || '匿名用户' }}</span>
+            <el-tag v-if="product.user?.school" size="small" type="info">{{ product.user.school }}</el-tag>
           </div>
           <div class="seller-meta-row">
-            <span v-if="product.user.campus" class="meta-item">
+            <span v-if="product.user?.campus" class="meta-item">
               <el-icon><i class="el-icon-location"></i></el-icon>
               {{ product.user.campus }}
             </span>
             <span class="meta-item credit">
               <el-icon><i class="el-icon-star"></i></el-icon>
-              信用 {{ product.user.creditScore }}
+              信用 {{ product.user?.creditScore ?? '-' }}
             </span>
           </div>
         </div>
@@ -237,12 +242,12 @@ onMounted(() => {
         <div class="image-section">
           <div class="main-image">
             <el-image
-              :src="product.images[0] || '/placeholder.png'"
-              :preview-src-list="product.images"
+              :src="product.images?.[0] || '/placeholder.png'"
+              :preview-src-list="product.images || []"
               fit="cover"
             />
           </div>
-          <div class="thumbnail-list" v-if="product.images.length > 1">
+          <div class="thumbnail-list" v-if="(product.images?.length || 0) > 1">
             <div
               v-for="(img, index) in product.images"
               :key="index"
