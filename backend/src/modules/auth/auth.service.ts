@@ -9,6 +9,7 @@ import { PasswordUtil } from '../../common/password';
 import { VerificationUtil, EmailCodeType } from '../../common/verification';
 import { TokenUtil } from '../../common/token';
 import { USER_PROFILE_SELECT } from '../../common/selects';
+import { ValidationUtil } from '../../common/validation';
 
 const LOGIN_FAIL_LOCK_THRESHOLD = 5;
 const LOGIN_LOCK_MINUTES = 30;
@@ -126,6 +127,9 @@ export const AuthService = {
 
   async register(data: { email: string; code: string; username: string; password: string }) {
     const { email, code, username, password } = data;
+
+    ValidationUtil.validatePassword(password);
+    ValidationUtil.validateUsername(username);
 
     const [existingEmail, existingUsername] = await Promise.all([
       prisma.user.findUnique({ where: { email } }),
@@ -246,6 +250,8 @@ export const AuthService = {
   },
 
   async resetPassword(email: string, code: string, newPassword: string) {
+    ValidationUtil.validatePassword(newPassword);
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) throw notFound('该邮箱未注册');
 

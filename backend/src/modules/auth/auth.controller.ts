@@ -30,7 +30,6 @@ export const AuthController = {
     if (!email || !code || !username || !password) {
       return fail(res, '请填写完整信息');
     }
-    ValidationUtil.validatePassword(password);
     ValidationUtil.validateUsername(username);
     const result = await AuthService.register({ email, code, username, password });
     return success(res, result, '注册成功', 201);
@@ -74,7 +73,6 @@ export const AuthController = {
   resetPassword: asyncHandler(async (req: Request, res: Response) => {
     const { email, code, new_password } = req.body;
     if (!email || !code || !new_password) return fail(res, '请填写完整信息');
-    ValidationUtil.validatePassword(new_password);
     await AuthService.resetPassword(email, code, new_password);
     res.cookie('refresh_token', '', CLEAR_COOKIE_OPTIONS);
     return success(res, null, '密码重置成功');

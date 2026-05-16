@@ -1,4 +1,5 @@
 import OSS from 'ali-oss';
+import crypto from 'crypto';
 import { env } from '../config/env';
 import { badRequest, forbidden } from '../common/errors';
 
@@ -91,11 +92,14 @@ function getExtFromFilename(filename: string): string {
   return filename.substring(dotIndex).toLowerCase();
 }
 
+function generateRandomSuffix(): string {
+  return crypto.randomBytes(3).toString('hex');
+}
+
 function generateTempPath(type: string, userId: number, ext: string): string {
   const config = UPLOAD_TYPES[type];
   const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  return `${config.path}/${userId}/temp/${timestamp}_${random}${ext}`;
+  return `${config.path}/${userId}/temp/${timestamp}_${generateRandomSuffix()}${ext}`;
 }
 
 function generatePermanentPath(type: string, userId: number, ext: string): string {
@@ -103,8 +107,7 @@ function generatePermanentPath(type: string, userId: number, ext: string): strin
   const now = new Date();
   const datePath = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
   const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  return `${config.path}/${userId}/${datePath}/${timestamp}_${random}${ext}`;
+  return `${config.path}/${userId}/${datePath}/${timestamp}_${generateRandomSuffix()}${ext}`;
 }
 
 function validateTempPath(tempPath: string, type: string, userId: number): void {
