@@ -1,5 +1,6 @@
 import OSS from 'ali-oss';
 import { env } from '../config/env';
+import { badRequest, forbidden } from '../common/errors';
 
 interface UploadTypeConfig {
   path: string;
@@ -100,16 +101,16 @@ function validateTempPath(tempPath: string, type: string, userId: number): void 
   const config = UPLOAD_TYPES[type];
   const expectedPrefix = `${config.path}/${userId}/temp/`;
   if (!tempPath.startsWith(expectedPrefix)) {
-    throw Object.assign(new Error('临时文件路径不属于当前用户'), { statusCode: 403 });
+    throw forbidden('临时文件路径不属于当前用户');
   }
   if (tempPath.includes('..') || tempPath.includes('//') || !/^[\w/.-]+$/.test(tempPath)) {
-    throw Object.assign(new Error('非法的文件路径'), { statusCode: 400 });
+    throw badRequest('非法的文件路径');
   }
 }
 
 async function getSTSCredentials(type: string, userId: number) {
   const config = UPLOAD_TYPES[type];
-  if (!config) throw Object.assign(new Error('不支持的上传类型'), { statusCode: 400 });
+  if (!config) throw badRequest('不支持的上传类型');
 
   const roleArn = env.OSS_ROLE_ARN;
   const uploadPath = `${config.path}/${userId}/temp/`;
@@ -170,11 +171,11 @@ async function getSTSCredentials(type: string, userId: number) {
 
 async function getSignedUrl(type: string, userId: number, filename: string) {
   const config = UPLOAD_TYPES[type];
-  if (!config) throw Object.assign(new Error('不支持的上传类型'), { statusCode: 400 });
+  if (!config) throw badRequest('不支持的上传类型');
 
   const ext = getExtFromFilename(filename);
   if (!ext || !config.allowedExt.includes(ext)) {
-    throw Object.assign(new Error('不支持的文件扩展名'), { statusCode: 400 });
+    throw badRequest('不支持的文件扩展名');
   }
 
   const ossPath = generateTempPath(type, userId, ext);
@@ -219,7 +220,7 @@ async function moveFileToPermanent(tempPath: string, type: string, userId: numbe
   return permanentPath;
 }
 
-async function cleanupTempFiles(type: string, userId: number, olderThanDays = 7): Promise<number> {
+async function cleanupTempFiles(type: string, userId: number, olderThanDays = 30): Promise<number> {
   const config = UPLOAD_TYPES[type];
   const prefix = `${config.path}/${userId}/temp/`;
   const client = getOSSClient();

@@ -13,13 +13,12 @@
  *   - 输入验证
  */
 
-import bcrypt from 'bcryptjs';
 import { PrismaClient, UserRole } from '@prisma/client';
 import * as readline from 'readline';
+import { PasswordUtil } from '../common/password';
+import { ValidationUtil } from '../common/validation';
 
 const prisma = new PrismaClient();
-
-const SALT_ROUNDS = 10;
 
 interface CreateAdminOptions {
   email: string;
@@ -27,45 +26,14 @@ interface CreateAdminOptions {
   password: string;
 }
 
-// 验证邮箱格式
-function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-// 验证用户名格式
-function validateUsername(username: string): boolean {
-  return username.length >= 2 && username.length <= 50;
-}
-
-// 验证密码强度
-function validatePassword(password: string): { valid: boolean; message: string } {
-  if (password.length < 6) {
-    return { valid: false, message: '密码长度至少6位' };
-  }
-  return { valid: true, message: '' };
-}
-
 // 创建超级管理员
 async function createSuperAdmin(options: CreateAdminOptions): Promise<void> {
   const { email, username, password } = options;
 
   // 验证输入
-  if (!validateEmail(email)) {
-    console.error('❌ 邮箱格式不正确');
-    process.exit(1);
-  }
-
-  if (!validateUsername(username)) {
-    console.error('❌ 用户名长度需在2-50个字符之间');
-    process.exit(1);
-  }
-
-  const pwdValidation = validatePassword(password);
-  if (!pwdValidation.valid) {
-    console.error(`❌ ${pwdValidation.message}`);
-    process.exit(1);
-  }
+  ValidationUtil.validateEmail(email);
+  ValidationUtil.validateUsername(username);
+  ValidationUtil.validatePassword(password);
 
   try {
     // 检查邮箱是否已存在
@@ -98,7 +66,7 @@ async function createSuperAdmin(options: CreateAdminOptions): Promise<void> {
     }
 
     // 创建新超级管理员
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    const passwordHash = await PasswordUtil.hash(password);
 
     const user = await prisma.user.create({
       data: {

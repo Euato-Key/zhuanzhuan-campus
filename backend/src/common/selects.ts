@@ -35,6 +35,15 @@ export const USER_PUBLIC_PROFILE_SELECT = {
 } as const;
 
 /**
+ * 管理员用户字段（用于商品管理等场景）
+ */
+export const USER_ADMIN_SELECT = {
+  id: true,
+  username: true,
+  email: true,
+} as const;
+
+/**
  * 商品列表用户字段
  */
 export const PRODUCT_USER_SELECT = {
@@ -70,4 +79,28 @@ export const PRODUCT_DETAIL_CATEGORY_SELECT = {
   id: true,
   name: true,
   parentId: true,
+} as const;
+
+/**
+ * 分类基础字段（用于树形结构）
+ */
+export const CATEGORY_BASE_SELECT = {
+  id: true,
+  name: true,
+  parentId: true,
+  icon: true,
+  sort: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+/**
+ * 分类子节点字段
+ */
+export const CATEGORY_CHILDREN_SELECT = {
+  id: true,
+  name: true,
+  parentId: true,
+  icon: true,
+  sort: true,
 } as const;

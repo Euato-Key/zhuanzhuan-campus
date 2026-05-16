@@ -1,19 +1,17 @@
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
 import { sendEmailCode } from '../../utils/email';
 import { JwtPayload } from '../../middlewares/auth';
+import { badRequest, unauthorized, forbidden, notFound, conflict } from '../../common/errors';
+import { PasswordUtil } from '../../common/password';
+import { VerificationUtil, EmailCodeType } from '../../common/verification';
+import { TokenUtil } from '../../common/token';
+import { USER_PROFILE_SELECT } from '../../common/selects';
 
-const SALT_ROUNDS = 10;
-const CODE_EXPIRE_MINUTES = 5;
 const LOGIN_FAIL_LOCK_THRESHOLD = 5;
 const LOGIN_LOCK_MINUTES = 30;
-
-function generateCode(): string {
-  return Math.random().toString().slice(2, 8);
-}
 
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -21,13 +19,13 @@ function hashToken(token: string): string {
 
 function signAccessToken(payload: JwtPayload): string {
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
-    expiresIn: env.JWT_ACCESS_EXPIRES_IN as any,
+    expiresIn: env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions['expiresIn'],
   });
 }
 
 function signRefreshToken(payload: JwtPayload): string {
   return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN as any,
+    expiresIn: env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn'],
   });
 }
 
@@ -44,7 +42,16 @@ function parseDuration(d: string): number {
   return n * (unit[match[2]] || 0);
 }
 
-async function signTokensAndStore(user: any, userAgent?: string, ipAddress?: string) {
+interface UserForToken {
+  id: number;
+  email: string;
+  username: string;
+  avatar: string | null;
+  role: string;
+  creditScore: number;
+}
+
+async function signTokensAndStore(user: UserForToken, userAgent?: string, ipAddress?: string) {
   const payload: JwtPayload = { userId: user.id, role: user.role };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
@@ -74,96 +81,94 @@ async function signTokensAndStore(user: any, userAgent?: string, ipAddress?: str
   };
 }
 
+function validateEmailCodeType(type: string): EmailCodeType | null {
+  const validTypes = Object.values(EmailCodeType);
+  return validTypes.includes(type as EmailCodeType) ? (type as EmailCodeType) : null;
+}
+
+function validateUserBlockStatus(user: { id: number; isBlocked: boolean; blockedUntil: Date | null }) {
+  if (user.isBlocked) {
+    if (user.blockedUntil && user.blockedUntil > new Date()) {
+      throw forbidden(`账号已被封禁，解封时间：${user.blockedUntil.toLocaleString()}`);
+    }
+    return prisma.user.update({ where: { id: user.id }, data: { isBlocked: false, blockedUntil: null } });
+  }
+  return Promise.resolve();
+}
+
 export const AuthService = {
   async sendCode(email: string, type: string) {
-    const validTypes = ['register', 'login', 'reset_password', 'change_email'];
-    if (!validTypes.includes(type)) {
-      throw Object.assign(new Error('无效的验证码类型'), { statusCode: 400 });
+    const emailCodeType = validateEmailCodeType(type);
+    if (!emailCodeType) {
+      throw badRequest('无效的验证码类型');
     }
 
-    if (type === 'register') {
+    if (emailCodeType === EmailCodeType.REGISTER) {
       const exists = await prisma.user.findUnique({ where: { email } });
-      if (exists) throw Object.assign(new Error('该邮箱已注册'), { statusCode: 409 });
+      if (exists) throw conflict('该邮箱已注册');
     }
 
-    if (type === 'reset_password') {
+    if (emailCodeType === EmailCodeType.RESET_PASSWORD) {
       const exists = await prisma.user.findUnique({ where: { email } });
-      if (!exists) throw Object.assign(new Error('该邮箱未注册'), { statusCode: 404 });
+      if (!exists) throw notFound('该邮箱未注册');
     }
 
     const oneMinuteAgo = new Date(Date.now() - 60_000);
     const recent = await prisma.emailCode.findFirst({
-      where: { email, type: type as any, createdAt: { gt: oneMinuteAgo } },
+      where: { email, type: emailCodeType, createdAt: { gt: oneMinuteAgo } },
       orderBy: { createdAt: 'desc' },
     });
-    if (recent) throw Object.assign(new Error('发送太频繁，请1分钟后再试'), { statusCode: 429 });
+    if (recent) throw conflict('发送太频繁，请1分钟后再试');
 
-    const code = generateCode();
-    const expiresAt = new Date(Date.now() + CODE_EXPIRE_MINUTES * 60_000);
-
-    await prisma.emailCode.create({
-      data: { email, code, type: type as any, expiresAt },
-    });
-
+    const code = await VerificationUtil.createCode(email, emailCodeType);
     await sendEmailCode(email, code, type);
   },
 
   async register(data: { email: string; code: string; username: string; password: string }) {
     const { email, code, username, password } = data;
 
-    const existingEmail = await prisma.user.findUnique({ where: { email } });
-    if (existingEmail) throw Object.assign(new Error('该邮箱已注册'), { statusCode: 409 });
+    const [existingEmail, existingUsername] = await Promise.all([
+      prisma.user.findUnique({ where: { email } }),
+      prisma.user.findUnique({ where: { username } }),
+    ]);
+    if (existingEmail) throw conflict('该邮箱已注册');
+    if (existingUsername) throw conflict('该用户名已被使用');
 
-    const existingUsername = await prisma.user.findUnique({ where: { username } });
-    if (existingUsername) throw Object.assign(new Error('该用户名已被使用'), { statusCode: 409 });
-
-    const emailCode = await prisma.emailCode.findFirst({
-      where: { email, type: 'register', isUsed: false, expiresAt: { gt: new Date() } },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (!emailCode) throw Object.assign(new Error('验证码无效或已过期'), { statusCode: 400 });
-    if (emailCode.code !== code) throw Object.assign(new Error('验证码错误'), { statusCode: 400 });
-
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    const [emailCode, passwordHash] = await Promise.all([
+      VerificationUtil.verifyEmailCode(email, code, EmailCodeType.REGISTER),
+      PasswordUtil.hash(password),
+    ]);
 
     const user = await prisma.user.create({
       data: { email, username, passwordHash },
     });
 
-    await prisma.emailCode.update({
-      where: { id: emailCode.id },
-      data: { isUsed: true },
-    });
+    await VerificationUtil.markCodeUsed(emailCode.id);
 
     return { id: user.id, email: user.email, username: user.username };
   },
 
   async loginByEmailPassword(email: string, password: string, userAgent?: string, ipAddress?: string) {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw Object.assign(new Error('邮箱或密码错误'), { statusCode: 401 });
+    if (!user) throw unauthorized('邮箱或密码错误');
 
-    if (user.isBlocked) {
-      if (user.blockedUntil && user.blockedUntil > new Date()) {
-        throw Object.assign(new Error(`账号已被封禁，解封时间：${user.blockedUntil.toLocaleString()}`), { statusCode: 403 });
-      }
-      await prisma.user.update({ where: { id: user.id }, data: { isBlocked: false, blockedUntil: null } });
-    }
+    await validateUserBlockStatus(user);
 
     if (user.loginFailCount >= LOGIN_FAIL_LOCK_THRESHOLD) {
       const lockExpiry = new Date(user.updatedAt.getTime() + LOGIN_LOCK_MINUTES * 60_000);
       if (lockExpiry > new Date()) {
-        throw Object.assign(new Error(`密码错误次数过多，请${LOGIN_LOCK_MINUTES}分钟后再试`), { statusCode: 423 });
+        throw forbidden(`密码错误次数过多，请${LOGIN_LOCK_MINUTES}分钟后再试`);
       }
       await prisma.user.update({ where: { id: user.id }, data: { loginFailCount: 0 } });
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    const valid = await PasswordUtil.verify(password, user.passwordHash);
     if (!valid) {
       await prisma.user.update({
         where: { id: user.id },
         data: { loginFailCount: { increment: 1 } },
       });
-      throw Object.assign(new Error('邮箱或密码错误'), { statusCode: 401 });
+      throw unauthorized('邮箱或密码错误');
     }
 
     await prisma.user.update({
@@ -176,31 +181,19 @@ export const AuthService = {
 
   async loginByEmailCode(email: string, code: string, userAgent?: string, ipAddress?: string) {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw Object.assign(new Error('该邮箱未注册'), { statusCode: 404 });
+    if (!user) throw notFound('该邮箱未注册');
 
-    if (user.isBlocked) {
-      if (user.blockedUntil && user.blockedUntil > new Date()) {
-        throw Object.assign(new Error(`账号已被封禁，解封时间：${user.blockedUntil.toLocaleString()}`), { statusCode: 403 });
-      }
-      await prisma.user.update({ where: { id: user.id }, data: { isBlocked: false, blockedUntil: null } });
-    }
+    await validateUserBlockStatus(user);
 
-    const emailCode = await prisma.emailCode.findFirst({
-      where: { email, type: 'login', isUsed: false, expiresAt: { gt: new Date() } },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (!emailCode) throw Object.assign(new Error('验证码无效或已过期'), { statusCode: 400 });
-    if (emailCode.code !== code) throw Object.assign(new Error('验证码错误'), { statusCode: 400 });
+    const emailCode = await VerificationUtil.verifyEmailCode(email, code, EmailCodeType.LOGIN);
 
-    await prisma.emailCode.update({
-      where: { id: emailCode.id },
-      data: { isUsed: true },
-    });
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    await Promise.all([
+      VerificationUtil.markCodeUsed(emailCode.id),
+      prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      }),
+    ]);
 
     return signTokensAndStore(user, userAgent, ipAddress);
   },
@@ -209,9 +202,9 @@ export const AuthService = {
     const tokenHash = hashToken(oldRefreshToken);
 
     const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
-    if (!stored) throw Object.assign(new Error('无效的Refresh Token'), { statusCode: 401 });
-    if (stored.isRevoked) throw Object.assign(new Error('Refresh Token已被吊销'), { statusCode: 401 });
-    if (stored.expiresAt < new Date()) throw Object.assign(new Error('Refresh Token已过期'), { statusCode: 401 });
+    if (!stored) throw unauthorized('无效的Refresh Token');
+    if (stored.isRevoked) throw unauthorized('Refresh Token已被吊销');
+    if (stored.expiresAt < new Date()) throw unauthorized('Refresh Token已过期');
 
     await prisma.refreshToken.update({
       where: { id: stored.id },
@@ -219,7 +212,7 @@ export const AuthService = {
     });
 
     const user = await prisma.user.findUnique({ where: { id: stored.userId } });
-    if (!user) throw Object.assign(new Error('用户不存在'), { statusCode: 404 });
+    if (!user) throw notFound('用户不存在');
 
     const payload: JwtPayload = { userId: user.id, role: user.role };
     const accessToken = signAccessToken(payload);
@@ -245,65 +238,36 @@ export const AuthService = {
   async logout(userId: number, refreshToken?: string) {
     if (refreshToken) {
       const tokenHash = hashToken(refreshToken);
-      await prisma.refreshToken.updateMany({
-        where: { tokenHash, userId },
-        data: { isRevoked: true },
-      });
+      await TokenUtil.revokeToken(tokenHash, userId);
     } else {
-      await prisma.refreshToken.updateMany({
-        where: { userId, isRevoked: false },
-        data: { isRevoked: true },
-      });
+      await TokenUtil.revokeAllUserTokens(userId);
     }
   },
 
   async resetPassword(email: string, code: string, newPassword: string) {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw Object.assign(new Error('该邮箱未注册'), { statusCode: 404 });
+    if (!user) throw notFound('该邮箱未注册');
 
-    const emailCode = await prisma.emailCode.findFirst({
-      where: { email, type: 'reset_password', isUsed: false, expiresAt: { gt: new Date() } },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (!emailCode) throw Object.assign(new Error('验证码无效或已过期'), { statusCode: 400 });
-    if (emailCode.code !== code) throw Object.assign(new Error('验证码错误'), { statusCode: 400 });
+    const emailCode = await VerificationUtil.verifyEmailCode(email, code, EmailCodeType.RESET_PASSWORD);
 
-    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    const passwordHash = await PasswordUtil.hash(newPassword);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash, loginFailCount: 0 },
-    });
-
-    await prisma.emailCode.update({
-      where: { id: emailCode.id },
-      data: { isUsed: true },
-    });
-
-    await prisma.refreshToken.updateMany({
-      where: { userId: user.id, isRevoked: false },
-      data: { isRevoked: true },
-    });
+    await Promise.all([
+      prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash, loginFailCount: 0 },
+      }),
+      VerificationUtil.markCodeUsed(emailCode.id),
+      TokenUtil.revokeAllUserTokens(user.id),
+    ]);
   },
 
   async getProfile(userId: number) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        avatar: true,
-        bio: true,
-        school: true,
-        campus: true,
-        phone: true,
-        role: true,
-        creditScore: true,
-        createdAt: true,
-      },
+      select: USER_PROFILE_SELECT,
     });
-    if (!user) throw Object.assign(new Error('用户不存在'), { statusCode: 404 });
+    if (!user) throw notFound('用户不存在');
     return user;
   },
 };

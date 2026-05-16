@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import { prisma } from './config/prisma';
+import { startCleanupJobs } from './common/cleanup';
 import authRoutes from './modules/auth/auth.routes';
 import userRoutes from './modules/user/user.routes';
 import uploadRoutes from './modules/upload/upload.routes';
@@ -30,6 +31,7 @@ app.get('/api/health', (_req, res) => {
 
 const server = app.listen(env.PORT, () => {
   console.log(`Server running on http://localhost:${env.PORT}`);
+  startCleanupJobs();
 });
 
 process.on('SIGINT', async () => {

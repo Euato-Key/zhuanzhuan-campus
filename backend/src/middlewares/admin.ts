@@ -1,30 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
 import { fail } from '../utils/response';
+import { unauthorized, forbidden } from '../common/errors';
 
-export function adminMiddleware(req: Request, res: Response, next: NextFunction) {
-  const user = req.user;
+type UserRole = 'user' | 'admin' | 'super_admin';
 
-  if (!user) {
-    return fail(res, '未登录', 401);
-  }
+function createRoleMiddleware(allowedRoles: UserRole[], errorMessage: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user;
 
-  if (user.role !== 'admin' && user.role !== 'super_admin') {
-    return fail(res, '无权限访问', 403);
-  }
+    if (!user) {
+      throw unauthorized('未登录');
+    }
 
-  next();
+    if (!allowedRoles.includes(user.role as UserRole)) {
+      throw forbidden(errorMessage);
+    }
+
+    next();
+  };
 }
 
-export function superAdminMiddleware(req: Request, res: Response, next: NextFunction) {
-  const user = req.user;
+export const adminMiddleware = createRoleMiddleware(
+  ['admin', 'super_admin'],
+  '无权限访问'
+);
 
-  if (!user) {
-    return fail(res, '未登录', 401);
-  }
-
-  if (user.role !== 'super_admin') {
-    return fail(res, '需要超级管理员权限', 403);
-  }
-
-  next();
-}
+export const superAdminMiddleware = createRoleMiddleware(
+  ['super_admin'],
+  '需要超级管理员权限'
+);

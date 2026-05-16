@@ -1,4 +1,6 @@
 import { prisma } from '../../config/prisma';
+import { badRequest, notFound, conflict } from '../../common/errors';
+import { CATEGORY_BASE_SELECT, CATEGORY_CHILDREN_SELECT } from '../../common/selects';
 
 export interface CreateCategoryData {
   name: string;
@@ -28,6 +30,7 @@ export interface CategoryTree {
 export const CategoryService = {
   async getAll(): Promise<CategoryTree[]> {
     const categories = await prisma.category.findMany({
+      select: CATEGORY_BASE_SELECT,
       orderBy: [{ sort: 'desc' }, { id: 'asc' }],
     });
 
@@ -72,8 +75,17 @@ export const CategoryService = {
   async getById(id: number) {
     return prisma.category.findUnique({
       where: { id },
-      include: {
-        children: true,
+      select: {
+        id: true,
+        name: true,
+        parentId: true,
+        icon: true,
+        sort: true,
+        createdAt: true,
+        updatedAt: true,
+        children: {
+          select: CATEGORY_CHILDREN_SELECT,
+        },
         _count: {
           select: { products: true },
         },
@@ -87,10 +99,10 @@ export const CategoryService = {
         where: { id: data.parentId },
       });
       if (!parent) {
-        throw Object.assign(new Error('父分类不存在'), { statusCode: 404 });
+        throw notFound('父分类不存在');
       }
       if (parent.parentId !== null) {
-        throw Object.assign(new Error('最多支持两级分类'), { statusCode: 400 });
+        throw badRequest('最多支持两级分类');
       }
     }
 
@@ -101,7 +113,7 @@ export const CategoryService = {
       },
     });
     if (existing) {
-      throw Object.assign(new Error('该分类名称已存在'), { statusCode: 409 });
+      throw conflict('该分类名称已存在');
     }
 
     return prisma.category.create({
@@ -119,28 +131,28 @@ export const CategoryService = {
       where: { id },
     });
     if (!category) {
-      throw Object.assign(new Error('分类不存在'), { statusCode: 404 });
+      throw notFound('分类不存在');
     }
 
     if (data.parentId !== undefined) {
       if (data.parentId === id) {
-        throw Object.assign(new Error('不能将自己设为父分类'), { statusCode: 400 });
+        throw badRequest('不能将自己设为父分类');
       }
       if (data.parentId !== null) {
         const parent = await prisma.category.findUnique({
           where: { id: data.parentId },
         });
         if (!parent) {
-          throw Object.assign(new Error('父分类不存在'), { statusCode: 404 });
+          throw notFound('父分类不存在');
         }
         if (parent.parentId !== null) {
-          throw Object.assign(new Error('最多支持两级分类'), { statusCode: 400 });
+          throw badRequest('最多支持两级分类');
         }
         const children = await prisma.category.count({
           where: { parentId: id },
         });
         if (children > 0) {
-          throw Object.assign(new Error('该分类下有子分类，不能变为子分类'), { statusCode: 400 });
+          throw badRequest('该分类下有子分类，不能变为子分类');
         }
       }
     }
@@ -154,7 +166,7 @@ export const CategoryService = {
         },
       });
       if (existing) {
-        throw Object.assign(new Error('该分类名称已存在'), { statusCode: 409 });
+        throw conflict('该分类名称已存在');
       }
     }
 
@@ -179,15 +191,15 @@ export const CategoryService = {
       },
     });
     if (!category) {
-      throw Object.assign(new Error('分类不存在'), { statusCode: 404 });
+      throw notFound('分类不存在');
     }
 
     if (category._count.products > 0) {
-      throw Object.assign(new Error('该分类下有商品，无法删除'), { statusCode: 400 });
+      throw badRequest('该分类下有商品，无法删除');
     }
 
     if (category._count.children > 0) {
-      throw Object.assign(new Error('该分类下有子分类，无法删除'), { statusCode: 400 });
+      throw badRequest('该分类下有子分类，无法删除');
     }
 
     await prisma.category.delete({
