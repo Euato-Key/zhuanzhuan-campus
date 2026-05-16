@@ -1,4 +1,5 @@
 import { prisma } from '../../config/prisma';
+import { Prisma } from '@prisma/client';
 import { PaginationUtil } from '../../common/pagination';
 
 export interface UniversityQuery {
@@ -18,7 +19,7 @@ export const UniversityService = {
       maxPageSize: 50,
     });
 
-    const where: Record<string, any> = {};
+    const where: Prisma.UniversityWhereInput = {};
     if (keyword) {
       where.name = { contains: keyword };
     }

@@ -19,11 +19,20 @@ export interface ProvinceItem extends RegionItem {
  * 高德地图行政区域查询服务
  * 文档: https://lbs.amap.com/api/webservice/guide/api/district
  */
+interface AmapDistrict {
+  name: string;
+  adcode: string;
+  districts?: AmapDistrict[];
+}
+
+interface AmapResponse {
+  status: string;
+  info: string;
+  districts?: AmapDistrict[];
+}
+
 export const RegionService = {
-  /**
-   * 获取行政区划数据
-   */
-  async getDistrict(keywords: string = '中国', subdistrict: number = 1): Promise<any> {
+  async getDistrict(keywords: string = '中国', subdistrict: number = 1): Promise<AmapResponse> {
     const params = new URLSearchParams({
       key: env.AMAP_API_KEY,
       keywords,
@@ -33,7 +42,7 @@ export const RegionService = {
 
     const url = `${AMAP_BASE_URL}?${params}`;
     const response = await fetch(url);
-    const data = await response.json();
+    const data = await response.json() as AmapResponse;
 
     if (data.status !== '1') {
       throw new Error(`高德API错误: ${data.info}`);
@@ -47,8 +56,8 @@ export const RegionService = {
    */
   async getProvinces(): Promise<RegionItem[]> {
     const data = await this.getDistrict('中国', 1);
-    if (data.districts && data.districts[0]) {
-      return data.districts[0].districts.map((p: any) => ({
+    if (data.districts?.[0]?.districts) {
+      return data.districts[0].districts.map((p: AmapDistrict) => ({
         name: p.name,
         adcode: p.adcode,
       }));
@@ -61,8 +70,8 @@ export const RegionService = {
    */
   async getCities(provinceAdcode: string): Promise<RegionItem[]> {
     const data = await this.getDistrict(provinceAdcode, 1);
-    if (data.districts && data.districts[0]) {
-      return data.districts[0].districts.map((c: any) => ({
+    if (data.districts?.[0]?.districts) {
+      return data.districts[0].districts.map((c: AmapDistrict) => ({
         name: c.name,
         adcode: c.adcode,
       }));
@@ -75,8 +84,8 @@ export const RegionService = {
    */
   async getDistricts(cityAdcode: string): Promise<RegionItem[]> {
     const data = await this.getDistrict(cityAdcode, 1);
-    if (data.districts && data.districts[0]) {
-      return data.districts[0].districts.map((d: any) => ({
+    if (data.districts?.[0]?.districts) {
+      return data.districts[0].districts.map((d: AmapDistrict) => ({
         name: d.name,
         adcode: d.adcode,
       }));
