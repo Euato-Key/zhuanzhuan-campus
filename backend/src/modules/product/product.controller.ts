@@ -179,4 +179,27 @@ export const ProductController = {
     const product = await ProductService.forceOffline(adminId, productId, reason);
     return success(res, product, '商品已下架');
   }),
+
+  addFavorite: asyncHandler(async (req: Request, res: Response) => {
+    const userId = ValidationUtil.requireUserId(req);
+    const productId = parseProductId(req);
+    const result = await ProductService.addFavorite(userId, productId);
+    return success(res, result, '收藏成功');
+  }),
+
+  removeFavorite: asyncHandler(async (req: Request, res: Response) => {
+    const userId = ValidationUtil.requireUserId(req);
+    const productId = parseProductId(req);
+    const result = await ProductService.removeFavorite(userId, productId);
+    return success(res, result, '已取消收藏');
+  }),
+
+  getFavorites: asyncHandler(async (req: Request, res: Response) => {
+    const userId = ValidationUtil.requireUserId(req);
+    const result = await ProductService.getFavorites(userId, {
+      page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
+      pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string, 10) : undefined,
+    });
+    return success(res, result);
+  }),
 };

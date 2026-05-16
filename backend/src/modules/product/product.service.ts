@@ -652,4 +652,96 @@ export const ProductService = {
 
     return updated;
   },
+
+  async addFavorite(userId: number, productId: bigint) {
+    const product = await prisma.product.findUnique({ where: { id: productId } });
+    if (!product) {
+      throw notFound('商品不存在');
+    }
+
+    const existing = await prisma.favorite.findFirst({
+      where: { userId, productId },
+    });
+    if (existing) {
+      throw badRequest('已收藏该商品');
+    }
+
+    await prisma.$transaction([
+      prisma.favorite.create({ data: { userId, productId } }),
+      prisma.product.update({
+        where: { id: productId },
+        data: { favoriteCount: { increment: 1 } },
+      }),
+    ]);
+
+    return { isFavorited: true };
+  },
+
+  async removeFavorite(userId: number, productId: bigint) {
+    const favorite = await prisma.favorite.findFirst({
+      where: { userId, productId },
+    });
+    if (!favorite) {
+      throw badRequest('未收藏该商品');
+    }
+
+    await prisma.$transaction([
+      prisma.favorite.delete({ where: { id: favorite.id } }),
+      prisma.product.update({
+        where: { id: productId },
+        data: { favoriteCount: { decrement: 1 } },
+      }),
+    ]);
+
+    return { isFavorited: false };
+  },
+
+  async getFavorites(userId: number, query: { page?: number; pageSize?: number }) {
+    const { skip, take, page, pageSize } = PaginationUtil.getPagination({
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+
+    const where: Prisma.FavoriteWhereInput = { userId };
+
+    const [total, list] = await Promise.all([
+      prisma.favorite.count({ where }),
+      prisma.favorite.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              images: true,
+              currentPrice: true,
+              originalPrice: true,
+              itemCondition: true,
+              deliveryType: true,
+              bargain: true,
+              viewCount: true,
+              favoriteCount: true,
+              status: true,
+              createdAt: true,
+              category: { select: PRODUCT_CATEGORY_SELECT },
+              user: { select: PRODUCT_USER_SELECT },
+            },
+          },
+        },
+      }),
+    ]);
+
+    const filteredList = list
+      .filter(f => f.product !== null)
+      .map(f => ({
+        ...f.product,
+        favoriteId: f.id,
+        favoritedAt: f.createdAt,
+      }));
+
+    return PaginationUtil.buildResponse(filteredList, total, page, pageSize);
+  },
 };
