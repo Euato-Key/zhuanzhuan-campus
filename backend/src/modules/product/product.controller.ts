@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { ProductService, ProductQuery, AdminProductQuery, CreateProductData, UpdateProductData, toItemCondition, tryToItemCondition } from './product.service';
-import { success, fail } from '../../utils/response';
+import { success } from '../../utils/response';
 import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
+import { badRequest } from '../../common/errors';
 
 function parseProductQuery(req: Request): ProductQuery {
   const itemConditionStr = req.query.itemCondition as string | undefined;
@@ -38,25 +39,25 @@ export const ProductController = {
     const data: CreateProductData = req.body;
 
     if (!data.name || !data.name.trim()) {
-      return fail(res, '商品名称不能为空', 400);
+      throw badRequest('商品名称不能为空');
     }
     if (data.name.length > 100) {
-      return fail(res, '商品名称不能超过100个字符', 400);
+      throw badRequest('商品名称不能超过100个字符');
     }
     if (!data.categoryId) {
-      return fail(res, '请选择商品分类', 400);
+      throw badRequest('请选择商品分类');
     }
     if (!data.images || !Array.isArray(data.images) || data.images.length === 0) {
-      return fail(res, '至少上传一张商品主图', 400);
+      throw badRequest('至少上传一张商品主图');
     }
     if (!data.currentPrice || data.currentPrice < 0) {
-      return fail(res, '请输入正确的价格', 400);
+      throw badRequest('请输入正确的价格');
     }
     if (!data.itemCondition) {
-      return fail(res, '请选择新旧程度', 400);
+      throw badRequest('请选择新旧程度');
     }
     if (!data.deliveryType) {
-      return fail(res, '请选择交易方式', 400);
+      throw badRequest('请选择交易方式');
     }
 
     const product = await ProductService.create(userId, data);
@@ -102,13 +103,13 @@ export const ProductController = {
     const data: UpdateProductData = req.body;
 
     if (data.name !== undefined && !data.name.trim()) {
-      return fail(res, '商品名称不能为空', 400);
+      throw badRequest('商品名称不能为空');
     }
     if (data.name && data.name.length > 100) {
-      return fail(res, '商品名称不能超过100个字符', 400);
+      throw badRequest('商品名称不能超过100个字符');
     }
     if (data.currentPrice !== undefined && data.currentPrice < 0) {
-      return fail(res, '价格不能为负数', 400);
+      throw badRequest('价格不能为负数');
     }
 
     const product = await ProductService.update(userId, productId, data);

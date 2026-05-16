@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AddressService, CreateAddressData, UpdateAddressData } from './address.service';
-import { success, fail } from '../../utils/response';
+import { success } from '../../utils/response';
 import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 
@@ -42,7 +42,6 @@ export const AddressController = {
   delete: asyncHandler(async (req: Request, res: Response) => {
     const userId = ValidationUtil.requireUserId(req);
     const addressId = parseAddressId(req);
-
     await AddressService.delete(userId, addressId);
     return success(res, null, '地址删除成功');
   }),
@@ -50,7 +49,6 @@ export const AddressController = {
   setDefault: asyncHandler(async (req: Request, res: Response) => {
     const userId = ValidationUtil.requireUserId(req);
     const addressId = parseAddressId(req);
-
     const address = await AddressService.setDefault(userId, addressId);
     return success(res, address, '已设置为默认地址');
   }),

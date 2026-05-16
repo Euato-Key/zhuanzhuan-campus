@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { success, fail } from '../../utils/response';
+import { success } from '../../utils/response';
 import { UserService } from './user.service';
 import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';

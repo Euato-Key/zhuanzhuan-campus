@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { CategoryService } from './category.service';
-import { success, fail } from '../../utils/response';
+import { success } from '../../utils/response';
 import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
+import { badRequest, notFound } from '../../common/errors';
 
 export const CategoryController = {
   getTree: asyncHandler(async (_req: Request, res: Response) => {
@@ -18,7 +19,7 @@ export const CategoryController = {
   getById: asyncHandler(async (req: Request, res: Response) => {
     const id = ValidationUtil.parseIdParam(req.params.id, '分类ID');
     const category = await CategoryService.getById(id);
-    if (!category) return fail(res, '分类不存在', 404);
+    if (!category) throw notFound('分类不存在');
     return success(res, category);
   }),
 
@@ -39,9 +40,7 @@ export const CategoryController = {
     const id = ValidationUtil.parseIdParam(req.params.id, '分类ID');
     const { name, parentId, icon, sort } = req.body;
     if (name !== undefined) {
-      if (name.trim().length === 0) {
-        return fail(res, '分类名称不能为空', 400);
-      }
+      if (name.trim().length === 0) throw badRequest('分类名称不能为空');
       ValidationUtil.validateCategoryName(name);
     }
     const category = await CategoryService.update(id, {

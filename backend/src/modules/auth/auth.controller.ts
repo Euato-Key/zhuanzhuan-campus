@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { success, fail } from '../../utils/response';
+import { success } from '../../utils/response';
 import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
+import { badRequest, unauthorized } from '../../common/errors';
 
 const REFRESH_TOKEN_MAX_AGE_DAYS = 30;
 
@@ -20,7 +21,7 @@ const CLEAR_COOKIE_OPTIONS = getCookieOptions(0);
 export const AuthController = {
   sendCode: asyncHandler(async (req: Request, res: Response) => {
     const { email, type } = req.body;
-    if (!email || !type) return fail(res, '邮箱和验证码类型不能为空');
+    if (!email || !type) throw badRequest('邮箱和验证码类型不能为空');
     await AuthService.sendCode(email, type);
     return success(res, null, '验证码已发送');
   }),
@@ -28,7 +29,7 @@ export const AuthController = {
   register: asyncHandler(async (req: Request, res: Response) => {
     const { email, code, username, password } = req.body;
     if (!email || !code || !username || !password) {
-      return fail(res, '请填写完整信息');
+      throw badRequest('请填写完整信息');
     }
     ValidationUtil.validateUsername(username);
     const result = await AuthService.register({ email, code, username, password });
@@ -37,7 +38,7 @@ export const AuthController = {
 
   loginByEmailPassword: asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
-    if (!email || !password) return fail(res, '邮箱和密码不能为空');
+    if (!email || !password) throw badRequest('邮箱和密码不能为空');
     const { userAgent, ip } = ValidationUtil.getRequestMeta(req);
     const result = await AuthService.loginByEmailPassword(email, password, userAgent, ip);
     res.cookie('refresh_token', result.refresh_token, COOKIE_OPTIONS);
@@ -46,7 +47,7 @@ export const AuthController = {
 
   loginByEmailCode: asyncHandler(async (req: Request, res: Response) => {
     const { email, code } = req.body;
-    if (!email || !code) return fail(res, '邮箱和验证码不能为空');
+    if (!email || !code) throw badRequest('邮箱和验证码不能为空');
     const { userAgent, ip } = ValidationUtil.getRequestMeta(req);
     const result = await AuthService.loginByEmailCode(email, code, userAgent, ip);
     res.cookie('refresh_token', result.refresh_token, COOKIE_OPTIONS);
@@ -55,7 +56,7 @@ export const AuthController = {
 
   refreshToken: asyncHandler(async (req: Request, res: Response) => {
     const oldRefreshToken = req.cookies.refresh_token;
-    if (!oldRefreshToken) return fail(res, '缺少Refresh Token', 401);
+    if (!oldRefreshToken) throw unauthorized('缺少Refresh Token');
     const { userAgent, ip } = ValidationUtil.getRequestMeta(req);
     const result = await AuthService.refreshToken(oldRefreshToken, userAgent, ip);
     res.cookie('refresh_token', result.refresh_token, COOKIE_OPTIONS);
@@ -72,7 +73,7 @@ export const AuthController = {
 
   resetPassword: asyncHandler(async (req: Request, res: Response) => {
     const { email, code, new_password } = req.body;
-    if (!email || !code || !new_password) return fail(res, '请填写完整信息');
+    if (!email || !code || !new_password) throw badRequest('请填写完整信息');
     await AuthService.resetPassword(email, code, new_password);
     res.cookie('refresh_token', '', CLEAR_COOKIE_OPTIONS);
     return success(res, null, '密码重置成功');

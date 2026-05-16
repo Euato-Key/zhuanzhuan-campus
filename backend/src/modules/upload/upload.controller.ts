@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { success, fail } from '../../utils/response';
+import { success } from '../../utils/response';
 import { UploadService } from './upload.service';
 import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
@@ -18,7 +18,7 @@ function validateUploadType(type: string): UploadType {
 export const UploadController = {
   getSTSToken: asyncHandler(async (req: Request, res: Response) => {
     const { type } = req.body;
-    if (!type) return fail(res, '上传类型不能为空');
+    if (!type) throw badRequest('上传类型不能为空');
     const validType = validateUploadType(type);
     const userId = ValidationUtil.requireUserId(req);
     const result = await UploadService.getSTSToken(validType, userId);
@@ -27,8 +27,8 @@ export const UploadController = {
 
   getSignedUrl: asyncHandler(async (req: Request, res: Response) => {
     const { type, filename } = req.body;
-    if (!type) return fail(res, '上传类型不能为空');
-    if (!filename) return fail(res, '文件名不能为空');
+    if (!type) throw badRequest('上传类型不能为空');
+    if (!filename) throw badRequest('文件名不能为空');
     const validType = validateUploadType(type);
     const userId = ValidationUtil.requireUserId(req);
     const result = await UploadService.getSignedUploadUrl(validType, userId, filename);
