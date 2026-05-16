@@ -291,15 +291,18 @@ export const ProductService = {
       }
     }
 
+    const isOwner = userId && userId === product.userId;
+    const shouldIncrementView = product.status === ProductStatus.active || !isOwner;
+
     const [favoriteResult] = await Promise.all([
       userId ? prisma.favorite.findFirst({
         where: { userId, productId: id },
       }) : Promise.resolve(null),
-      prisma.product.update({
+      shouldIncrementView ? prisma.product.update({
         where: { id },
         data: { viewCount: { increment: 1 } },
-      }),
-      userId ? prisma.$executeRaw`
+      }) : Promise.resolve(product),
+      (userId && shouldIncrementView) ? prisma.$executeRaw`
         INSERT INTO product_views (user_id, product_id, created_at)
         VALUES (${userId}, ${id}, NOW())
       ` : Promise.resolve(),
