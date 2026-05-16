@@ -7,6 +7,7 @@ const router = Router();
 
 // 公开路由
 router.get('/', ProductController.getList);
+router.get('/user/:userId', ProductController.getUserProducts);
 router.get('/:id', ProductController.getById);
 
 // 需要登录的路由

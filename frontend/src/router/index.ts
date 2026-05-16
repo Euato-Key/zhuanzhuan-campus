@@ -36,6 +36,12 @@ const router = createRouter({
       meta: { title: '个人主页', auth: true }
     },
     {
+      path: '/user/:id',
+      name: 'UserProfile',
+      component: () => import('@/views/user/userProfile.vue'),
+      meta: { title: '用户主页' }
+    },
+    {
       path: '/addresses',
       name: 'Addresses',
       component: () => import('@/views/user/addresses.vue'),
@@ -139,7 +145,8 @@ router.beforeEach(async (to, _from, next) => {
     try {
       await userStore.fetchUser()
     } catch {
-      // Token invalid, will be handled by interceptor
+      // Token invalid, clearAuth has been called by interceptor
+      // Continue navigation - user is not logged in
     }
   }
 

@@ -365,6 +365,47 @@ export const ProductService = {
     };
   },
 
+  // 获取指定用户的公开商品列表（用于用户主页）
+  async getUserProducts(userId: number, query: ProductQuery) {
+    const page = query.page ?? 1;
+    const pageSize = Math.min(query.pageSize ?? 12, 50);
+    const skip = (page - 1) * pageSize;
+
+    const where: Prisma.ProductWhereInput = { userId };
+
+    // 公开接口只显示在售商品
+    if (query.status === 'active') {
+      where.status = 'active';
+    } else {
+      where.status = 'active';
+    }
+
+    const [total, list] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          images: true,
+          currentPrice: true,
+          status: true,
+        },
+      }),
+    ]);
+
+    return {
+      list,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  },
+
   // 更新商品
   async update(userId: number, productId: bigint, data: UpdateProductData) {
     const product = await prisma.product.findUnique({

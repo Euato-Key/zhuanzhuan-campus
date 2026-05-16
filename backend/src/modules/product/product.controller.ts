@@ -77,6 +77,25 @@ export const ProductController = {
     }
   },
 
+  // 获取指定用户的商品列表（公开）
+  async getUserProducts(req: Request, res: Response) {
+    try {
+      const userId = parseInt(req.params.userId as string, 10);
+      const query: ProductQuery = {
+        page: req.query.page ? parseInt(req.query.page as string, 10) : 1,
+        pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string, 10) : 12,
+        status: req.query.status as ProductQuery['status'],
+        userId,
+      };
+
+      const result = await ProductService.getUserProducts(userId, query);
+      return success(res, result);
+    } catch (err: unknown) {
+      const error = err as Error & { statusCode?: number };
+      return fail(res, error.message, error.statusCode || 500);
+    }
+  },
+
   // 获取我的商品列表
   async getMyProducts(req: Request, res: Response) {
     try {
