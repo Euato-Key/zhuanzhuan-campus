@@ -243,6 +243,65 @@
         }
       }
     },
+    "/api/products/my/favorites": {
+      "get": {
+        "tags": ["商品用户接口"],
+        "summary": "获取我的收藏列表",
+        "description": "获取当前用户收藏的商品列表，按收藏时间倒序排列",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "schema": { "type": "integer", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页数量",
+            "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "list": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/FavoriteItem" }
+                        },
+                        "total": { "type": "integer" },
+                        "page": { "type": "integer" },
+                        "pageSize": { "type": "integer" },
+                        "totalPages": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/products/user/{userId}": {
       "get": {
         "tags": ["商品公开接口"],
@@ -574,6 +633,106 @@
           },
           "404": {
             "description": "商品不存在",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/{id}/favorite": {
+      "post": {
+        "tags": ["商品用户接口"],
+        "summary": "收藏商品",
+        "description": "收藏指定商品，需登录。重复收藏返回400错误。",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "商品ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "收藏成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "收藏成功" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "isFavorited": { "type": "boolean", "example": true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "已收藏或商品不存在",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["商品用户接口"],
+        "summary": "取消收藏",
+        "description": "取消收藏指定商品，需登录。未收藏时返回400错误。",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "商品ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "取消收藏成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "已取消收藏" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "isFavorited": { "type": "boolean", "example": false }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "未收藏该商品",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
@@ -1028,6 +1187,25 @@
               "rejectReason": { "type": "string", "example": null },
               "auditCount": { "type": "integer", "example": 1 },
               "expireTime": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
+      },
+      "FavoriteItem": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ProductListItem" },
+          {
+            "type": "object",
+            "description": "收藏列表项，包含商品信息和收藏时间",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["pending", "active", "offline", "banned", "audit_failed"],
+                "description": "商品当前状态（可能已下架或被封禁）",
+                "example": "active"
+              },
+              "favoriteId": { "type": "integer", "description": "收藏记录ID", "example": 1 },
+              "favoritedAt": { "type": "string", "format": "date-time", "description": "收藏时间" }
             }
           }
         ]
