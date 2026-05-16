@@ -63,7 +63,7 @@ export const AuthController = {
   }),
 
   logout: asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user!.userId;
+    const userId = ValidationUtil.requireUserId(req);
     const refreshToken = req.cookies.refresh_token;
     await AuthService.logout(userId, refreshToken);
     res.cookie('refresh_token', '', CLEAR_COOKIE_OPTIONS);
@@ -79,7 +79,7 @@ export const AuthController = {
   }),
 
   getProfile: asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user!.userId;
+    const userId = ValidationUtil.requireUserId(req);
     const result = await AuthService.getProfile(userId);
     return success(res, result);
   }),
