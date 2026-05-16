@@ -6,6 +6,7 @@ import ProductCard from '@/components/product/ProductCard.vue'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { getProductList, getCategoryTree, type ProductListItem, type Category } from '@/api/product'
+import { showError } from '@/utils/error'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -18,19 +19,20 @@ const loading = ref(false)
 async function fetchData() {
   loading.value = true
   try {
-    // 获取分类
-    const catRes = await getCategoryTree()
+    // 并行获取分类和热门商品
+    const [catRes, prodRes] = await Promise.all([
+      getCategoryTree(),
+      getProductList({ sortBy: 'favorite', sortOrder: 'desc', pageSize: 8 })
+    ])
+
     if (catRes.data.code === 200) {
       categories.value = catRes.data.data.slice(0, 6)
     }
-
-    // 获取热门商品（按收藏数排序）
-    const prodRes = await getProductList({ sortBy: 'favorite', sortOrder: 'desc', pageSize: 8 })
     if (prodRes.data.code === 200) {
       hotProducts.value = prodRes.data.data.list
     }
   } catch (err) {
-    console.error('获取数据失败', err)
+    showError(err, '获取数据失败')
   } finally {
     loading.value = false
   }

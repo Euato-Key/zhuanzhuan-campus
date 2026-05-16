@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { useUserStore } from '@/stores/user'
+import { useCountdown } from '@/composables/useCountdown'
 import { sendCode, resetPassword } from '@/api/auth'
-import { ElMessage } from 'element-plus'
+import { showError, showSuccess, showWarning } from '@/utils/error'
+import { isValidEmail } from '@/utils/format'
 import { Lock, Message, Cellphone, User, Check } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
@@ -17,8 +19,10 @@ const forgotFormRef = ref<FormInstance>()
 
 const loading = ref(false)
 const codeSending = ref(false)
-const countdown = ref(0)
-let countdownTimer: ReturnType<typeof setInterval> | null = null
+const { isCountingDown, buttonText: codeBtnText, start: startCountdown } = useCountdown()
+
+// Expose countdown for debugging/testing if needed
+void isCountingDown
 
 // ─── Login form ───
 const loginType = ref<'password' | 'code'>('password')
@@ -140,24 +144,12 @@ const forgotStep2Rules: FormRules = {
 }
 
 // ─── Countdown ───
-const codeBtnText = computed(() =>
-  countdown.value > 0 ? `${countdown.value}s` : '获取验证码'
+const codeBtnTextComputed = computed(() =>
+  isCountingDown.value ? codeBtnText.value : '获取验证码'
 )
 
-function startCountdown() {
-  countdown.value = 60
-  if (countdownTimer) clearInterval(countdownTimer)
-  countdownTimer = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0 && countdownTimer) {
-      clearInterval(countdownTimer)
-      countdownTimer = null
-    }
-  }, 1000)
-}
-
 // ─── Error helper ───
-function getErrorMessage(error: unknown): string {
+function getAuthErrorMessage(error: unknown): string {
   const err = error as { response?: { status?: number; data?: { message?: string } } }
   const status = err.response?.status
   const msg = err.response?.data?.message
@@ -177,22 +169,21 @@ function getErrorMessage(error: unknown): string {
 // ─── Send code ───
 async function handleSendCode(targetEmail: string, type: 'register' | 'login' | 'reset_password') {
   if (!targetEmail) {
-    ElMessage.warning('请先输入邮箱')
+    showWarning('请先输入邮箱')
     return
   }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(targetEmail)) {
-    ElMessage.warning('请输入正确的邮箱格式')
+  if (!isValidEmail(targetEmail)) {
+    showWarning('请输入正确的邮箱格式')
     return
   }
 
   codeSending.value = true
   try {
     await sendCode(targetEmail, type)
-    ElMessage.success('验证码已发送至您的邮箱')
+    showSuccess('验证码已发送至您的邮箱')
     startCountdown()
   } catch (error) {
-    ElMessage.error(getErrorMessage(error))
+    showError(getAuthErrorMessage(error))
   } finally {
     codeSending.value = false
   }
@@ -211,10 +202,10 @@ async function handleLogin() {
     } else {
       await userStore.loginByCode(loginForm.email, loginForm.code)
     }
-    ElMessage.success('登录成功')
+    showSuccess('登录成功')
     close()
   } catch (error) {
-    ElMessage.error(getErrorMessage(error))
+    showError(getAuthErrorMessage(error))
   } finally {
     loading.value = false
   }
@@ -233,12 +224,12 @@ async function handleRegister() {
       username: registerForm.username,
       password: registerForm.password
     })
-    ElMessage.success('注册成功，请登录')
+    showSuccess('注册成功，请登录')
     // Switch to login, prefill email
     loginForm.email = registerForm.email
     switchTo('login')
   } catch (error) {
-    ElMessage.error(getErrorMessage(error))
+    showError(getAuthErrorMessage(error))
   } finally {
     loading.value = false
   }
@@ -247,23 +238,22 @@ async function handleRegister() {
 // ─── Forgot password ───
 async function handleForgotSendCode() {
   if (!forgotForm.email) {
-    ElMessage.warning('请输入邮箱')
+    showWarning('请输入邮箱')
     return
   }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(forgotForm.email)) {
-    ElMessage.warning('请输入正确的邮箱格式')
+  if (!isValidEmail(forgotForm.email)) {
+    showWarning('请输入正确的邮箱格式')
     return
   }
 
   codeSending.value = true
   try {
     await sendCode(forgotForm.email, 'reset_password')
-    ElMessage.success('验证码已发送至您的邮箱')
+    showSuccess('验证码已发送至您的邮箱')
     forgotStep.value = 2
     startCountdown()
   } catch (error) {
-    ElMessage.error(getErrorMessage(error))
+    showError(getAuthErrorMessage(error))
   } finally {
     codeSending.value = false
   }
@@ -276,12 +266,12 @@ async function handleResetPassword() {
   loading.value = true
   try {
     await resetPassword(forgotForm.email, forgotForm.code, forgotForm.newPassword)
-    ElMessage.success('密码重置成功，请登录')
+    showSuccess('密码重置成功，请登录')
     loginForm.email = forgotForm.email
     switchTo('login')
     forgotStep.value = 1
   } catch (error) {
-    ElMessage.error(getErrorMessage(error))
+    showError(getAuthErrorMessage(error))
   } finally {
     loading.value = false
   }
@@ -290,11 +280,6 @@ async function handleResetPassword() {
 // ─── Reset on mode change ───
 watch(mode, () => {
   forgotStep.value = 1
-})
-
-// ─── Cleanup ───
-onUnmounted(() => {
-  if (countdownTimer) clearInterval(countdownTimer)
 })
 </script>
 
@@ -350,8 +335,8 @@ onUnmounted(() => {
         <el-form-item v-if="loginType === 'code'" label="验证码" prop="code">
           <div class="code-row">
             <el-input v-model="loginForm.code" placeholder="6位验证码" :prefix-icon="Cellphone" maxlength="6" clearable />
-            <el-button :loading="codeSending" :disabled="countdown > 0" @click="handleSendCode(loginForm.email, 'login')" class="code-btn">
-              {{ codeBtnText }}
+            <el-button :loading="codeSending" :disabled="isCountingDown" @click="handleSendCode(loginForm.email, 'login')" class="code-btn">
+              {{ codeBtnTextComputed }}
             </el-button>
           </div>
         </el-form-item>
@@ -390,8 +375,8 @@ onUnmounted(() => {
         <el-form-item label="验证码" prop="code">
           <div class="code-row">
             <el-input v-model="registerForm.code" placeholder="6位验证码" :prefix-icon="Cellphone" maxlength="6" clearable />
-            <el-button :loading="codeSending" :disabled="countdown > 0" @click="handleSendCode(registerForm.email, 'register')" class="code-btn">
-              {{ codeBtnText }}
+            <el-button :loading="codeSending" :disabled="isCountingDown" @click="handleSendCode(registerForm.email, 'register')" class="code-btn">
+              {{ codeBtnTextComputed }}
             </el-button>
           </div>
         </el-form-item>
@@ -481,8 +466,8 @@ onUnmounted(() => {
         <el-form-item label="验证码" prop="code">
           <div class="code-row">
             <el-input v-model="forgotForm.code" placeholder="6位验证码" :prefix-icon="Cellphone" maxlength="6" clearable />
-            <el-button :disabled="countdown > 0" @click="handleSendCode(forgotForm.email, 'reset_password')" class="code-btn">
-              {{ codeBtnText }}
+            <el-button :disabled="isCountingDown" @click="handleSendCode(forgotForm.email, 'reset_password')" class="code-btn">
+              {{ codeBtnTextComputed }}
             </el-button>
           </div>
         </el-form-item>

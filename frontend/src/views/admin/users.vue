@@ -3,12 +3,25 @@ import { ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Search, UserFilled, Lock, Unlock } from '@element-plus/icons-vue'
 
+type UserRole = 'user' | 'admin'
+type UserStatus = 'active' | 'banned'
+
+interface User {
+  id: number
+  username: string
+  email: string
+  role: UserRole
+  status: UserStatus
+  creditScore: number
+  createdAt: string
+}
+
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
 
 // Mock data
-const users = ref([
+const users = ref<User[]>([
   { id: 1, username: '张三', email: 'zhangsan@example.com', role: 'user', status: 'active', creditScore: 100, createdAt: '2024-01-15' },
   { id: 2, username: '李四', email: 'lisi@example.com', role: 'user', status: 'active', creditScore: 95, createdAt: '2024-02-20' },
   { id: 3, username: '王五', email: 'wangwu@example.com', role: 'admin', status: 'active', creditScore: 100, createdAt: '2024-01-10' },
@@ -19,15 +32,15 @@ function handleSearch() {
   // TODO: Implement search
 }
 
-function handleBan(user: any) {
+function handleBan(user: User) {
   console.log('Ban user:', user)
 }
 
-function handleUnban(user: any) {
+function handleUnban(user: User) {
   console.log('Unban user:', user)
 }
 
-function handleSetAdmin(user: any) {
+function handleSetAdmin(user: User) {
   console.log('Set admin:', user)
 }
 </script>

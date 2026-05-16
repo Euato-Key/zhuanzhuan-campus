@@ -3,18 +3,30 @@ import { ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Search, View } from '@element-plus/icons-vue'
 
+type OrderStatus = 'pending_payment' | 'pending_delivery' | 'pending_pickup' | 'pending_receive' | 'completed' | 'cancelled' | 'returning' | 'refunded'
+
+interface Order {
+  id: string
+  buyer: string
+  seller: string
+  product: string
+  amount: number
+  status: OrderStatus
+  createdAt: string
+}
+
 const loading = ref(false)
 const statusFilter = ref('')
 
 // Mock data
-const orders = ref([
+const orders = ref<Order[]>([
   { id: 'ORD001', buyer: '张三', seller: '李四', product: '二手自行车', amount: 150, status: 'pending_payment', createdAt: '2024-03-15 10:30' },
   { id: 'ORD002', buyer: '王五', seller: '赵六', product: 'iPhone 13', amount: 4500, status: 'pending_delivery', createdAt: '2024-03-14 14:20' },
   { id: 'ORD003', buyer: '钱七', seller: '张三', product: '教材高等数学', amount: 30, status: 'completed', createdAt: '2024-03-13 09:15' },
   { id: 'ORD004', buyer: '李四', seller: '王五', product: 'Nike运动鞋', amount: 200, status: 'cancelled', createdAt: '2024-03-12 16:45' },
 ])
 
-const statusMap: Record<string, { label: string; type: string }> = {
+const statusMap: Record<OrderStatus, { label: string; type: string }> = {
   pending_payment: { label: '待支付', type: 'warning' },
   pending_delivery: { label: '待发货', type: 'primary' },
   pending_pickup: { label: '待自提', type: 'primary' },
@@ -25,7 +37,7 @@ const statusMap: Record<string, { label: string; type: string }> = {
   refunded: { label: '已退款', type: 'info' },
 }
 
-function handleView(order: any) {
+function handleView(order: Order) {
   console.log('View order:', order)
 }
 </script>
@@ -65,7 +77,7 @@ function handleView(order: any) {
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
+          <template #default="{ row }: { row: Order }">
             <el-tag :type="statusMap[row.status]?.type" size="small">
               {{ statusMap[row.status]?.label }}
             </el-tag>

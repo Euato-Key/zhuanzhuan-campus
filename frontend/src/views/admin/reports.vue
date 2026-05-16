@@ -3,37 +3,50 @@ import { ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Search, Check, Close } from '@element-plus/icons-vue'
 
+type ReportType = 'product' | 'user' | 'comment' | 'wantbuy'
+type ReportStatus = 'pending' | 'processing' | 'resolved' | 'closed'
+
+interface Report {
+  id: number
+  type: ReportType
+  target: string
+  reporter: string
+  reason: string
+  status: ReportStatus
+  createdAt: string
+}
+
 const loading = ref(false)
 const typeFilter = ref('')
 const statusFilter = ref('')
 
 // Mock data
-const reports = ref([
+const reports = ref<Report[]>([
   { id: 1, type: 'product', target: '二手自行车', reporter: '张三', reason: '虚假商品', status: 'pending', createdAt: '2024-03-15' },
   { id: 2, type: 'user', target: '李四', reporter: '王五', reason: '欺诈行为', status: 'processing', createdAt: '2024-03-14' },
   { id: 3, type: 'comment', target: '评论内容...', reporter: '赵六', reason: '辱骂言论', status: 'resolved', createdAt: '2024-03-13' },
   { id: 4, type: 'wantbuy', target: '求购iPhone', reporter: '钱七', reason: '虚假求购', status: 'closed', createdAt: '2024-03-12' },
 ])
 
-const typeMap: Record<string, { label: string; type: string }> = {
+const typeMap: Record<ReportType, { label: string; type: string }> = {
   product: { label: '商品举报', type: 'primary' },
   user: { label: '用户举报', type: 'warning' },
   comment: { label: '评论举报', type: 'info' },
   wantbuy: { label: '求购举报', type: 'success' },
 }
 
-const statusMap: Record<string, { label: string; type: string }> = {
+const statusMap: Record<ReportStatus, { label: string; type: string }> = {
   pending: { label: '待处理', type: 'warning' },
   processing: { label: '处理中', type: 'primary' },
   resolved: { label: '已处理', type: 'success' },
   closed: { label: '已关闭', type: 'info' },
 }
 
-function handleApprove(report: any) {
+function handleApprove(report: Report) {
   console.log('Approve report:', report)
 }
 
-function handleReject(report: any) {
+function handleReject(report: Report) {
   console.log('Reject report:', report)
 }
 </script>
@@ -69,7 +82,7 @@ function handleReject(report: any) {
       <el-table :data="reports" v-loading="loading" stripe>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="type" label="举报类型" width="120">
-          <template #default="{ row }">
+          <template #default="{ row }: { row: Report }">
             <el-tag :type="typeMap[row.type]?.type" size="small">
               {{ typeMap[row.type]?.label }}
             </el-tag>
@@ -79,7 +92,7 @@ function handleReject(report: any) {
         <el-table-column prop="reporter" label="举报人" width="100" />
         <el-table-column prop="reason" label="举报理由" min-width="150" />
         <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
+          <template #default="{ row }: { row: Report }">
             <el-tag :type="statusMap[row.status]?.type" size="small">
               {{ statusMap[row.status]?.label }}
             </el-tag>

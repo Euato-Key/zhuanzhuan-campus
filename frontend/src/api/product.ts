@@ -217,6 +217,15 @@ export const PRODUCT_STATUS_LABELS: Record<ProductStatus, string> = {
   audit_failed: '审核失败',
 }
 
+// 商品状态对应的标签类型（用于 el-tag）
+export const PRODUCT_STATUS_TAG_TYPE: Record<ProductStatus, 'success' | 'warning' | 'danger' | 'info'> = {
+  active: 'success',
+  pending: 'warning',
+  banned: 'danger',
+  offline: 'info',
+  audit_failed: 'danger',
+}
+
 // 交易方式显示文本
 export const DELIVERY_TYPE_LABELS: Record<DeliveryType, string> = {
   self: '自提',

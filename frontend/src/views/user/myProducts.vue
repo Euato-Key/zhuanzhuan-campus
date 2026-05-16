@@ -11,6 +11,7 @@ import {
   type MyProductItem,
   type ProductDetail,
   PRODUCT_STATUS_LABELS,
+  PRODUCT_STATUS_TAG_TYPE,
   type ProductStatus,
 } from '@/api/product'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
@@ -185,11 +186,7 @@ onMounted(() => {
           <div class="product-meta">
             <span class="price">¥{{ product.currentPrice }}</span>
             <el-tag
-              :type="
-                product.status === 'active' ? 'success' :
-                product.status === 'pending' ? 'warning' :
-                product.status === 'banned' ? 'danger' : 'info'
-              "
+              :type="PRODUCT_STATUS_TAG_TYPE[product.status]"
               size="small"
             >
               {{ PRODUCT_STATUS_LABELS[product.status] }}

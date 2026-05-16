@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Back } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getOssUrl } from '@/utils/oss'
+import { formatDate } from '@/utils/format'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
@@ -46,6 +47,17 @@ const isOwnProfile = computed(() => {
 const userAvatar = computed(() => {
   if (!user.value?.avatar) return undefined
   return getOssUrl(user.value.avatar)
+})
+
+// 用户名首字母（安全处理空值）
+const userInitial = computed(() => {
+  return user.value?.username?.charAt(0) || '?'
+})
+
+// 格式化加入时间
+const joinTime = computed(() => {
+  if (!user.value?.createdAt) return ''
+  return formatDate(user.value.createdAt, 'date')
 })
 
 // 获取用户信息
@@ -134,7 +146,7 @@ onMounted(() => {
         <div class="profile-card">
           <div class="avatar-section">
             <el-avatar :size="100" :src="userAvatar">
-              {{ user.username.charAt(0) }}
+              {{ userInitial }}
             </el-avatar>
           </div>
 
@@ -155,7 +167,7 @@ onMounted(() => {
             </div>
 
             <div class="join-time">
-              加入时间: {{ new Date(user.createdAt).toLocaleDateString() }}
+              加入时间: {{ joinTime }}
             </div>
           </div>
 

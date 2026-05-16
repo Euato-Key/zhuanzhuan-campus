@@ -9,6 +9,7 @@ import {
   unbanProduct,
   type MyProductItem,
   PRODUCT_STATUS_LABELS,
+  PRODUCT_STATUS_TAG_TYPE,
   type ProductStatus,
 } from '@/api/product'
 
@@ -175,11 +176,7 @@ onMounted(() => {
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag
-              :type="
-                row.status === 'active' ? 'success' :
-                row.status === 'pending' ? 'warning' :
-                row.status === 'banned' ? 'danger' : 'info'
-              "
+              :type="PRODUCT_STATUS_TAG_TYPE[row.status as ProductStatus]"
               size="small"
             >
               {{ PRODUCT_STATUS_LABELS[row.status as ProductStatus] }}

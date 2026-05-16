@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onUnmounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
+import { useCountdown } from '@/composables/useCountdown'
 import { sendCode } from '@/api/auth'
-import { ElMessage } from 'element-plus'
+import { showError, showSuccess, showWarning } from '@/utils/error'
+import { isValidEmail } from '@/utils/format'
 import { Message, EditPen } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
@@ -16,14 +18,12 @@ const editing = ref(false)
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const codeSending = ref(false)
-const countdown = ref(0)
+const { isCountingDown, buttonText: codeBtnText, start: startCountdown } = useCountdown()
 
 const form = reactive({
   newEmail: '',
   code: '',
 })
-
-let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 const rules: FormRules = {
   newEmail: [
@@ -36,22 +36,6 @@ const rules: FormRules = {
   ],
 }
 
-const codeBtnText = computed(() =>
-  countdown.value > 0 ? `${countdown.value}s` : '获取验证码'
-)
-
-function startCountdown() {
-  countdown.value = 60
-  if (countdownTimer) clearInterval(countdownTimer)
-  countdownTimer = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0 && countdownTimer) {
-      clearInterval(countdownTimer)
-      countdownTimer = null
-    }
-  }, 1000)
-}
-
 function startEdit() {
   form.newEmail = ''
   form.code = ''
@@ -60,22 +44,21 @@ function startEdit() {
 
 async function handleSendCode() {
   if (!form.newEmail) {
-    ElMessage.warning('请先输入新邮箱')
+    showWarning('请先输入新邮箱')
     return
   }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(form.newEmail)) {
-    ElMessage.warning('请输入正确的邮箱格式')
+  if (!isValidEmail(form.newEmail)) {
+    showWarning('请输入正确的邮箱格式')
     return
   }
 
   codeSending.value = true
   try {
     await sendCode(form.newEmail, 'change_email')
-    ElMessage.success('验证码已发送至新邮箱')
+    showSuccess('验证码已发送至新邮箱')
     startCountdown()
-  } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '发送失败')
+  } catch (error: unknown) {
+    showError(error)
   } finally {
     codeSending.value = false
   }
@@ -88,19 +71,15 @@ async function handleSave() {
   loading.value = true
   try {
     await userStore.changeEmail(form.newEmail, form.code)
-    ElMessage.success('邮箱已修改，请重新登录')
+    showSuccess('邮箱已修改，请重新登录')
     authDialog.open('login')
     router.push('/')
-  } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '修改失败')
+  } catch (error: unknown) {
+    showError(error)
   } finally {
     loading.value = false
   }
 }
-
-onUnmounted(() => {
-  if (countdownTimer) clearInterval(countdownTimer)
-})
 </script>
 
 <template>
@@ -139,7 +118,7 @@ onUnmounted(() => {
       <el-form-item label="验证码" prop="code">
         <div class="code-row">
           <el-input v-model="form.code" placeholder="6位验证码" maxlength="6" clearable />
-          <el-button :loading="codeSending" :disabled="countdown > 0" @click="handleSendCode">
+          <el-button :loading="codeSending" :disabled="isCountingDown" @click="handleSendCode">
             {{ codeBtnText }}
           </el-button>
         </div>
