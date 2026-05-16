@@ -25,6 +25,7 @@ $color-text-primary: #212121;
 $color-text-secondary: #616161;
 $color-text-placeholder: #9E9E9E;
 $color-border: #E0E0E0;
+$color-border-light: #F0F0F0;
 $color-bg-page: #F5F5F5;
 $color-bg-card: #FFFFFF;
 
@@ -144,14 +145,3 @@ $container-xxl: 1320px;
   --shadow-lg: #{$shadow-lg};
 }
 
-// 暗色模式
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-text-primary: #E0E0E0;
-    --color-text-secondary: #B0B0B0;
-    --color-text-placeholder: #808080;
-    --color-border: #404040;
-    --color-bg-page: #1A1A1A;
-    --color-bg-card: #2D2D2D;
-  }
-}

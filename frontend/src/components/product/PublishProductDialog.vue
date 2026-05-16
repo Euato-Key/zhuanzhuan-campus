@@ -253,7 +253,7 @@ async function handleSubmit() {
       }
     } else {
       const res = await createProduct(submitData)
-      if (res.data.code === 201 || res.data.code === 200) {
+      if (res.data.code === 200) {
         ElMessage.success('发布成功，等待审核')
         visible.value = false
         emit('success')

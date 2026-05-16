@@ -101,7 +101,7 @@ async function handleSubmit() {
         icon: formData.value.icon || undefined,
         sort: formData.value.sort || undefined,
       })
-      if (res.data.code === 201 || res.data.code === 200) {
+      if (res.data.code === 200) {
         ElMessage.success('创建成功')
         dialogVisible.value = false
         fetchCategories()
