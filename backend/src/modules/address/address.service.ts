@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma';
 import { badRequest, notFound, forbidden } from '../../common/errors';
+import { ValidationUtil } from '../../common/validation';
 
 export interface CreateAddressData {
   receiverName: string;
@@ -56,6 +57,7 @@ export const AddressService = {
     if (!data.receiverPhone || !data.receiverPhone.trim()) {
       throw badRequest('请填写收货人手机号');
     }
+    ValidationUtil.validatePhone(data.receiverPhone);
     if (!data.province || !data.city || !data.district) {
       throw badRequest('请选择完整的地区信息');
     }

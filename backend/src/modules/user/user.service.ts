@@ -66,6 +66,7 @@ export const UserService = {
     if (!newEmail || !code) {
       throw badRequest('新邮箱和验证码不能为空');
     }
+    ValidationUtil.validateEmail(newEmail);
 
     const existing = await prisma.user.findUnique({ where: { email: newEmail } });
     if (existing && existing.id !== userId) {

@@ -45,7 +45,7 @@ export const CategoryController = {
     }
     const category = await CategoryService.update(id, {
       name: name?.trim(),
-      parentId: parentId ?? null,
+      parentId: parentId === null ? null : parentId,
       icon,
       sort,
     });

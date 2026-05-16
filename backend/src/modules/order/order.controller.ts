@@ -21,7 +21,7 @@ function parseOrderQuery(req: Request): OrderQuery {
 export const OrderController = {
   create: asyncHandler(async (req: Request, res: Response) => {
     const userId = ValidationUtil.requireUserId(req);
-    const { productId, quantity, deliveryType, addressId, pickupInfo, remark } = req.body;
+    const { productId, quantity, deliveryType, addressId, pickupInfo } = req.body;
 
     if (!productId) throw badRequest('请选择商品');
     if (!quantity || quantity < 1) throw badRequest('购买数量至少为1');
@@ -34,7 +34,6 @@ export const OrderController = {
       deliveryType,
       addressId,
       pickupInfo,
-      remark,
     });
 
     return success(res, order, '订单创建成功', 201);

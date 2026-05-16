@@ -13,7 +13,7 @@ export interface UniversityQuery {
 export const UniversityService = {
   async search(query: UniversityQuery) {
     const { keyword, province, level, page, pageSize } = query;
-    const { skip, take, page: p, pageSize: ps } = PaginationUtil.fromQuery({
+    const { skip, take, page: p, pageSize: ps } = PaginationUtil.getPagination({
       page,
       pageSize,
       maxPageSize: 50,

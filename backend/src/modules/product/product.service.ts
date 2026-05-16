@@ -169,7 +169,7 @@ export const ProductService = {
       data: {
         userId,
         name: data.name.trim(),
-        description: data.description?.trim(),
+        description: data.description?.trim() ?? '',
         categoryId: data.categoryId,
         tags: data.tags ?? Prisma.JsonNull,
         images: data.images,
@@ -292,7 +292,7 @@ export const ProductService = {
     }
 
     const isOwner = userId && userId === product.userId;
-    const shouldIncrementView = product.status === ProductStatus.active || !isOwner;
+    const shouldIncrementView = product.status === ProductStatus.active && !isOwner;
 
     const [favoriteResult] = await Promise.all([
       userId ? prisma.favorite.findFirst({
@@ -302,10 +302,6 @@ export const ProductService = {
         where: { id },
         data: { viewCount: { increment: 1 } },
       }) : Promise.resolve(product),
-      (userId && shouldIncrementView) ? prisma.$executeRaw`
-        INSERT INTO product_views (user_id, product_id, created_at)
-        VALUES (${userId}, ${id}, NOW())
-      ` : Promise.resolve(),
     ]);
 
     return { ...product, isFavorited: !!favoriteResult };
@@ -445,8 +441,11 @@ export const ProductService = {
     // 需要重新审核的情况
     const needsAudit = needReAudit || product.status === ProductStatus.audit_failed;
     if (needsAudit) {
-      if (product.auditCount >= 3) {
-        throw badRequest('审核次数已达上限，无法再次提交');
+      if (product.status === ProductStatus.audit_failed) {
+        if (product.auditCount >= 3) {
+          throw badRequest('审核次数已达上限，无法再次提交');
+        }
+        updateData.auditCount = { increment: 1 };
       }
       updateData.status = ProductStatus.pending;
       updateData.rejectReason = null;
@@ -486,18 +485,26 @@ export const ProductService = {
       throw badRequest('只能重新上架已下架或审核失败的商品');
     }
 
-    if (product.status === ProductStatus.audit_failed && product.auditCount >= 3) {
-      throw badRequest('审核次数已达上限');
+    if (product.status === ProductStatus.audit_failed) {
+      if (product.auditCount >= 3) {
+        throw badRequest('审核次数已达上限');
+      }
+    }
+
+    const updateData: Prisma.ProductUpdateInput = {
+      status: ProductStatus.pending,
+      rejectReason: null,
+      expireTime: calculateExpireTime(product.validDays ?? undefined),
+      relistCount: { increment: 1 },
+    };
+
+    if (product.status === ProductStatus.audit_failed) {
+      updateData.auditCount = { increment: 1 };
     }
 
     const updated = await prisma.product.update({
       where: { id: productId },
-      data: {
-        status: ProductStatus.pending,
-        rejectReason: null,
-        expireTime: calculateExpireTime(product.validDays ?? undefined),
-        relistCount: { increment: 1 },
-      },
+      data: updateData,
     });
 
     return updated;
@@ -578,7 +585,6 @@ export const ProductService = {
       where: { id: productId },
       data: {
         status: ProductStatus.active,
-        auditCount: { increment: 1 },
         expireTime: calculateExpireTime(product.validDays ?? undefined),
       },
     });
@@ -587,19 +593,15 @@ export const ProductService = {
   },
 
   async reject(_adminId: number, productId: bigint, reason: string) {
-    const product = await findProductOrThrow(productId, {
+    await findProductOrThrow(productId, {
       allowedStatuses: [ProductStatus.pending],
     });
-
-    const newAuditCount = product.auditCount + 1;
-    const newStatus = newAuditCount >= 3 ? ProductStatus.audit_failed : ProductStatus.pending;
 
     const updated = await prisma.product.update({
       where: { id: productId },
       data: {
-        status: newStatus,
+        status: ProductStatus.audit_failed,
         rejectReason: reason,
-        auditCount: newAuditCount,
       },
     });
 
@@ -745,6 +747,7 @@ export const ProductService = {
         favoritedAt: f.createdAt,
       }));
 
-    return PaginationUtil.buildResponse(filteredList, total, page, pageSize);
+    const filteredTotal = total - (list.length - filteredList.length);
+    return PaginationUtil.buildResponse(filteredList, filteredTotal, page, pageSize);
   },
 };

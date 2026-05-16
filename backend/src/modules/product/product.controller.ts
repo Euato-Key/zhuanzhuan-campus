@@ -50,7 +50,7 @@ export const ProductController = {
     if (!data.images || !Array.isArray(data.images) || data.images.length === 0) {
       throw badRequest('至少上传一张商品主图');
     }
-    if (!data.currentPrice || data.currentPrice < 0) {
+    if (data.currentPrice === undefined || data.currentPrice < 0) {
       throw badRequest('请输入正确的价格');
     }
     if (!data.itemCondition) {

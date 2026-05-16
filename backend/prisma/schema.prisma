@@ -257,13 +257,13 @@ model Product {
   id              BigInt        @id @default(autoincrement())
   userId          Int           @map("user_id")
   name            String        @db.VarChar(100)
-  description     String?       @db.Text
-  categoryId      Int?          @map("category_id")
+  description     String         @db.Text
+  categoryId      Int            @map("category_id")
   tags            Json?
-  images          Json?
+  images          Json
   detailImages    Json?         @map("detail_images")
   originalPrice   Decimal?      @map("original_price") @db.Decimal(10, 2)
-  currentPrice    Decimal?      @map("current_price") @db.Decimal(10, 2)
+  currentPrice    Decimal        @map("current_price") @db.Decimal(10, 2)
   bargain         Boolean       @default(false) @db.TinyInt
   deliveryType    DeliveryType  @default(both) @map("delivery_type")
   pickupAddress   String?       @map("pickup_address") @db.VarChar(255)
@@ -320,9 +320,9 @@ model Order {
   buyerId             Int               @map("buyer_id")
   sellerId            Int               @map("seller_id")
   quantity            Int               @default(1)
-  price               Decimal?          @db.Decimal(10, 2)
-  totalPrice          Decimal?          @map("total_price") @db.Decimal(10, 2)
-  deliveryType        OrderDeliveryType? @map("delivery_type")
+  price               Decimal            @db.Decimal(10, 2)
+  totalPrice          Decimal            @map("total_price") @db.Decimal(10, 2)
+  deliveryType        OrderDeliveryType  @map("delivery_type")
   addressId           Int?              @map("address_id")
   addressSnapshot     Json?             @map("address_snapshot")
   pickupInfo          Json?             @map("pickup_info")
@@ -335,7 +335,7 @@ model Order {
   confirmTime         DateTime?         @map("confirm_time") @db.DateTime
   expressCompany      String?           @map("express_company") @db.VarChar(50)
   expressNo           String?           @map("express_no") @db.VarChar(50)
-  productName         String?           @map("product_name") @db.VarChar(100)
+  productName         String             @map("product_name") @db.VarChar(100)
   productImage        String?           @map("product_image") @db.VarChar(500)
   productSpecs        Json?             @map("product_specs")
   cancelReason        String?           @map("cancel_reason") @db.VarChar(255)
@@ -470,7 +470,7 @@ model Complaint {
   complainantId Int             @map("complainant_id")
   respondentId  Int             @map("respondent_id")
   type          ComplaintType
-  description   String?         @db.Text
+  description   String         @db.Text
   images        Json?
   status        ComplaintStatus @default(pending)
   handlerId     Int?            @map("handler_id")

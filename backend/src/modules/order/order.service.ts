@@ -16,6 +16,7 @@ export interface AddressSnapshot {
   province: string;
   city: string;
   district: string;
+  street?: string | null;
   detail: string;
 }
 
@@ -30,7 +31,6 @@ export interface CreateOrderData {
   deliveryType: OrderDeliveryType;
   addressId?: number;
   pickupInfo?: PickupInfo;
-  remark?: string;
 }
 
 export interface OrderQuery {
@@ -63,7 +63,7 @@ const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending_payment: ['cancelled'],
   pending_ship: ['cancelled'],
   pending_pickup: ['cancelled'],
-  pending_receive: ['cancelled'],
+  pending_receive: [],
   pending_confirm: ['completed', 'cancelled'],
   completed: ['returning'],
   cancelled: [],
@@ -132,6 +132,9 @@ export const OrderService = {
    * 4. 创建订单
    */
   async create(userId: number, data: CreateOrderData) {
+    if (!/^\d+$/.test(data.productId)) {
+      throw badRequest('商品ID格式不正确');
+    }
     const productId = BigInt(data.productId);
 
     // 1. 获取商品信息
@@ -172,7 +175,7 @@ export const OrderService = {
         throw badRequest('请选择自提地点');
       }
       // 验证自提地点是否在商品设置的自提地点范围内
-      if (product.pickupAddress && !data.pickupInfo.address.includes(product.pickupAddress)) {
+      if (product.pickupAddress && !product.pickupAddress.includes(data.pickupInfo.address)) {
         throw badRequest('请选择商品支持的自提地点');
       }
     }
@@ -195,6 +198,7 @@ export const OrderService = {
         province: address.province,
         city: address.city,
         district: address.district,
+        street: address.street,
         detail: address.detail,
       };
     }
@@ -596,7 +600,7 @@ export const OrderService = {
       where: { id: orderId },
       data: {
         status: OrderStatus.completed,
-        receiveTime: order.status === OrderStatus.pending_receive ? new Date() : order.receiveTime,
+        receiveTime: new Date(),
         confirmTime: new Date(),
       },
     });
@@ -622,6 +626,14 @@ export const OrderService = {
 
     if (order.status !== OrderStatus.completed) {
       throw badRequest('只有已完成的订单可以申请退货');
+    }
+
+    if (order.returnStatus === ReturnStatus.pending) {
+      throw badRequest('已有待审核的退货申请');
+    }
+
+    if (order.returnStatus === ReturnStatus.approved) {
+      throw badRequest('退货申请已通过，请填写快递信息');
     }
 
     // 检查退货申请次数

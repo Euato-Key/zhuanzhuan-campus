@@ -2,11 +2,13 @@ import cron from 'node-cron';
 import { prisma } from '../config/prisma';
 import { FileService } from '../services/file.service';
 import { TokenUtil } from './token';
+import { OrderService } from '../modules/order/order.service';
 
 const CLEANUP_CONFIG = {
   refreshToken: { enabled: true, schedule: '0 3 * * *' },
   emailCode: { enabled: true, schedule: '0 4 * * *' },
   ossTempFiles: { enabled: true, schedule: '0 5 * * *', olderThanDays: 30 },
+  expiredLocks: { enabled: true, schedule: '*/5 * * * *' },
 };
 
 async function cleanupExpiredRefreshTokens(): Promise<number> {
@@ -124,6 +126,18 @@ export function startCleanupJobs() {
       }
     });
     console.log('[Cleanup] OSS temp files cleanup job scheduled');
+  }
+
+  if (CLEANUP_CONFIG.expiredLocks.enabled) {
+    cron.schedule(CLEANUP_CONFIG.expiredLocks.schedule, async () => {
+      try {
+        const count = await OrderService.cleanExpiredLocks();
+        console.log(`[Cleanup] Cleaned ${count} expired product locks`);
+      } catch (error) {
+        console.error('[Cleanup] Failed to cleanup expired locks:', error);
+      }
+    });
+    console.log('[Cleanup] Expired product lock cleanup job scheduled');
   }
 }
 

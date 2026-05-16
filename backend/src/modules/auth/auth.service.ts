@@ -99,6 +99,7 @@ function validateUserBlockStatus(user: { id: number; isBlocked: boolean; blocked
 
 export const AuthService = {
   async sendCode(email: string, type: string) {
+    ValidationUtil.validateEmail(email);
     const emailCodeType = validateEmailCodeType(type);
     if (!emailCodeType) {
       throw badRequest('无效的验证码类型');
@@ -159,11 +160,14 @@ export const AuthService = {
     await validateUserBlockStatus(user);
 
     if (user.loginFailCount >= LOGIN_FAIL_LOCK_THRESHOLD) {
-      const lockExpiry = new Date(user.updatedAt.getTime() + LOGIN_LOCK_MINUTES * 60_000);
-      if (lockExpiry > new Date()) {
-        throw forbidden(`密码错误次数过多，请${LOGIN_LOCK_MINUTES}分钟后再试`);
+      const lockDuration = LOGIN_LOCK_MINUTES * 60_000;
+      const timeSinceLastFail = Date.now() - user.updatedAt.getTime();
+      if (timeSinceLastFail < lockDuration) {
+        const remainingMinutes = Math.ceil((lockDuration - timeSinceLastFail) / 60000);
+        throw forbidden(`密码错误次数过多，请${remainingMinutes}分钟后再试`);
       }
       await prisma.user.update({ where: { id: user.id }, data: { loginFailCount: 0 } });
+      user.loginFailCount = 0;
     }
 
     const valid = await PasswordUtil.verify(password, user.passwordHash);

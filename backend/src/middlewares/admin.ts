@@ -8,11 +8,11 @@ function createRoleMiddleware(allowedRoles: UserRole[], errorMessage: string) {
     const user = req.user;
 
     if (!user) {
-      throw unauthorized('未登录');
+      return next(unauthorized('未登录'));
     }
 
     if (!allowedRoles.includes(user.role as UserRole)) {
-      throw forbidden(errorMessage);
+      return next(forbidden(errorMessage));
     }
 
     next();
