@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { fail } from '../utils/response';
 import { unauthorized, forbidden } from '../common/errors';
 
 type UserRole = 'user' | 'admin' | 'super_admin';

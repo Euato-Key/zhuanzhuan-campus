@@ -1,9 +1,11 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import { prisma } from './config/prisma';
 import { startCleanupJobs } from './common/cleanup';
+import { AppError } from './common/errors';
+import { fail } from './utils/response';
 import authRoutes from './modules/auth/auth.routes';
 import userRoutes from './modules/user/user.routes';
 import uploadRoutes from './modules/upload/upload.routes';
@@ -35,6 +37,14 @@ app.use('/api/universities', universityRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ code: 200, data: { status: 'ok' }, message: 'success' });
+});
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof AppError) {
+    return fail(res, err.message, err.statusCode);
+  }
+  console.error('Unhandled error:', err);
+  return fail(res, '服务器内部错误', 500);
 });
 
 const server = app.listen(env.PORT, () => {
