@@ -3,7 +3,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, SwitchButton, Star, Bell, ChatDotRound, ShoppingBag, Location } from '@element-plus/icons-vue'
+import { User, SwitchButton, Star, Bell, ChatDotRound, ShoppingBag, Location, Setting } from '@element-plus/icons-vue'
 import { getOssUrl } from '@/utils/oss'
 
 const router = useRouter()
@@ -53,6 +53,7 @@ async function handleLogout() {
             else if (cmd === 'orders') router.push('/orders')
             else if (cmd === 'favorites') router.push('/favorites')
             else if (cmd === 'addresses') router.push('/addresses')
+            else if (cmd === 'admin') router.push('/admin')
             else if (cmd === 'logout') handleLogout()
           }">
             <div class="user-avatar-wrap">
@@ -74,6 +75,9 @@ async function handleLogout() {
                 </el-dropdown-item>
                 <el-dropdown-item command="addresses">
                   <el-icon><Location /></el-icon>收货地址
+                </el-dropdown-item>
+                <el-dropdown-item v-if="userStore.isAdmin" divided command="admin">
+                  <el-icon><Setting /></el-icon>管理后台
                 </el-dropdown-item>
                 <el-dropdown-item divided command="logout">
                   <el-icon><SwitchButton /></el-icon>退出登录

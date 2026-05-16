@@ -81,6 +81,15 @@ export interface MyProductItem extends ProductListItem {
   rejectReason: string | null
   auditCount: number
   expireTime: string | null
+  detailImages: string[] | null
+  tags: string[] | null
+  specs: ProductSpec[] | null
+  pickupAddress: string | null
+  pickupTime: string | null
+  brand: string | null
+  bargain: boolean
+  description: string | null
+  originalPrice: number | null
   user?: {
     id: number
     username: string
@@ -159,6 +168,21 @@ export const ITEM_CONDITION_LABELS: Record<ItemCondition, string> = {
   '95new': '95新',
   '90new': '9成新',
   '80new': '8成新及以下',
+}
+
+// 后端返回的 Prisma 枚举值映射到前端格式
+export const ITEM_CONDITION_MAP: Record<string, ItemCondition> = {
+  new: 'new',
+  ninety_nine_new: '99new',
+  ninety_five_new: '95new',
+  ninety_new: '90new',
+  eighty_new: '80new',
+}
+
+// 获取新旧程度显示文本
+export function getItemConditionLabel(value: string): string {
+  const mapped = ITEM_CONDITION_MAP[value] || value
+  return ITEM_CONDITION_LABELS[mapped] || value
 }
 
 // 商品状态显示文本

@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { useUserStore } from '@/stores/user'
-import { ElMessage } from 'element-plus'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -9,7 +8,7 @@ const api = axios.create({
 })
 
 let isRefreshing = false
-let pendingRequests: Array<(token: string) => void> = []
+let pendingRequests: Array<(token: string | null) => void> = []
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
@@ -26,11 +25,22 @@ api.interceptors.response.use(
 
     // 401 and not a retry — try to refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // If this is already a refresh request or we have no token, just fail
+      if (originalRequest.url?.includes('/auth/refresh-token') || !localStorage.getItem('access_token')) {
+        const userStore = useUserStore()
+        userStore.clearAuth()
+        return Promise.reject(error)
+      }
+
       if (isRefreshing) {
         return new Promise((resolve) => {
-          pendingRequests.push((token: string) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`
-            resolve(api(originalRequest))
+          pendingRequests.push((token: string | null) => {
+            if (token) {
+              originalRequest.headers.Authorization = `Bearer ${token}`
+              resolve(api(originalRequest))
+            } else {
+              resolve(Promise.reject(error))
+            }
           })
         })
       }
@@ -42,18 +52,17 @@ api.interceptors.response.use(
         const userStore = useUserStore()
         await userStore.refresh()
         const newToken = localStorage.getItem('access_token')
-        pendingRequests.forEach((cb) => cb(newToken!))
+        pendingRequests.forEach((cb) => cb(newToken))
         pendingRequests = []
-        originalRequest.headers.Authorization = `Bearer ${newToken}`
-        return api(originalRequest)
+        if (newToken) {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`
+          return api(originalRequest)
+        }
+        return Promise.reject(error)
       } catch {
         pendingRequests = []
         const userStore = useUserStore()
         userStore.clearAuth()
-        // Only show session expired message for authenticated requests
-        if (localStorage.getItem('access_token') === null) {
-          ElMessage.warning('登录已过期，请重新登录')
-        }
         return Promise.reject(error)
       } finally {
         isRefreshing = false
