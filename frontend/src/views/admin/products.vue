@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
 import { Search, Check, Close, View, Lock, Unlock, Bottom } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import ProductAuditDialog from '@/components/admin/ProductAuditDialog.vue'
 import {
   getAdminProductList,
-  approveProduct,
-  rejectProduct,
-  banProduct,
   unbanProduct,
-  forceOfflineProduct,
   type MyProductItem,
   PRODUCT_STATUS_LABELS,
   type ProductStatus,
 } from '@/api/product'
-
-const router = useRouter()
 
 // 状态
 const loading = ref(false)
@@ -28,19 +22,17 @@ const queryParams = reactive({
   page: 1,
   pageSize: 10,
   keyword: '',
-  status: undefined as ProductStatus | undefined,
+  status: '' as ProductStatus | '',
   sellerId: undefined as number | undefined,
 })
 
-// 拒绝/封禁/下架弹窗
-const actionDialogVisible = ref(false)
-const actionType = ref<'reject' | 'ban' | 'forceOffline'>('reject')
-const actionReason = ref('')
-const actionProductId = ref('')
+// 审核弹窗
+const auditDialogVisible = ref(false)
+const currentProduct = ref<MyProductItem | null>(null)
 
 // 状态筛选选项
-const statusOptions: { label: string; value: ProductStatus | undefined }[] = [
-  { label: '全部', value: undefined },
+const statusOptions: { label: string; value: ProductStatus | '' }[] = [
+  { label: '全部', value: '' },
   { label: '待审核', value: 'pending' },
   { label: '在售', value: 'active' },
   { label: '已下架', value: 'offline' },
@@ -52,7 +44,11 @@ const statusOptions: { label: string; value: ProductStatus | undefined }[] = [
 async function fetchProducts() {
   loading.value = true
   try {
-    const res = await getAdminProductList(queryParams)
+    const params = {
+      ...queryParams,
+      status: queryParams.status || undefined,
+    }
+    const res = await getAdminProductList(params)
     if (res.data.code === 200) {
       products.value = res.data.data.list
       total.value = res.data.data.total
@@ -83,85 +79,10 @@ function handlePageChange(page: number) {
   fetchProducts()
 }
 
-// 查看详情
-function goToDetail(product: MyProductItem) {
-  router.push({ name: 'ProductDetail', params: { id: product.id } })
-}
-
-// 审核通过
-async function handleApprove(product: MyProductItem) {
-  try {
-    await ElMessageBox.confirm('确定审核通过该商品吗？', '提示', { type: 'info' })
-    const res = await approveProduct(product.id)
-    if (res.data.code === 200) {
-      ElMessage.success('审核通过')
-      fetchProducts()
-    }
-  } catch (err) {
-    if (err !== 'cancel') {
-      ElMessage.error('操作失败')
-    }
-  }
-}
-
-// 打开拒绝弹窗
-function openRejectDialog(product: MyProductItem) {
-  actionType.value = 'reject'
-  actionProductId.value = product.id
-  actionReason.value = ''
-  actionDialogVisible.value = true
-}
-
-// 打开封禁弹窗
-function openBanDialog(product: MyProductItem) {
-  actionType.value = 'ban'
-  actionProductId.value = product.id
-  actionReason.value = ''
-  actionDialogVisible.value = true
-}
-
-// 打开强制下架弹窗
-function openForceOfflineDialog(product: MyProductItem) {
-  actionType.value = 'forceOffline'
-  actionProductId.value = product.id
-  actionReason.value = ''
-  actionDialogVisible.value = true
-}
-
-// 执行操作
-async function executeAction() {
-  if (!actionReason.value.trim()) {
-    ElMessage.warning('请填写原因')
-    return
-  }
-
-  try {
-    let res
-    switch (actionType.value) {
-      case 'reject':
-        res = await rejectProduct(actionProductId.value, actionReason.value.trim())
-        break
-      case 'ban':
-        res = await banProduct(actionProductId.value, actionReason.value.trim())
-        break
-      case 'forceOffline':
-        res = await forceOfflineProduct(actionProductId.value, actionReason.value.trim())
-        break
-    }
-
-    if (res && res.data.code === 200) {
-      const messages = {
-        reject: '已拒绝',
-        ban: '已封禁',
-        forceOffline: '已下架',
-      }
-      ElMessage.success(messages[actionType.value])
-      actionDialogVisible.value = false
-      fetchProducts()
-    }
-  } catch (err) {
-    ElMessage.error('操作失败')
-  }
+// 查看详情（弹窗）
+function openAuditDialog(product: MyProductItem) {
+  currentProduct.value = product
+  auditDialogVisible.value = true
 }
 
 // 解封
@@ -180,15 +101,10 @@ async function handleUnban(product: MyProductItem) {
   }
 }
 
-// 弹窗标题
-const dialogTitle = computed(() => {
-  const titles = {
-    reject: '审核拒绝',
-    ban: '封禁商品',
-    forceOffline: '强制下架',
-  }
-  return titles[actionType.value]
-})
+// 弹窗操作成功
+function handleAuditSuccess() {
+  fetchProducts()
+}
 
 onMounted(() => {
   fetchProducts()
@@ -277,7 +193,7 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="goToDetail(row)">
+            <el-button type="primary" link size="small" @click="openAuditDialog(row)">
               <el-icon><View /></el-icon>查看
             </el-button>
             <el-button
@@ -285,7 +201,7 @@ onMounted(() => {
               type="success"
               link
               size="small"
-              @click="handleApprove(row)"
+              @click="openAuditDialog(row)"
             >
               <el-icon><Check /></el-icon>通过
             </el-button>
@@ -294,27 +210,9 @@ onMounted(() => {
               type="danger"
               link
               size="small"
-              @click="openRejectDialog(row)"
+              @click="openAuditDialog(row)"
             >
               <el-icon><Close /></el-icon>拒绝
-            </el-button>
-            <el-button
-              v-if="row.status === 'active'"
-              type="warning"
-              link
-              size="small"
-              @click="openForceOfflineDialog(row)"
-            >
-              <el-icon><Bottom /></el-icon>下架
-            </el-button>
-            <el-button
-              v-if="row.status === 'active'"
-              type="danger"
-              link
-              size="small"
-              @click="openBanDialog(row)"
-            >
-              <el-icon><Lock /></el-icon>封禁
             </el-button>
             <el-button
               v-if="row.status === 'banned'"
@@ -341,25 +239,12 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 操作弹窗 -->
-    <el-dialog v-model="actionDialogVisible" :title="dialogTitle" width="400px">
-      <el-form label-width="80px">
-        <el-form-item label="原因" required>
-          <el-input
-            v-model="actionReason"
-            type="textarea"
-            :rows="3"
-            placeholder="请填写原因"
-            maxlength="200"
-            show-word-limit
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="actionDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="executeAction">确定</el-button>
-      </template>
-    </el-dialog>
+    <!-- 审核弹窗 -->
+    <ProductAuditDialog
+      v-model="auditDialogVisible"
+      :product="currentProduct"
+      @success="handleAuditSuccess"
+    />
   </AdminLayout>
 </template>
 
