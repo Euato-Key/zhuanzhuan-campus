@@ -1,4 +1,5 @@
 import { env } from '../../config/env';
+import { badRequest } from '../../common/errors';
 
 const AMAP_BASE_URL = 'https://restapi.amap.com/v3/config/district';
 
@@ -45,7 +46,7 @@ export const RegionService = {
     const data = await response.json() as AmapResponse;
 
     if (data.status !== '1') {
-      throw new Error(`高德API错误: ${data.info}`);
+      throw badRequest(`高德API错误: ${data.info}`);
     }
 
     return data;
