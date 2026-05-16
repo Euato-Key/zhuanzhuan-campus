@@ -49,6 +49,7 @@ export interface AddressSnapshot {
   province: string
   city: string
   district: string
+  street?: string | null
   detail: string
 }
 
@@ -137,7 +138,6 @@ export interface CreateOrderRequest {
   deliveryType: OrderDeliveryType
   addressId?: number
   pickupInfo?: PickupInfo
-  remark?: string
 }
 
 // 发货请求

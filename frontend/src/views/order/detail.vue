@@ -403,10 +403,6 @@ onMounted(async () => {
               <span class="label">交易方式</span>
               <span class="value">{{ order.deliveryType === 'express' ? '快递配送' : '线下自提' }}</span>
             </div>
-            <div class="info-item" v-if="order.remark">
-              <span class="label">订单备注</span>
-              <span class="value">{{ order.remark }}</span>
-            </div>
           </div>
         </div>
 
@@ -421,7 +417,7 @@ onMounted(async () => {
               <span class="receiver-phone">{{ order.addressSnapshot.receiverPhone }}</span>
             </div>
             <div class="address-text">
-              {{ order.addressSnapshot.province }}{{ order.addressSnapshot.city }}{{ order.addressSnapshot.district }}{{ order.addressSnapshot.detail }}
+              {{ order.addressSnapshot.province }}{{ order.addressSnapshot.city }}{{ order.addressSnapshot.district }}{{ order.addressSnapshot.street || '' }}{{ order.addressSnapshot.detail }}
             </div>
           </div>
         </div>
