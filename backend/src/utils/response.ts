@@ -49,7 +49,7 @@ function serializeData(obj: unknown): unknown {
 
 export function success<T>(res: Response, data: T, message = 'success', statusCode = 200) {
   const serializedData = serializeData(data) as T;
-  const body: ApiResponse<T> = { code: statusCode, data: serializedData, message };
+  const body: ApiResponse<T> = { code: 200, data: serializedData, message };
   return res.status(statusCode).json(body);
 }
 

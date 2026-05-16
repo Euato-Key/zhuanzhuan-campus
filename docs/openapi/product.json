@@ -158,7 +158,7 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 201 },
+                    "code": { "type": "integer", "example": 200 },
                     "message": { "type": "string", "example": "商品发布成功，等待审核" },
                     "data": { "$ref": "#/components/schemas/ProductDetail" }
                   }

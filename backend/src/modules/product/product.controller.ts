@@ -1,16 +1,17 @@
 import { Request, Response } from 'express';
-import { ProductService, ProductQuery, AdminProductQuery, CreateProductData, UpdateProductData } from './product.service';
+import { ProductService, ProductQuery, AdminProductQuery, CreateProductData, UpdateProductData, toItemCondition, tryToItemCondition } from './product.service';
 import { success, fail } from '../../utils/response';
 import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 
 function parseProductQuery(req: Request): ProductQuery {
+  const itemConditionStr = req.query.itemCondition as string | undefined;
   return {
     page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
     pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string, 10) : undefined,
     keyword: req.query.keyword as string,
     categoryId: req.query.categoryId ? parseInt(req.query.categoryId as string, 10) : undefined,
-    itemCondition: req.query.itemCondition as ProductQuery['itemCondition'],
+    itemCondition: itemConditionStr ? tryToItemCondition(itemConditionStr) : undefined,
     minPrice: req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined,
     maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
     deliveryType: req.query.deliveryType as ProductQuery['deliveryType'],

@@ -5,6 +5,7 @@ import { PaginationUtil } from '../../common/pagination';
 import { PRODUCT_CATEGORY_SELECT, PRODUCT_USER_SELECT, PRODUCT_DETAIL_USER_SELECT, PRODUCT_DETAIL_CATEGORY_SELECT, USER_ADMIN_SELECT } from '../../common/selects';
 
 export type { ItemCondition, DeliveryType, ProductStatus };
+export { toItemCondition, tryToItemCondition };
 
 const ITEM_CONDITION_MAP: Record<string, ItemCondition> = {
   'new': ItemCondition.new,
@@ -20,6 +21,10 @@ function toItemCondition(value: string): ItemCondition {
     throw badRequest(`无效的新旧程度: ${value}`);
   }
   return result;
+}
+
+function tryToItemCondition(value: string): ItemCondition | undefined {
+  return ITEM_CONDITION_MAP[value];
 }
 
 export interface ProductSpec {

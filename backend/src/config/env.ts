@@ -47,4 +47,6 @@ export const env = {
   OSS_ACCESS_KEY_ID: process.env.OSS_ACCESS_KEY_ID || '',
   OSS_ACCESS_KEY_SECRET: process.env.OSS_ACCESS_KEY_SECRET || '',
   OSS_ROLE_ARN: process.env.OSS_ROLE_ARN || '',
+
+  AMAP_API_KEY: process.env.AMAP_API_KEY || '',
 } as const;
