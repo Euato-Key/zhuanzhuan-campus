@@ -351,3 +351,52 @@ export function forceOfflineProduct(id: string, reason: string) {
     { reason }
   )
 }
+
+// 收藏商品
+export function addFavorite(id: string) {
+  return api.post<{ code: number; data: { isFavorited: boolean }; message: string }>(
+    `/products/${id}/favorite`
+  )
+}
+
+// 取消收藏
+export function removeFavorite(id: string) {
+  return api.delete<{ code: number; data: { isFavorited: boolean }; message: string }>(
+    `/products/${id}/favorite`
+  )
+}
+
+// 收藏列表项
+export interface FavoriteItem {
+  id: string
+  name: string
+  images: string[]
+  currentPrice: number
+  originalPrice: number | null
+  itemCondition: ItemCondition
+  deliveryType: DeliveryType
+  bargain: boolean
+  viewCount: number
+  favoriteCount: number
+  status: ProductStatus
+  createdAt: string
+  favoriteId: number
+  favoritedAt: string
+  category: {
+    id: number
+    name: string
+  }
+  user: {
+    id: number
+    username: string
+    avatar: string | null
+  }
+}
+
+// 获取我的收藏列表
+export function getMyFavorites(params?: { page?: number; pageSize?: number }) {
+  return api.get<{ code: number; data: PaginatedResponse<FavoriteItem>; message: string }>(
+    '/products/my/favorites',
+    { params }
+  )
+}
