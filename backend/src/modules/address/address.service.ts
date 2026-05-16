@@ -69,12 +69,28 @@ export const AddressService = {
       throw badRequest('地址数量已达上限（最多20个）');
     }
 
-    // 如果设置为默认地址，先取消其他默认地址
+    // 如果设置为默认地址，使用事务确保原子性
     if (data.isDefault) {
-      await prisma.address.updateMany({
-        where: { userId, isDefault: true },
-        data: { isDefault: false },
+      const address = await prisma.$transaction(async (tx) => {
+        await tx.address.updateMany({
+          where: { userId, isDefault: true },
+          data: { isDefault: false },
+        });
+        return tx.address.create({
+          data: {
+            userId,
+            receiverName: data.receiverName.trim(),
+            receiverPhone: data.receiverPhone.trim(),
+            province: data.province,
+            city: data.city,
+            district: data.district,
+            street: data.street,
+            detail: data.detail.trim(),
+            isDefault: true,
+          },
+        });
       });
+      return address;
     }
 
     const address = await prisma.address.create({
@@ -87,7 +103,7 @@ export const AddressService = {
         district: data.district,
         street: data.street,
         detail: data.detail.trim(),
-        isDefault: data.isDefault ?? false,
+        isDefault: false,
       },
     });
 
@@ -118,12 +134,28 @@ export const AddressService = {
       throw badRequest('详细地址不能为空');
     }
 
-    // 如果设置为默认地址，先取消其他默认地址
+    // 如果设置为默认地址，使用事务确保原子性
     if (data.isDefault) {
-      await prisma.address.updateMany({
-        where: { userId, isDefault: true },
-        data: { isDefault: false },
+      const updated = await prisma.$transaction(async (tx) => {
+        await tx.address.updateMany({
+          where: { userId, isDefault: true },
+          data: { isDefault: false },
+        });
+        return tx.address.update({
+          where: { id: addressId },
+          data: {
+            receiverName: data.receiverName?.trim(),
+            receiverPhone: data.receiverPhone?.trim(),
+            province: data.province,
+            city: data.city,
+            district: data.district,
+            street: data.street,
+            detail: data.detail?.trim(),
+            isDefault: true,
+          },
+        });
       });
+      return updated;
     }
 
     const updated = await prisma.address.update({
@@ -176,16 +208,15 @@ export const AddressService = {
       throw forbidden('无权操作此地址');
     }
 
-    // 取消其他默认地址
-    await prisma.address.updateMany({
-      where: { userId, isDefault: true },
-      data: { isDefault: false },
-    });
-
-    // 设置为默认
-    const updated = await prisma.address.update({
-      where: { id: addressId },
-      data: { isDefault: true },
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.address.updateMany({
+        where: { userId, isDefault: true },
+        data: { isDefault: false },
+      });
+      return tx.address.update({
+        where: { id: addressId },
+        data: { isDefault: true },
+      });
     });
 
     return updated;
