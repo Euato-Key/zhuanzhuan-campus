@@ -14,6 +14,7 @@ import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { getOssUrl } from '@/utils/oss'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import CreateOrderDialog from '@/components/order/CreateOrderDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,6 +23,9 @@ const authDialog = useAuthDialog()
 
 const loading = ref(true)
 const product = ref<ProductDetail | null>(null)
+
+// 下单弹窗
+const createOrderDialogVisible = ref(false)
 
 // 是否是卖家
 const isOwner = computed(() => {
@@ -49,6 +53,12 @@ const canRelist = computed(() => {
 const canDelete = computed(() => {
   if (!isOwner.value || !product.value) return false
   return ['offline', 'audit_failed', 'banned'].includes(product.value.status)
+})
+
+// 是否可购买
+const canBuy = computed(() => {
+  if (!product.value) return false
+  return product.value.status === 'active' && product.value.stock > 0
 })
 
 // 卖家头像URL
@@ -114,8 +124,12 @@ function buyNow() {
     return
   }
   if (!product.value) return
-  // TODO: 跳转订单创建页面
-  ElMessage.info('订单功能开发中')
+  createOrderDialogVisible.value = true
+}
+
+// 下单成功
+function handleOrderSuccess(orderId: string) {
+  router.push({ name: 'OrderDetail', params: { id: orderId } })
 }
 
 // 编辑商品
@@ -342,7 +356,7 @@ onMounted(() => {
               <el-button type="primary" size="large" @click="contactSeller">
                 联系卖家
               </el-button>
-              <el-button type="success" size="large" @click="buyNow">
+              <el-button type="success" size="large" :disabled="!canBuy" @click="buyNow">
                 立即购买
               </el-button>
             </template>
@@ -376,6 +390,14 @@ onMounted(() => {
         </div>
       </div>
     </template>
+
+    <!-- 下单弹窗 - 只有product存在时才渲染 -->
+    <CreateOrderDialog
+      v-if="product"
+      v-model="createOrderDialogVisible"
+      :product="product"
+      @success="handleOrderSuccess"
+    />
   </div>
   </AppLayout>
 </template>

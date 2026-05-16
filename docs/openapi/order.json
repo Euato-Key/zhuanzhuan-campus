@@ -1,0 +1,912 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "订单模块 API",
+    "description": "转转校园二手平台 - 订单模块接口文档",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "订单接口",
+      "description": "订单相关接口（需登录）"
+    }
+  ],
+  "paths": {
+    "/api/orders": {
+      "get": {
+        "tags": ["订单接口"],
+        "summary": "获取我的订单列表",
+        "description": "获取当前用户的订单列表，可通过角色和状态筛选",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "schema": { "type": "integer", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页数量",
+            "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 50 }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "订单状态",
+            "schema": {
+              "type": "string",
+              "enum": ["pending_payment", "pending_ship", "pending_pickup", "pending_receive", "pending_confirm", "completed", "cancelled", "returning", "refunded"]
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "description": "角色筛选（buyer=买家订单，seller=卖家订单）",
+            "schema": {
+              "type": "string",
+              "enum": ["buyer", "seller"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "list": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/OrderListItem" }
+                        },
+                        "total": { "type": "integer" },
+                        "page": { "type": "integer" },
+                        "pageSize": { "type": "integer" },
+                        "totalPages": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["订单接口"],
+        "summary": "创建订单",
+        "description": "创建新订单，锁定库存",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateOrderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "订单创建成功" },
+                    "data": { "$ref": "#/components/schemas/Order" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/{id}": {
+      "get": {
+        "tags": ["订单接口"],
+        "summary": "获取订单详情",
+        "description": "获取订单详细信息",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": { "$ref": "#/components/schemas/OrderDetail" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/{id}/pay": {
+      "post": {
+        "tags": ["订单接口"],
+        "summary": "支付订单",
+        "description": "模拟支付订单，支付成功后扣减库存",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["paymentMethod"],
+                "properties": {
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": ["wechat", "alipay"],
+                    "description": "支付方式"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "支付成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "支付成功" },
+                    "data": { "$ref": "#/components/schemas/Order" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/{id}/cancel": {
+      "post": {
+        "tags": ["订单接口"],
+        "summary": "取消订单",
+        "description": "取消订单，释放库存锁",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "取消原因",
+                    "maxLength": 255
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "取消成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "订单已取消" },
+                    "data": { "$ref": "#/components/schemas/Order" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/{id}/ship": {
+      "post": {
+        "tags": ["订单接口"],
+        "summary": "卖家发货",
+        "description": "卖家填写快递信息并发货",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expressCompany", "expressNo"],
+                "properties": {
+                  "expressCompany": {
+                    "type": "string",
+                    "description": "快递公司",
+                    "example": "顺丰速运"
+                  },
+                  "expressNo": {
+                    "type": "string",
+                    "description": "快递单号",
+                    "example": "SF1234567890"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "发货成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "发货成功" },
+                    "data": { "$ref": "#/components/schemas/Order" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/{id}/confirm-pickup": {
+      "post": {
+        "tags": ["订单接口"],
+        "summary": "卖家确认买家取货",
+        "description": "自提订单：卖家确认买家已取货",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "确认成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "已确认买家取货" },
+                    "data": { "$ref": "#/components/schemas/Order" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/{id}/confirm-receive": {
+      "post": {
+        "tags": ["订单接口"],
+        "summary": "买家确认收货",
+        "description": "买家确认收货，订单完成",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "确认成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "确认收货成功" },
+                    "data": { "$ref": "#/components/schemas/Order" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/{id}/return": {
+      "post": {
+        "tags": ["订单接口"],
+        "summary": "申请退货",
+        "description": "买家申请退货（确认收货后14天内）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason"],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "退货原因",
+                    "example": "商品与描述不符"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "申请成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "退货申请已提交" },
+                    "data": { "$ref": "#/components/schemas/Order" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/{id}/return/review": {
+      "post": {
+        "tags": ["订单接口"],
+        "summary": "卖家审核退货申请",
+        "description": "卖家同意或拒绝退货申请",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["approved"],
+                "properties": {
+                  "approved": {
+                    "type": "boolean",
+                    "description": "是否同意退货"
+                  },
+                  "rejectReason": {
+                    "type": "string",
+                    "description": "拒绝原因（拒绝时必填）"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "审核成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "已同意退货" },
+                    "data": { "$ref": "#/components/schemas/Order" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/{id}/return/express": {
+      "post": {
+        "tags": ["订单接口"],
+        "summary": "买家填写退货快递信息",
+        "description": "买家填写退货快递公司和单号",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["company", "expressNo"],
+                "properties": {
+                  "company": {
+                    "type": "string",
+                    "description": "快递公司",
+                    "example": "中通快递"
+                  },
+                  "expressNo": {
+                    "type": "string",
+                    "description": "快递单号",
+                    "example": "ZT9876543210"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "提交成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "快递信息已提交" },
+                    "data": { "$ref": "#/components/schemas/Order" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/{id}/return/confirm": {
+      "post": {
+        "tags": ["订单接口"],
+        "summary": "卖家确认收到退货",
+        "description": "卖家确认收到退货商品，订单变为已退款",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "确认成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "已确认收到退货，退款已完成" },
+                    "data": { "$ref": "#/components/schemas/Order" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "请求参数错误",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "integer", "example": 400 },
+                "message": { "type": "string", "example": "请求参数错误" },
+                "data": { "type": "null" }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未授权",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "integer", "example": 401 },
+                "message": { "type": "string", "example": "未授权" },
+                "data": { "type": "null" }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "无权限",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "integer", "example": 403 },
+                "message": { "type": "string", "example": "无权限" },
+                "data": { "type": "null" }
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "资源不存在",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": { "type": "integer", "example": 404 },
+                "message": { "type": "string", "example": "资源不存在" },
+                "data": { "type": "null" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "OrderStatus": {
+        "type": "string",
+        "enum": ["pending_payment", "pending_ship", "pending_pickup", "pending_receive", "pending_confirm", "completed", "cancelled", "returning", "refunded"],
+        "description": "订单状态"
+      },
+      "OrderDeliveryType": {
+        "type": "string",
+        "enum": ["self", "express"],
+        "description": "交易方式"
+      },
+      "PaymentMethod": {
+        "type": "string",
+        "enum": ["wechat", "alipay"],
+        "description": "支付方式"
+      },
+      "ReturnStatus": {
+        "type": "string",
+        "enum": ["none", "pending", "approved", "rejected"],
+        "description": "退货审核状态"
+      },
+      "AddressSnapshot": {
+        "type": "object",
+        "description": "收货地址快照",
+        "properties": {
+          "receiverName": { "type": "string", "description": "收货人姓名" },
+          "receiverPhone": { "type": "string", "description": "收货人手机号" },
+          "province": { "type": "string", "description": "省份" },
+          "city": { "type": "string", "description": "城市" },
+          "district": { "type": "string", "description": "区县" },
+          "detail": { "type": "string", "description": "详细地址" }
+        }
+      },
+      "PickupInfo": {
+        "type": "object",
+        "description": "自提信息",
+        "properties": {
+          "address": { "type": "string", "description": "自提地点" },
+          "time": { "type": "string", "description": "自提时间段" }
+        }
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": ["productId", "quantity", "deliveryType"],
+        "properties": {
+          "productId": {
+            "type": "string",
+            "description": "商品ID"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "购买数量",
+            "minimum": 1,
+            "default": 1
+          },
+          "deliveryType": {
+            "$ref": "#/components/schemas/OrderDeliveryType"
+          },
+          "addressId": {
+            "type": "integer",
+            "description": "收货地址ID（快递方式必填）"
+          },
+          "pickupInfo": {
+            "$ref": "#/components/schemas/PickupInfo",
+            "description": "自提信息（自提方式必填）"
+          },
+          "remark": {
+            "type": "string",
+            "description": "订单备注",
+            "maxLength": 255
+          }
+        }
+      },
+      "OrderListItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "订单ID" },
+          "orderNo": { "type": "string", "description": "订单编号" },
+          "productId": { "type": "string", "description": "商品ID" },
+          "buyerId": { "type": "integer", "description": "买家ID" },
+          "sellerId": { "type": "integer", "description": "卖家ID" },
+          "quantity": { "type": "integer", "description": "购买数量" },
+          "price": { "type": "number", "description": "成交单价" },
+          "totalPrice": { "type": "number", "description": "订单总价" },
+          "deliveryType": { "$ref": "#/components/schemas/OrderDeliveryType" },
+          "status": { "$ref": "#/components/schemas/OrderStatus" },
+          "productName": { "type": "string", "description": "商品名称快照" },
+          "productImage": { "type": "string", "description": "商品主图快照" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "product": {
+            "type": "object",
+            "description": "商品信息",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "images": { "type": "array", "items": { "type": "string" } },
+              "status": { "type": "string" }
+            }
+          },
+          "buyer": {
+            "type": "object",
+            "description": "买家信息",
+            "properties": {
+              "id": { "type": "integer" },
+              "username": { "type": "string" },
+              "avatar": { "type": "string", "nullable": true }
+            }
+          },
+          "seller": {
+            "type": "object",
+            "description": "卖家信息",
+            "properties": {
+              "id": { "type": "integer" },
+              "username": { "type": "string" },
+              "avatar": { "type": "string", "nullable": true }
+            }
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "订单ID" },
+          "orderNo": { "type": "string", "description": "订单编号" },
+          "productId": { "type": "string", "description": "商品ID" },
+          "buyerId": { "type": "integer", "description": "买家ID" },
+          "sellerId": { "type": "integer", "description": "卖家ID" },
+          "quantity": { "type": "integer", "description": "购买数量" },
+          "price": { "type": "number", "description": "成交单价" },
+          "totalPrice": { "type": "number", "description": "订单总价" },
+          "deliveryType": { "$ref": "#/components/schemas/OrderDeliveryType" },
+          "addressSnapshot": { "$ref": "#/components/schemas/AddressSnapshot" },
+          "pickupInfo": { "$ref": "#/components/schemas/PickupInfo" },
+          "paymentMethod": { "$ref": "#/components/schemas/PaymentMethod" },
+          "status": { "$ref": "#/components/schemas/OrderStatus" },
+          "payTime": { "type": "string", "format": "date-time", "nullable": true },
+          "shipTime": { "type": "string", "format": "date-time", "nullable": true },
+          "receiveTime": { "type": "string", "format": "date-time", "nullable": true },
+          "confirmPickupTime": { "type": "string", "format": "date-time", "nullable": true },
+          "confirmTime": { "type": "string", "format": "date-time", "nullable": true },
+          "expressCompany": { "type": "string", "nullable": true },
+          "expressNo": { "type": "string", "nullable": true },
+          "productName": { "type": "string", "description": "商品名称快照" },
+          "productImage": { "type": "string", "description": "商品主图快照", "nullable": true },
+          "productSpecs": { "type": "object", "nullable": true },
+          "cancelReason": { "type": "string", "nullable": true },
+          "returnStatus": { "$ref": "#/components/schemas/ReturnStatus" },
+          "returnReason": { "type": "string", "nullable": true },
+          "returnRejectReason": { "type": "string", "nullable": true },
+          "returnApplyTime": { "type": "string", "format": "date-time", "nullable": true },
+          "returnApprovedTime": { "type": "string", "format": "date-time", "nullable": true },
+          "returnReceivedTime": { "type": "string", "format": "date-time", "nullable": true },
+          "returnCompany": { "type": "string", "nullable": true },
+          "returnExpressNo": { "type": "string", "nullable": true },
+          "returnApplyCount": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OrderDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Order" },
+          {
+            "type": "object",
+            "properties": {
+              "product": {
+                "type": "object",
+                "description": "商品信息",
+                "properties": {
+                  "id": { "type": "string" },
+                  "name": { "type": "string" },
+                  "images": { "type": "array", "items": { "type": "string" } },
+                  "currentPrice": { "type": "number" },
+                  "status": { "type": "string" }
+                }
+              },
+              "buyer": {
+                "type": "object",
+                "description": "买家信息",
+                "properties": {
+                  "id": { "type": "integer" },
+                  "username": { "type": "string" },
+                  "avatar": { "type": "string", "nullable": true },
+                  "school": { "type": "string", "nullable": true },
+                  "campus": { "type": "string", "nullable": true }
+                }
+              },
+              "seller": {
+                "type": "object",
+                "description": "卖家信息",
+                "properties": {
+                  "id": { "type": "integer" },
+                  "username": { "type": "string" },
+                  "avatar": { "type": "string", "nullable": true },
+                  "school": { "type": "string", "nullable": true },
+                  "campus": { "type": "string", "nullable": true }
+                }
+              },
+              "address": {
+                "type": "object",
+                "nullable": true,
+                "description": "收货地址",
+                "properties": {
+                  "id": { "type": "integer" },
+                  "receiverName": { "type": "string" },
+                  "receiverPhone": { "type": "string" },
+                  "province": { "type": "string" },
+                  "city": { "type": "string" },
+                  "district": { "type": "string" },
+                  "detail": { "type": "string" }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
