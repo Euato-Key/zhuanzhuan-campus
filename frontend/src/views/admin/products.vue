@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { Search, Check, Close, View, Unlock } from '@element-plus/icons-vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { Search, Check, Close, View, Unlock, Lock, Bottom } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ProductAuditDialog from '@/components/admin/ProductAuditDialog.vue'
@@ -12,11 +12,13 @@ import {
   PRODUCT_STATUS_TAG_TYPE,
   type ProductStatus,
 } from '@/api/product'
+import { getCategoryTree, type Category } from '@/api/category'
 
 // 状态
 const loading = ref(false)
 const products = ref<MyProductItem[]>([])
 const total = ref(0)
+const categories = ref<Category[]>([])
 
 // 查询参数
 const queryParams = reactive({
@@ -24,6 +26,7 @@ const queryParams = reactive({
   pageSize: 10,
   keyword: '',
   status: '' as ProductStatus | '',
+  categoryId: undefined as number | undefined,
   sellerId: undefined as number | undefined,
 })
 
@@ -41,6 +44,33 @@ const statusOptions: { label: string; value: ProductStatus | '' }[] = [
   { label: '审核失败', value: 'audit_failed' },
 ]
 
+// 分类扁平化
+const flatCategories = computed(() => {
+  const result: { id: number; name: string; level: number }[] = []
+  const flatten = (cats: Category[], level = 0) => {
+    cats.forEach(cat => {
+      result.push({ id: cat.id, name: cat.name, level })
+      if (cat.children?.length) {
+        flatten(cat.children, level + 1)
+      }
+    })
+  }
+  flatten(categories.value)
+  return result
+})
+
+// 获取分类
+async function fetchCategories() {
+  try {
+    const res = await getCategoryTree()
+    if (res.data.code === 200) {
+      categories.value = res.data.data
+    }
+  } catch (err) {
+    console.error('获取分类失败', err)
+  }
+}
+
 // 获取商品列表
 async function fetchProducts() {
   loading.value = true
@@ -48,6 +78,8 @@ async function fetchProducts() {
     const params = {
       ...queryParams,
       status: queryParams.status || undefined,
+      sellerId: queryParams.sellerId || undefined,
+      categoryId: queryParams.categoryId || undefined,
     }
     const res = await getAdminProductList(params)
     if (res.data.code === 200) {
@@ -69,7 +101,7 @@ function handleSearch() {
 }
 
 // 状态筛选变化
-function handleStatusChange() {
+function handleFilterChange() {
   queryParams.page = 1
   fetchProducts()
 }
@@ -108,6 +140,7 @@ function handleAuditSuccess() {
 }
 
 onMounted(() => {
+  fetchCategories()
   fetchProducts()
 })
 </script>
@@ -122,7 +155,7 @@ onMounted(() => {
           placeholder="搜索商品名称"
           :prefix-icon="Search"
           clearable
-          style="width: 300px"
+          style="width: 240px"
           @keyup.enter="handleSearch"
           @clear="handleSearch"
         />
@@ -131,7 +164,7 @@ onMounted(() => {
           placeholder="状态筛选"
           clearable
           style="width: 120px"
-          @change="handleStatusChange"
+          @change="handleFilterChange"
         >
           <el-option
             v-for="opt in statusOptions"
@@ -140,6 +173,30 @@ onMounted(() => {
             :value="opt.value"
           />
         </el-select>
+        <el-select
+          v-model="queryParams.categoryId"
+          placeholder="分类筛选"
+          clearable
+          style="width: 150px"
+          @change="handleFilterChange"
+        >
+          <el-option
+            v-for="cat in flatCategories"
+            :key="cat.id"
+            :label="cat.name"
+            :value="cat.id"
+            :style="{ paddingLeft: cat.level * 20 + 'px' }"
+          />
+        </el-select>
+        <el-input
+          v-model.number="queryParams.sellerId"
+          placeholder="卖家ID"
+          clearable
+          type="number"
+          style="width: 120px"
+          @keyup.enter="handleSearch"
+          @clear="handleSearch"
+        />
         <el-button type="primary" @click="handleSearch">搜索</el-button>
       </div>
     </div>
@@ -188,7 +245,7 @@ onMounted(() => {
             {{ new Date(row.createdAt).toLocaleString() }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="openAuditDialog(row)">
               <el-icon><View /></el-icon>查看
@@ -200,16 +257,25 @@ onMounted(() => {
               size="small"
               @click="openAuditDialog(row)"
             >
-              <el-icon><Check /></el-icon>通过
+              <el-icon><Check /></el-icon>审核
             </el-button>
             <el-button
-              v-if="row.status === 'pending'"
+              v-if="row.status === 'active'"
+              type="warning"
+              link
+              size="small"
+              @click="openAuditDialog(row)"
+            >
+              <el-icon><Bottom /></el-icon>下架
+            </el-button>
+            <el-button
+              v-if="row.status === 'active'"
               type="danger"
               link
               size="small"
               @click="openAuditDialog(row)"
             >
-              <el-icon><Close /></el-icon>拒绝
+              <el-icon><Lock /></el-icon>封禁
             </el-button>
             <el-button
               v-if="row.status === 'banned'"
