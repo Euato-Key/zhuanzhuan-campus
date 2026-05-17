@@ -32,6 +32,10 @@ function parseTypingKey(key: string): { socketId: string; conversationId: number
   return { socketId, conversationId };
 }
 
+function isValidConversationId(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0;
+}
+
 export function registerChatSocketEvents(io: Server) {
   io.on('connection', (socket: Socket) => {
     const userId = getUserId(socket);
@@ -53,25 +57,34 @@ export function registerChatSocketEvents(io: Server) {
     io.emit('chat:online_status', { userId, online: true });
 
     socket.on('chat:join_conversation', (payload: JoinConversationPayload) => {
-      const { conversationId } = payload;
-      socket.join(getRoomKey(conversationId));
+      if (!isValidConversationId(payload?.conversationId)) {
+        socket.emit('chat:error', { message: '无效的会话ID' });
+        return;
+      }
+      socket.join(getRoomKey(payload.conversationId));
     });
 
     socket.on('chat:leave_conversation', (payload: LeaveConversationPayload) => {
-      const { conversationId } = payload;
-      socket.leave(getRoomKey(conversationId));
-      clearTypingTimeout(socket.id, conversationId, userId, io);
+      if (!isValidConversationId(payload?.conversationId)) {
+        return;
+      }
+      socket.leave(getRoomKey(payload.conversationId));
+      clearTypingTimeout(socket.id, payload.conversationId, userId, io);
     });
 
     socket.on('chat:send_message', async (payload: SendMessagePayload) => {
       try {
         const { conversationId, type, content } = payload;
-        if (!conversationId || !type || !content) {
-          socket.emit('chat:error', { message: '参数不完整' });
+        if (!isValidConversationId(conversationId)) {
+          socket.emit('chat:error', { message: '无效的会话ID' });
           return;
         }
-        if (!['text', 'image', 'product', 'order'].includes(type)) {
+        if (typeof type !== 'string' || !['text', 'image', 'product', 'order'].includes(type)) {
           socket.emit('chat:error', { message: '无效的消息类型' });
+          return;
+        }
+        if (typeof content !== 'string' || !content) {
+          socket.emit('chat:error', { message: '消息内容不能为空' });
           return;
         }
         await ChatService.message.send(conversationId, userId, { type, content });
@@ -83,6 +96,7 @@ export function registerChatSocketEvents(io: Server) {
     });
 
     socket.on('chat:typing', (payload: TypingPayload) => {
+      if (!isValidConversationId(payload?.conversationId)) return;
       const { conversationId } = payload;
       const timeoutKey = makeTypingKey(socket.id, conversationId);
 
@@ -102,14 +116,17 @@ export function registerChatSocketEvents(io: Server) {
     });
 
     socket.on('chat:stop_typing', (payload: TypingPayload) => {
-      const { conversationId } = payload;
-      clearTypingTimeout(socket.id, conversationId, userId, io);
+      if (!isValidConversationId(payload?.conversationId)) return;
+      clearTypingTimeout(socket.id, payload.conversationId, userId, io);
     });
 
     socket.on('chat:mark_read', async (payload: MarkReadPayload) => {
       try {
-        const { conversationId } = payload;
-        await ChatService.message.markAsRead(conversationId, userId);
+        if (!isValidConversationId(payload?.conversationId)) {
+          socket.emit('chat:error', { message: '无效的会话ID' });
+          return;
+        }
+        await ChatService.message.markAsRead(payload.conversationId, userId);
       } catch (err) {
         socket.emit('chat:error', { message: err instanceof Error ? err.message : '标记已读失败' });
       }

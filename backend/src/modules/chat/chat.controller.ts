@@ -18,13 +18,19 @@ function parseQuickReplyId(req: Request): number {
   return ValidationUtil.parseIdParam(req.params.id, '快捷回复ID');
 }
 
+function parsePositiveInt(value: unknown): number | undefined {
+  if (typeof value !== 'string') return undefined;
+  const n = parseInt(value, 10);
+  return Number.isInteger(n) && n > 0 ? n : undefined;
+}
+
 export const ChatController = {
   // Conversations
   listConversations: asyncHandler(async (req: Request, res: Response) => {
     const userId = ValidationUtil.requireUserId(req);
     const query: ConversationQuery = {
-      page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
-      pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string, 10) : undefined,
+      page: parsePositiveInt(req.query.page),
+      pageSize: parsePositiveInt(req.query.pageSize),
     };
     const result = await ChatService.conversation.list(userId, query);
     return success(res, result);
@@ -52,8 +58,8 @@ export const ChatController = {
     const userId = ValidationUtil.requireUserId(req);
     const conversationId = parseConversationId(req);
     const query: MessageQuery = {
-      page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
-      pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string, 10) : undefined,
+      page: parsePositiveInt(req.query.page),
+      pageSize: parsePositiveInt(req.query.pageSize),
       before: req.query.before as string | undefined,
     };
     const result = await ChatService.message.list(conversationId, userId, query);
@@ -87,8 +93,8 @@ export const ChatController = {
     const keyword = typeof req.query.keyword === 'string' ? req.query.keyword : '';
     const result = await ChatService.message.search(conversationId, userId, {
       keyword,
-      page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
-      pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string, 10) : undefined,
+      page: parsePositiveInt(req.query.page),
+      pageSize: parsePositiveInt(req.query.pageSize),
     });
     return success(res, result);
   }),
@@ -97,8 +103,8 @@ export const ChatController = {
   listBlacklist: asyncHandler(async (req: Request, res: Response) => {
     const userId = ValidationUtil.requireUserId(req);
     const query: ConversationQuery = {
-      page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
-      pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string, 10) : undefined,
+      page: parsePositiveInt(req.query.page),
+      pageSize: parsePositiveInt(req.query.pageSize),
     };
     const result = await ChatService.blacklist.list(userId, query);
     return success(res, result);
@@ -142,6 +148,7 @@ export const ChatController = {
     const userId = ValidationUtil.requireUserId(req);
     const { content, sort } = req.body;
     if (typeof content !== 'string') throw badRequest('快捷回复内容格式不正确');
+    if (sort !== undefined && typeof sort !== 'number') throw badRequest('排序值格式不正确');
     const result = await ChatService.quickReply.create(userId, content, sort);
     return success(res, result, '创建成功', 201);
   }),
@@ -150,6 +157,8 @@ export const ChatController = {
     const userId = ValidationUtil.requireUserId(req);
     const id = parseQuickReplyId(req);
     const { content, sort } = req.body;
+    if (content !== undefined && typeof content !== 'string') throw badRequest('快捷回复内容格式不正确');
+    if (sort !== undefined && typeof sort !== 'number') throw badRequest('排序值格式不正确');
     const result = await ChatService.quickReply.update(id, userId, { content, sort });
     return success(res, result);
   }),

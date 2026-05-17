@@ -48,7 +48,7 @@ export const ChatService = {
             messages: {
               take: 1,
               orderBy: { createdAt: 'desc' },
-              select: { id: true, type: true, content: true, createdAt: true },
+              select: { id: true, type: true, content: true, senderId: true, createdAt: true },
             },
           },
         }),
@@ -229,9 +229,13 @@ export const ChatService = {
 
       // Cursor-based pagination for infinite scroll
       if (query.before) {
-        const beforeId = Number(query.before);
-        if (beforeId > 0) {
-          where.id = { lt: beforeId };
+        try {
+          const beforeId = BigInt(query.before);
+          if (beforeId > 0n) {
+            where.id = { lt: beforeId };
+          }
+        } catch {
+          throw badRequest('无效的before参数');
         }
       }
 
@@ -342,14 +346,14 @@ export const ChatService = {
         const convForUser1 = serializeBigInt({
           id: conversation.id,
           otherUser: user2Info,
-          lastMessage: { id: message.id, type: message.type, content: message.content, createdAt: message.createdAt },
-          updatedAt: new Date(),
+          lastMessage: { id: message.id, type: message.type, content: message.content, senderId: message.senderId, createdAt: message.createdAt },
+          updatedAt: conversation.updatedAt,
         });
         const convForUser2 = serializeBigInt({
           id: conversation.id,
           otherUser: user1Info,
-          lastMessage: { id: message.id, type: message.type, content: message.content, createdAt: message.createdAt },
-          updatedAt: new Date(),
+          lastMessage: { id: message.id, type: message.type, content: message.content, senderId: message.senderId, createdAt: message.createdAt },
+          updatedAt: conversation.updatedAt,
         });
         io.to(`user_${conversation.user1Id}`).emit('chat:conversation_updated', convForUser1);
         io.to(`user_${conversation.user2Id}`).emit('chat:conversation_updated', convForUser2);
@@ -636,6 +640,15 @@ export const ChatService = {
     async batchUpdateSort(userId: number, items: { id: number; sort: number }[]) {
       if (!items || items.length === 0) {
         throw badRequest('请提供排序数据');
+      }
+      if (items.length > 100) {
+        throw badRequest('排序数据不能超过100条');
+      }
+      for (const item of items) {
+        if (typeof item.id !== 'number' || !Number.isInteger(item.id) || item.id <= 0 ||
+            typeof item.sort !== 'number' || !Number.isInteger(item.sort)) {
+          throw badRequest('排序数据格式不正确');
+        }
       }
 
       // Verify all items belong to the user
