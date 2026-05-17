@@ -86,8 +86,9 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // ─── Socket Event Handlers ───
-  function handleNewMessage(data: { message: MessageItem }) {
-    const msg = data.message
+  function handleNewMessage(data: unknown) {
+    const msg = data as MessageItem
+    if (!msg || !msg.conversationId) return
     appendMessage(msg.conversationId, msg)
 
     const idx = conversations.value.findIndex(c => c.id === msg.conversationId)
@@ -105,12 +106,12 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  function handleMessageRead(data: { conversationId: number; userId: number }) {
+  function handleMessageRead(data: { conversationId: number; readBy: number; readCount: number }) {
     const msgs = messagesMap.value.get(data.conversationId)
     if (!msgs) return
     const now = new Date().toISOString()
     msgs.forEach(m => {
-      if (m.senderId === data.userId && m.readAt === null) {
+      if (m.senderId === data.readBy && m.readAt === null) {
         m.readAt = now
       }
     })
@@ -124,12 +125,14 @@ export const useChatStore = defineStore('chat', () => {
     typingMap.value.delete(data.conversationId)
   }
 
-  function handleConversationUpdated(data: { conversation: ConversationListItem }) {
-    const idx = conversations.value.findIndex(c => c.id === data.conversation.id)
+  function handleConversationUpdated(data: unknown) {
+    const conv = data as ConversationListItem
+    if (!conv || !conv.id) return
+    const idx = conversations.value.findIndex(c => c.id === conv.id)
     if (idx !== -1) {
-      conversations.value[idx] = data.conversation
+      conversations.value[idx] = conv
     } else {
-      conversations.value.unshift(data.conversation)
+      conversations.value.unshift(conv)
     }
     conversations.value.sort((a, b) =>
       new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -146,18 +149,18 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  function handleBlocked(data: { blockedBy: number; blockedUser: number }) {
+  function handleBlocked(data: { blockedByUserId: number }) {
     const otherId = currentConversation.value?.otherUser.id
     if (!otherId) return
-    if (data.blockedUser === otherId || data.blockedBy === otherId) {
+    if (data.blockedByUserId === otherId) {
       checkBlock(otherId)
     }
   }
 
-  function handleUnblocked(data: { unblockedBy: number; unblockedUser: number }) {
+  function handleUnblocked(data: { unblockedByUserId: number }) {
     const otherId = currentConversation.value?.otherUser.id
     if (!otherId) return
-    if (data.unblockedUser === otherId || data.unblockedBy === otherId) {
+    if (data.unblockedByUserId === otherId) {
       checkBlock(otherId)
     }
   }
@@ -290,13 +293,14 @@ export const useChatStore = defineStore('chat', () => {
       })
       if (res.data.code === 200) {
         const { list } = res.data.data
+        const normalized = list.map(normalizeMessage)
         const existing = messagesMap.value.get(conversationId) || []
 
         if (before) {
           // Prepend older messages
-          messagesMap.value.set(conversationId, [...list, ...existing])
+          messagesMap.value.set(conversationId, [...normalized, ...existing])
         } else {
-          messagesMap.value.set(conversationId, list)
+          messagesMap.value.set(conversationId, normalized)
         }
 
         // Update cursor (oldest message id)
@@ -322,12 +326,6 @@ export const useChatStore = defineStore('chat', () => {
         const msg = res.data.data
         appendMessage(convId, msg)
 
-        // Notify via socket
-        socketComposable.emit('chat:send_message', {
-          conversationId: convId,
-          message: msg,
-        })
-
         // Update conversation list lastMessage
         const idx = conversations.value.findIndex(c => c.id === convId)
         if (idx !== -1) {
@@ -346,11 +344,20 @@ export const useChatStore = defineStore('chat', () => {
 
   const messageIds = ref<Set<string>>(new Set())
 
+  // Normalize backend data: Date objects may arrive as {} (empty object) from BigInt serialization
+  function normalizeMessage(raw: unknown): MessageItem {
+    const msg = raw as MessageItem
+    if (msg.readAt && typeof msg.readAt !== 'string') msg.readAt = null
+    if (msg.createdAt && typeof msg.createdAt !== 'string') msg.createdAt = new Date().toISOString()
+    return msg
+  }
+
   function appendMessage(conversationId: number, msg: MessageItem) {
-    if (messageIds.value.has(msg.id)) return
-    messageIds.value.add(msg.id)
+    const normalized = normalizeMessage(msg)
+    if (messageIds.value.has(normalized.id)) return
+    messageIds.value.add(normalized.id)
     const list = messagesMap.value.get(conversationId) || []
-    list.push(msg)
+    list.push(normalized)
     messagesMap.value.set(conversationId, list)
   }
 
@@ -546,10 +553,10 @@ export const useChatStore = defineStore('chat', () => {
   // ─── Init & Cleanup ───
   function registerSocketEvents() {
     socketComposable.on('chat:new_message', (data: unknown) => {
-      handleNewMessage(data as { message: MessageItem })
+      handleNewMessage(data as MessageItem)
     })
     socketComposable.on('chat:message_read', (data: unknown) => {
-      handleMessageRead(data as { conversationId: number; userId: number })
+      handleMessageRead(data as { conversationId: number; readBy: number; readCount: number })
     })
     socketComposable.on('chat:typing_indicator', (data: unknown) => {
       handleTypingIndicator(data as { conversationId: number; userId: number })
@@ -558,16 +565,16 @@ export const useChatStore = defineStore('chat', () => {
       handleStopTypingIndicator(data as { conversationId: number })
     })
     socketComposable.on('chat:conversation_updated', (data: unknown) => {
-      handleConversationUpdated(data as { conversation: ConversationListItem })
+      handleConversationUpdated(data as ConversationListItem)
     })
     socketComposable.on('chat:online_status', (data: unknown) => {
       handleOnlineStatus(data as { userId: number; online: boolean })
     })
     socketComposable.on('chat:blocked', (data: unknown) => {
-      handleBlocked(data as { blockedBy: number; blockedUser: number })
+      handleBlocked(data as { blockedByUserId: number })
     })
     socketComposable.on('chat:unblocked', (data: unknown) => {
-      handleUnblocked(data as { unblockedBy: number; unblockedUser: number })
+      handleUnblocked(data as { unblockedByUserId: number })
     })
     socketComposable.on('chat:error', (data: unknown) => {
       handleSocketError(data as { message: string })

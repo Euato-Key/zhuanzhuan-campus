@@ -22,15 +22,22 @@ export function formatPrice(price: number): string {
   return price.toLocaleString('zh-CN')
 }
 
+function toDate(date: string | Date | number): Date | null {
+  try {
+    if (date instanceof Date) return date
+    const d = new Date(date as string | number)
+    return isNaN(d.getTime()) ? null : d
+  } catch {
+    return null
+  }
+}
+
 /**
  * 格式化日期
  */
-export function formatDate(date: string | Date, format: 'full' | 'date' | 'time' = 'full'): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-
-  if (isNaN(d.getTime())) {
-    return '-'
-  }
+export function formatDate(date: string | Date | number, format: 'full' | 'date' | 'time' = 'full'): string {
+  const d = toDate(date)
+  if (!d) return '-'
 
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
@@ -52,12 +59,9 @@ export function formatDate(date: string | Date, format: 'full' | 'date' | 'time'
 /**
  * 格式化相对时间（如"3分钟前"）
  */
-export function formatRelativeTime(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-
-  if (isNaN(d.getTime())) {
-    return '-'
-  }
+export function formatRelativeTime(date: string | Date | number): string {
+  const d = toDate(date)
+  if (!d) return '-'
 
   const now = new Date()
   const diff = now.getTime() - d.getTime()

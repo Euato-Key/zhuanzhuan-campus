@@ -64,7 +64,10 @@ const imageUrl = computed(() => {
         <ReadStatusBadge v-if="isOwn" :read-at="message.readAt" />
       </div>
       <template v-if="isOwn">
-        <div v-if="showAvatar" class="msg-avatar-placeholder" />
+        <el-avatar v-if="showAvatar" :size="36" :src="message.sender?.avatar ? getOssUrl(message.sender.avatar) : undefined" class="msg-avatar">
+          {{ message.sender?.username?.charAt(0) || '?' }}
+        </el-avatar>
+        <div v-else class="msg-avatar-placeholder" />
       </template>
     </div>
   </div>

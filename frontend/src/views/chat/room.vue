@@ -59,7 +59,7 @@ const groupedMessages = computed(() => {
     const prev = group.items.length > 0 ? group.items[group.items.length - 1] : null
     group.items.push({
       ...msg,
-      _showAvatar: msg.senderId !== currentUserId.value && (!prev || prev.senderId !== msg.senderId),
+      _showAvatar: !prev || prev.senderId !== msg.senderId,
       _showTime: !prev || formatRelativeTime(msg.createdAt) !== formatRelativeTime(prev.createdAt),
     })
   }
@@ -247,7 +247,7 @@ function scrollToNewMessage() {
       @stop-typing="handleStopTyping"
     />
 
-    <BlacklistDialog v-model="showBlacklistDialog" />
+    <BlacklistDialog v-model:visible="showBlacklistDialog" />
   </div>
 </template>
 
