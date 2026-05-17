@@ -1,0 +1,252 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "评价模块 API",
+    "description": "转转校园二手平台 - 评价模块接口文档",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "开发环境" }
+  ],
+  "tags": [
+    { "name": "评价接口", "description": "评价相关接口（需登录）" },
+    { "name": "商品评价", "description": "商品评价列表（公开）" },
+    { "name": "管理员评价", "description": "评价审核接口（需管理员权限）" }
+  ],
+  "paths": {
+    "/api/reviews": {
+      "post": {
+        "tags": ["评价接口"],
+        "summary": "创建评价",
+        "description": "对已完成订单创建评价。同一订单同一方向只能评价一次。确认收货后14天内可评价。当前简化：评价直接通过审核。",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["orderId", "rating"],
+                "properties": {
+                  "orderId": { "type": "string", "description": "订单ID" },
+                  "rating": { "type": "integer", "minimum": 1, "maximum": 5, "description": "星级(1-5)" },
+                  "content": { "type": "string", "description": "评价内容" },
+                  "images": { "type": "array", "items": { "type": "string" }, "description": "图片URL数组" },
+                  "isAnonymous": { "type": "boolean", "description": "是否匿名" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "评价成功" },
+          "400": { "description": "参数错误或不可评价" }
+        }
+      }
+    },
+    "/api/reviews/{id}/append": {
+      "post": {
+        "tags": ["评价接口"],
+        "summary": "追加评价",
+        "description": "对已有评价追加追评。首次评价后7天内可追评，每个评价只能追评一次。",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "评价ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["appendContent"],
+                "properties": {
+                  "appendContent": { "type": "string", "description": "追评内容" },
+                  "appendImages": { "type": "array", "items": { "type": "string" }, "description": "追评图片数组" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "追评成功" },
+          "400": { "description": "不可追评" }
+        }
+      }
+    },
+    "/api/reviews/{id}": {
+      "delete": {
+        "tags": ["评价接口"],
+        "summary": "删除评价",
+        "description": "软删除自己的评价，状态变为deleted。删除主评时追评也会一起被删除。",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "评价ID" }],
+        "responses": { "200": { "description": "删除成功" } }
+      }
+    },
+    "/api/reviews/{id}/append": {
+      "delete": {
+        "tags": ["评价接口"],
+        "summary": "删除追评",
+        "description": "仅删除追评内容，主评价保留。清除isAppend、appendContent、appendImages等追评字段。",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "评价ID" }],
+        "responses": { "200": { "description": "追评删除成功" } }
+      }
+    },
+    "/api/reviews/received": {
+      "get": {
+        "tags": ["评价接口"],
+        "summary": "获取我收到的评价",
+        "description": "查看别人对我的评价列表",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["buyer_to_seller", "seller_to_buyer"] }, "description": "评价类型筛选" },
+          { "name": "rating", "in": "query", "schema": { "type": "integer" }, "description": "星级筛选" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "评价列表" } }
+      }
+    },
+    "/api/reviews/sent": {
+      "get": {
+        "tags": ["评价接口"],
+        "summary": "获取我发出的评价",
+        "description": "查看我给别人的评价列表",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "approved", "rejected", "deleted"] }, "description": "状态筛选" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "评价列表" } }
+      }
+    },
+    "/api/products/{productId}/reviews": {
+      "get": {
+        "tags": ["商品评价"],
+        "summary": "获取商品评价列表",
+        "description": "获取指定商品的评价列表和统计摘要。公开接口，可选登录。",
+        "parameters": [
+          { "name": "productId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "商品ID" },
+          { "name": "rating", "in": "query", "schema": { "type": "integer" }, "description": "星级筛选(1-5)" },
+          { "name": "hasImage", "in": "query", "schema": { "type": "boolean" }, "description": "是否有图" },
+          { "name": "sortBy", "in": "query", "schema": { "type": "string", "enum": ["time", "rating"] }, "description": "排序字段" },
+          { "name": "sortOrder", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"] }, "description": "排序方向" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "评价列表+统计摘要",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "list": { "type": "array" },
+                    "total": { "type": "integer" },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalCount": { "type": "integer" },
+                        "avgRating": { "type": "number" },
+                        "ratingDistribution": { "type": "object", "additionalProperties": { "type": "integer" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/review-status": {
+      "get": {
+        "tags": ["评价接口"],
+        "summary": "获取订单评价状态",
+        "description": "获取指定订单的评价情况，包括买家/卖家是否已评价、是否可评价、是否可追评",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "订单ID" }],
+        "responses": {
+          "200": {
+            "description": "订单评价状态",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "buyerReviewed": { "type": "boolean" },
+                    "sellerReviewed": { "type": "boolean" },
+                    "canReview": { "type": "boolean" },
+                    "canAppend": { "type": "boolean" },
+                    "buyerReview": { "type": "object", "nullable": true },
+                    "sellerReview": { "type": "object", "nullable": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reviews/admin/list": {
+      "get": {
+        "tags": ["管理员评价"],
+        "summary": "获取评价审核列表",
+        "description": "管理员查看评价列表，支持筛选",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "approved", "rejected", "deleted"] } },
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["buyer_to_seller", "seller_to_buyer"] } },
+          { "name": "rating", "in": "query", "schema": { "type": "integer" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "评价列表" } }
+      }
+    },
+    "/api/reviews/admin/{id}/approve": {
+      "put": {
+        "tags": ["管理员评价"],
+        "summary": "审核通过评价",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "评价ID" }],
+        "responses": { "200": { "description": "审核通过" } }
+      }
+    },
+    "/api/reviews/admin/{id}/reject": {
+      "put": {
+        "tags": ["管理员评价"],
+        "summary": "审核拒绝评价",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "评价ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["rejectReason"],
+                "properties": {
+                  "rejectReason": { "type": "string", "description": "拒绝原因" },
+                  "rejectAppend": { "type": "boolean", "description": "是否拒绝追评(而非主评价)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "审核拒绝" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

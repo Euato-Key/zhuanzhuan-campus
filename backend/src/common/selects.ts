@@ -115,3 +115,22 @@ export const CHAT_USER_SELECT = {
   school: true,
   campus: true,
 } as const;
+
+/**
+ * 评价人字段（评价列表中的评价人信息）
+ */
+export const REVIEW_USER_SELECT = {
+  id: true,
+  username: true,
+  avatar: true,
+} as const;
+
+/**
+ * 评价关联订单字段
+ */
+export const REVIEW_ORDER_SELECT = {
+  id: true,
+  orderNo: true,
+  productName: true,
+  productImage: true,
+} as const;

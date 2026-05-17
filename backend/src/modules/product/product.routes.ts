@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ProductController } from './product.controller';
+import { ReviewController } from '../review/review.controller';
 import { optionalAuth } from '../../middlewares/optionalAuth';
 import { authMiddleware } from '../../middlewares/auth';
 import { adminMiddleware } from '../../middlewares/admin';
@@ -28,6 +29,9 @@ router.put('/admin/:id/reject', authMiddleware, adminMiddleware, ProductControll
 router.put('/admin/:id/ban', authMiddleware, adminMiddleware, ProductController.ban);
 router.put('/admin/:id/unban', authMiddleware, adminMiddleware, ProductController.unban);
 router.put('/admin/:id/force-offline', authMiddleware, adminMiddleware, ProductController.forceOffline);
+
+// 商品评价列表（公开，可选登录）
+router.get('/:productId/reviews', optionalAuth, ReviewController.getProductReviews);
 
 // 公开路由 - 放在参数化路由之后，但需要可选认证来获取收藏状态
 router.get('/:id', optionalAuth, ProductController.getById);

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { OrderController } from './order.controller';
+import { ReviewController } from '../review/review.controller';
 import { authMiddleware } from '../../middlewares/auth';
 
 const router = Router();
@@ -12,6 +13,9 @@ router.get('/', OrderController.getMyOrders);
 
 // 创建订单
 router.post('/', OrderController.create);
+
+// 订单评价状态
+router.get('/:id/review-status', ReviewController.getOrderReviewStatus);
 
 // 订单详情
 router.get('/:id', OrderController.getById);
