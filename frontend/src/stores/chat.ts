@@ -143,6 +143,12 @@ export const useChatStore = defineStore('chat', () => {
     onlineStatusMap.value.set(data.userId, data.online)
   }
 
+  function handleOnlineStatusBatch(list: Array<{ userId: number; online: boolean }>) {
+    for (const item of list) {
+      onlineStatusMap.value.set(item.userId, item.online)
+    }
+  }
+
   function refreshBlockStatus(otherUserId: number) {
     if (currentConversation.value?.otherUser.id === otherUserId) {
       checkBlock(otherUserId)
@@ -569,6 +575,9 @@ export const useChatStore = defineStore('chat', () => {
     })
     socketComposable.on('chat:online_status', (data: unknown) => {
       handleOnlineStatus(data as { userId: number; online: boolean })
+    })
+    socketComposable.on('chat:online_status_batch', (data: unknown) => {
+      handleOnlineStatusBatch(data as Array<{ userId: number; online: boolean }>)
     })
     socketComposable.on('chat:blocked', (data: unknown) => {
       handleBlocked(data as { blockedByUserId: number })

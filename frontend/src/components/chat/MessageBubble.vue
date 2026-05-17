@@ -80,6 +80,7 @@ const imageUrl = computed(() => {
   margin-bottom: $spacing-sm;
   display: flex;
   flex-direction: column;
+  max-width: 75%;
 
   &.own { align-items: flex-end; }
   &.other { align-items: flex-start; }
@@ -111,7 +112,8 @@ const imageUrl = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-width: 70%;
+  flex: 1;
+  min-width: 0;
 }
 
 .bubble {

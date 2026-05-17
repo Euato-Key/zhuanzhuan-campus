@@ -53,7 +53,14 @@ export function registerChatSocketEvents(io: Server) {
     // Join personal room for targeted events
     socket.join(getUserRoomKey(userId));
 
-    // Broadcast online status
+    // Send all currently online users to this newly connected socket
+    const onlineList: Array<{ userId: number; online: boolean }> = [];
+    for (const [uid] of onlineUsers.entries()) {
+      onlineList.push({ userId: uid, online: true });
+    }
+    socket.emit('chat:online_status_batch', onlineList);
+
+    // Broadcast this user's online status to everyone else
     io.emit('chat:online_status', { userId, online: true });
 
     socket.on('chat:join_conversation', (payload: JoinConversationPayload) => {
