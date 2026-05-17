@@ -2,6 +2,7 @@
 import { ref, nextTick } from 'vue'
 import { Camera, Goods, List, Promotion } from '@element-plus/icons-vue'
 import { uploadImage } from '@/api/modules/upload'
+import { getOssUrl } from '@/utils/oss'
 import type { MessageType } from '@/api/modules/chat'
 import { showError } from '@/utils/error'
 
@@ -57,7 +58,7 @@ async function handleImageUpload(e: Event) {
   try {
     const res = await uploadImage(file, 'chat')
     if (res.data.code === 200) {
-      emit('send', 'image', res.data.data.ossPath)
+      emit('send', 'image', getOssUrl(res.data.data.ossPath))
     }
   } catch (err) {
     showError(err, '图片上传失败')
