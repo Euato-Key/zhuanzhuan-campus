@@ -1,4 +1,4 @@
-import api from './index'
+import api from '../index'
 
 // 订单状态枚举
 export type OrderStatus =

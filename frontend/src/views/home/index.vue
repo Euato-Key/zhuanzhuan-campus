@@ -5,7 +5,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import ProductCard from '@/components/product/ProductCard.vue'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
-import { getProductList, getCategoryTree, type ProductListItem, type Category } from '@/api/product'
+import { getProductList, getCategoryTree, type ProductListItem, type Category } from '@/api/modules/product'
 import { showError } from '@/utils/error'
 
 const router = useRouter()

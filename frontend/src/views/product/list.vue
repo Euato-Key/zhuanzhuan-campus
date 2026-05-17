@@ -12,7 +12,7 @@ import {
   DELIVERY_TYPE_LABELS,
   type ItemCondition,
   type DeliveryType,
-} from '@/api/product'
+} from '@/api/modules/product'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
 import ProductCard from '@/components/product/ProductCard.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'

@@ -2,7 +2,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { OrderStatus, OrderListItem } from '@/api/order'
+import type { OrderStatus, OrderListItem } from '@/api/modules/order'
 import {
   getMyOrders,
   cancelOrder,
@@ -10,7 +10,7 @@ import {
   confirmPickup,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_TAG_TYPE,
-} from '@/api/order'
+} from '@/api/modules/order'
 import { showError } from '@/utils/error'
 import { formatDate } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'

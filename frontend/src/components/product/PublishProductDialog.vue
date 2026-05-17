@@ -11,8 +11,8 @@ import {
   type ProductDetail,
   ITEM_CONDITION_LABELS,
   type ProductSpec,
-} from '@/api/product'
-import { uploadImage } from '@/api/upload'
+} from '@/api/modules/product'
+import { uploadImage } from '@/api/modules/upload'
 
 const props = defineProps<{
   modelValue: boolean

@@ -2,8 +2,8 @@
 import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { createAddress, updateAddress, type Address, type CreateAddressData } from '@/api/address'
-import { getProvinces, getCities, getDistricts, type RegionItem } from '@/api/region'
+import { createAddress, updateAddress, type Address, type CreateAddressData } from '@/api/modules/address'
+import { getProvinces, getCities, getDistricts, type RegionItem } from '@/api/modules/region'
 
 const props = defineProps<{
   modelValue: boolean

@@ -14,7 +14,7 @@ import {
   DELIVERY_TYPE_LABELS,
   PRODUCT_STATUS_LABELS,
   getItemConditionLabel,
-} from '@/api/product'
+} from '@/api/modules/product'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { getOssUrl } from '@/utils/oss'

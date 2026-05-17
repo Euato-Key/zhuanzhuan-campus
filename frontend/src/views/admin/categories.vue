@@ -9,7 +9,7 @@ import {
   updateCategory,
   deleteCategory,
   type Category,
-} from '@/api/category'
+} from '@/api/modules/category'
 
 const loading = ref(false)
 const categories = ref<Category[]>([])

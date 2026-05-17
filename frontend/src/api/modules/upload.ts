@@ -1,4 +1,4 @@
-import api from './index'
+import api from '../index'
 import { getOssUrl } from '@/utils/oss'
 
 // ─── Upload API ───

@@ -11,8 +11,8 @@ import {
   PRODUCT_STATUS_LABELS,
   PRODUCT_STATUS_TAG_TYPE,
   type ProductStatus,
-} from '@/api/product'
-import { getCategoryTree, type Category } from '@/api/category'
+} from '@/api/modules/product'
+import { getCategoryTree, type Category } from '@/api/modules/category'
 
 // 状态
 const loading = ref(false)

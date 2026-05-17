@@ -1,4 +1,4 @@
-import api from './index'
+import api from '../index'
 
 export function sendCode(email: string, type: 'register' | 'login' | 'reset_password' | 'change_email') {
   return api.post('/auth/send-code', { email, type })

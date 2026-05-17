@@ -1,4 +1,4 @@
-import api from './index'
+import api from '../index'
 import { getCategoryTree } from './category'
 
 // 导出分类API供组件使用

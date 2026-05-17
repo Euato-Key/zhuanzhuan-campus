@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { getSTSToken, type UploadType } from '@/api/upload'
+import { getSTSToken, type UploadType } from '@/api/modules/upload'
 import { getOssUrl } from '@/utils/oss'
 import { ElMessage } from 'element-plus'
 import { Plus, Loading } from '@element-plus/icons-vue'

@@ -11,7 +11,7 @@ import {
   PRODUCT_STATUS_LABELS,
   PRODUCT_STATUS_TAG_TYPE,
   type ProductStatus,
-} from '@/api/product'
+} from '@/api/modules/product'
 import { getOssUrl } from '@/utils/oss'
 import { showError, showSuccess } from '@/utils/error'
 

@@ -8,7 +8,7 @@ import {
   deleteAddress,
   setDefaultAddress,
   type Address,
-} from '@/api/address'
+} from '@/api/modules/address'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import AddressFormDialog from '@/components/address/AddressFormDialog.vue'
 

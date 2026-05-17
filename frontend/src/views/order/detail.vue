@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, ChatDotRound, Van, Location, Clock } from '@element-plus/icons-vue'
-import type { OrderDetail } from '@/api/order'
+import type { OrderDetail } from '@/api/modules/order'
 import {
   getOrderDetail,
   payOrder,
@@ -17,7 +17,7 @@ import {
   confirmReturnReceived,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_TAG_TYPE,
-} from '@/api/order'
+} from '@/api/modules/order'
 import { useUserStore } from '@/stores/user'
 import { showError, showSuccess } from '@/utils/error'
 import { formatDate } from '@/utils/format'

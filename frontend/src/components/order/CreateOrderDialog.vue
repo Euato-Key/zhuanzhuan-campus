@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import type { ProductDetail } from '@/api/product'
-import type { OrderDeliveryType, PickupInfo } from '@/api/order'
-import { createOrder } from '@/api/order'
-import { getAddresses, type Address } from '@/api/address'
+import type { ProductDetail } from '@/api/modules/product'
+import type { OrderDeliveryType, PickupInfo } from '@/api/modules/order'
+import { createOrder } from '@/api/modules/order'
+import { getAddresses, type Address } from '@/api/modules/address'
 import { showError } from '@/utils/error'
 import PaymentDialog from './PaymentDialog.vue'
 

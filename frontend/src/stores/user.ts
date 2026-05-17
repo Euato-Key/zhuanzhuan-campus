@@ -7,14 +7,14 @@ import {
   logout as logoutApi,
   register as registerApi,
   getProfile as getProfileApi
-} from '@/api/auth'
+} from '@/api/modules/auth'
 import {
   updateProfile as updateProfileApi,
   changePassword as changePasswordApi,
   changeEmail as changeEmailApi,
   updateAvatar as updateAvatarApi,
   type UserProfile
-} from '@/api/user'
+} from '@/api/modules/user'
 
 interface User {
   id: number

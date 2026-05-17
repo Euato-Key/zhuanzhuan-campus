@@ -10,7 +10,7 @@ import {
   type MyProductItem,
   ITEM_CONDITION_LABELS,
   PRODUCT_STATUS_LABELS,
-} from '@/api/product'
+} from '@/api/modules/product'
 
 const props = defineProps<{
   modelValue: boolean

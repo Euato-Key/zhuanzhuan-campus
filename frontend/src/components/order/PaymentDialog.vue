@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { PaymentMethod } from '@/api/order'
+import type { PaymentMethod } from '@/api/modules/order'
 
 const props = defineProps<{
   modelValue: boolean

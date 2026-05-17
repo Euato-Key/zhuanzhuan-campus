@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getOssUrl } from '@/utils/oss'
-import { getItemConditionLabel, DELIVERY_TYPE_LABELS } from '@/api/product'
-import type { ProductListItem } from '@/api/product'
+import { getItemConditionLabel, DELIVERY_TYPE_LABELS } from '@/api/modules/product'
+import type { ProductListItem } from '@/api/modules/product'
 
 const props = defineProps<{
   product: ProductListItem

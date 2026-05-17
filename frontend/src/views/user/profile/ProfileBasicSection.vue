@@ -4,7 +4,7 @@ import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { User, School, Location, Phone, EditPen, Check } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { searchUniversities } from '@/api/university'
+import { searchUniversities } from '@/api/modules/university'
 
 const userStore = useUserStore()
 
