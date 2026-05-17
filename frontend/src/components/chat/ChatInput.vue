@@ -5,9 +5,12 @@ import { uploadImage } from '@/api/modules/upload'
 import { getOssUrl } from '@/utils/oss'
 import type { MessageType } from '@/api/modules/chat'
 import { showError } from '@/utils/error'
+import ProductPickerDialog from './ProductPickerDialog.vue'
+import OrderPickerDialog from './OrderPickerDialog.vue'
 
 const props = defineProps<{
   disabled: boolean
+  otherUserId: number
 }>()
 
 const emit = defineEmits<{
@@ -19,6 +22,8 @@ const emit = defineEmits<{
 const inputText = ref('')
 const imageUploading = ref(false)
 const showQuickReplies = ref(false)
+const showProductPicker = ref(false)
+const showOrderPicker = ref(false)
 
 function handleInput() {
   emit('typing')
@@ -67,19 +72,12 @@ async function handleImageUpload(e: Event) {
   }
 }
 
-function handleProductCard() {
-  // Simple prompt for product ID - can be enhanced with a dialog later
-  const productId = window.prompt('请输入商品ID')
-  if (productId) {
-    emit('send', 'product', JSON.stringify({ productId }))
-  }
+function handleProductSelect(productId: string) {
+  emit('send', 'product', JSON.stringify({ productId }))
 }
 
-function handleOrderCard() {
-  const orderId = window.prompt('请输入订单ID')
-  if (orderId) {
-    emit('send', 'order', JSON.stringify({ orderId }))
-  }
+function handleOrderSelect(orderId: string) {
+  emit('send', 'order', JSON.stringify({ orderId }))
 }
 
 function handleBlur() {
@@ -97,12 +95,12 @@ function handleBlur() {
         </label>
       </el-tooltip>
       <el-tooltip content="商品卡片" placement="top">
-        <button class="toolbar-btn" :disabled="disabled" @click="handleProductCard">
+        <button class="toolbar-btn" :disabled="disabled" @click="showProductPicker = true">
           <el-icon :size="20"><Goods /></el-icon>
         </button>
       </el-tooltip>
       <el-tooltip content="订单卡片" placement="top">
-        <button class="toolbar-btn" :disabled="disabled" @click="handleOrderCard">
+        <button class="toolbar-btn" :disabled="disabled" @click="showOrderPicker = true">
           <el-icon :size="20"><List /></el-icon>
         </button>
       </el-tooltip>
@@ -127,6 +125,8 @@ function handleBlur() {
         发送
       </el-button>
     </div>
+    <ProductPickerDialog v-model:visible="showProductPicker" :other-user-id="otherUserId" @select="handleProductSelect" />
+    <OrderPickerDialog v-model:visible="showOrderPicker" :other-user-id="otherUserId" @select="handleOrderSelect" />
   </div>
 </template>
 

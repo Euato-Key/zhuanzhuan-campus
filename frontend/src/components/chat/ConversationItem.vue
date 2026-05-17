@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import type { ConversationListItem } from '@/api/modules/chat'
 import { formatRelativeTime } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
 import { useChatStore } from '@/stores/chat'
 import OnlineDot from './OnlineDot.vue'
+
+const router = useRouter()
 
 defineProps<{
   conversation: ConversationListItem
@@ -29,8 +32,8 @@ function getLastMessagePreview(msg: ConversationListItem['lastMessage']): string
 
 <template>
   <div class="conversation-item" :class="{ active: isActive }" @click="$emit('click')">
-    <div class="conv-avatar-wrap">
-      <el-avatar :size="48" :src="conversation.otherUser.avatar ? getOssUrl(conversation.otherUser.avatar) : undefined">
+    <div class="conv-avatar-wrap" @click.stop="router.push({ name: 'UserProfile', params: { id: conversation.otherUser.id } })">
+      <el-avatar :size="48" :src="conversation.otherUser.avatar ? getOssUrl(conversation.otherUser.avatar) : undefined" class="clickable-avatar">
         {{ conversation.otherUser.username?.charAt(0) || '?' }}
       </el-avatar>
       <OnlineDot :online="chatStore.onlineStatusMap.get(conversation.otherUser.id) ?? false" />
@@ -77,6 +80,15 @@ function getLastMessagePreview(msg: ConversationListItem['lastMessage']): string
 .conv-avatar-wrap {
   position: relative;
   flex-shrink: 0;
+}
+
+.clickable-avatar {
+  cursor: pointer;
+  transition: opacity $transition-fast;
+
+  &:hover {
+    opacity: 0.8;
+  }
 }
 
 .conv-info {

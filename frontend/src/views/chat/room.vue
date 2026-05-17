@@ -148,7 +148,7 @@ function scrollToNewMessage() {
         <el-button link class="back-btn" @click="goBack">
           <el-icon><ArrowLeft /></el-icon>
         </el-button>
-        <div class="other-user-info" v-if="otherUser">
+        <div class="other-user-info" v-if="otherUser" @click="router.push({ name: 'UserProfile', params: { id: otherUser.id } })">
           <el-avatar :size="36" :src="otherUserAvatar">
             {{ otherUser.username?.charAt(0) || '?' }}
           </el-avatar>
@@ -242,6 +242,7 @@ function scrollToNewMessage() {
 
     <ChatInput
       :disabled="isInputDisabled"
+      :other-user-id="chatStore.currentConversation?.otherUser.id ?? 0"
       @send="handleSend"
       @typing="handleTyping"
       @stop-typing="handleStopTyping"
@@ -287,6 +288,12 @@ function scrollToNewMessage() {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
+  cursor: pointer;
+  transition: opacity $transition-fast;
+
+  &:hover {
+    opacity: 0.8;
+  }
 }
 
 .user-meta {

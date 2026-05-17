@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import type { MessageItem, ProductCardContent, OrderCardContent } from '@/api/modules/chat'
 import { formatRelativeTime } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
 import ProductCardMessage from './ProductCardMessage.vue'
 import OrderCardMessage from './OrderCardMessage.vue'
 import ReadStatusBadge from './ReadStatusBadge.vue'
+
+const router = useRouter()
 
 const props = defineProps<{
   message: MessageItem
@@ -34,7 +37,7 @@ const imageUrl = computed(() => {
     <div v-if="showTime" class="msg-time">{{ formatRelativeTime(message.createdAt) }}</div>
     <div class="msg-row">
       <template v-if="!isOwn">
-        <el-avatar v-if="showAvatar" :size="36" :src="message.sender?.avatar ? getOssUrl(message.sender.avatar) : undefined" class="msg-avatar">
+        <el-avatar v-if="showAvatar" :size="36" :src="message.sender?.avatar ? getOssUrl(message.sender.avatar) : undefined" class="msg-avatar clickable" @click="router.push({ name: 'UserProfile', params: { id: message.senderId } })">
           {{ message.sender?.username?.charAt(0) || '?' }}
         </el-avatar>
         <div v-else class="msg-avatar-placeholder" />
@@ -64,7 +67,7 @@ const imageUrl = computed(() => {
         <ReadStatusBadge v-if="isOwn" :read-at="message.readAt" />
       </div>
       <template v-if="isOwn">
-        <el-avatar v-if="showAvatar" :size="36" :src="message.sender?.avatar ? getOssUrl(message.sender.avatar) : undefined" class="msg-avatar">
+        <el-avatar v-if="showAvatar" :size="36" :src="message.sender?.avatar ? getOssUrl(message.sender.avatar) : undefined" class="msg-avatar clickable" @click="router.push({ name: 'UserProfile', params: { id: message.senderId } })">
           {{ message.sender?.username?.charAt(0) || '?' }}
         </el-avatar>
         <div v-else class="msg-avatar-placeholder" />
@@ -95,12 +98,21 @@ const imageUrl = computed(() => {
 
 .msg-row {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: $spacing-sm;
 }
 
 .msg-avatar {
   flex-shrink: 0;
+
+  &.clickable {
+    cursor: pointer;
+    transition: opacity $transition-fast;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
 }
 
 .msg-avatar-placeholder {
