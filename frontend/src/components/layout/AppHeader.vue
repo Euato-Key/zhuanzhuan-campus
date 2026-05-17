@@ -3,7 +3,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, SwitchButton, Star, Bell, ChatDotRound, ShoppingBag, Location, Setting, Goods } from '@element-plus/icons-vue'
+import { User, SwitchButton, Star, Bell, ChatDotRound, ShoppingBag, Location, Setting, Goods, Comment } from '@element-plus/icons-vue'
 import { getOssUrl } from '@/utils/oss'
 import { useChatStore } from '@/stores/chat'
 
@@ -56,6 +56,7 @@ async function handleLogout() {
             else if (cmd === 'myProducts') router.push('/my-products')
             else if (cmd === 'orders') router.push('/orders')
             else if (cmd === 'favorites') router.push('/favorites')
+            else if (cmd === 'reviews') router.push('/reviews')
             else if (cmd === 'addresses') router.push('/addresses')
             else if (cmd === 'admin') router.push('/admin')
             else if (cmd === 'logout') handleLogout()
@@ -79,6 +80,9 @@ async function handleLogout() {
                 </el-dropdown-item>
                 <el-dropdown-item command="favorites">
                   <el-icon><Star /></el-icon>我的收藏
+                </el-dropdown-item>
+                <el-dropdown-item command="reviews">
+                  <el-icon><Comment /></el-icon>我的评价
                 </el-dropdown-item>
                 <el-dropdown-item command="addresses">
                   <el-icon><Location /></el-icon>收货地址

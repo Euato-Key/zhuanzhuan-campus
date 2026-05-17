@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowDown } from '@element-plus/icons-vue'
 import type { OrderStatus, OrderListItem } from '@/api/modules/order'
 import {
   getMyOrders,
@@ -25,13 +26,13 @@ const total = ref(0)
 const queryParams = reactive({
   page: 1,
   pageSize: 10,
-  status: undefined as OrderStatus | undefined,
+  status: '' as string,
   role: 'buyer' as 'buyer' | 'seller',
 })
 
 // 高频状态筛选
-const mainStatusOptions: { label: string; value: OrderStatus | undefined }[] = [
-  { label: '全部', value: undefined },
+const mainStatusOptions: { label: string; value: string }[] = [
+  { label: '全部', value: '' },
   { label: '待支付', value: 'pending_payment' },
   { label: '待发货', value: 'pending_ship' },
   { label: '待收货', value: 'pending_receive' },
@@ -60,7 +61,10 @@ const moreStatusLabel = computed(() => {
 async function fetchOrders() {
   loading.value = true
   try {
-    const res = await getMyOrders(queryParams)
+    const res = await getMyOrders({
+      ...queryParams,
+      status: queryParams.status || undefined,
+    })
     if (res.data.code === 200) {
       orders.value = res.data.data.list
       total.value = res.data.data.total
@@ -89,7 +93,7 @@ function handleMoreStatus(status: OrderStatus) {
 }
 
 function clearStatusFilter() {
-  queryParams.status = undefined
+  queryParams.status = ''
   queryParams.page = 1
   fetchOrders()
 }
@@ -124,6 +128,7 @@ function getActions(order: OrderListItem) {
       actions.push({ label: '确认收货', type: 'primary', action: () => handleConfirmReceive(order) })
     }
     if (order.status === 'completed') {
+      actions.push({ label: '评价', type: 'primary', action: () => goToDetail(order) })
       actions.push({ label: '申请退货', type: 'default', action: () => goToDetail(order) })
     }
   } else {
@@ -224,7 +229,7 @@ onMounted(() => {
             plain
           >
             {{ moreStatusLabel }}
-            <el-icon class="el-icon--right"><arrow-down /></el-icon>
+            <el-icon class="el-icon--right"><ArrowDown /></el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>

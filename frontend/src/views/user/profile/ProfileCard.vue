@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { getOssUrl } from '@/utils/oss'
 import AvatarUpload from '@/components/AvatarUpload.vue'
 import { ElMessage } from 'element-plus'
 import { EditPen } from '@element-plus/icons-vue'
 
+const router = useRouter()
 const userStore = useUserStore()
 
 const editingAvatar = ref(false)
@@ -94,6 +96,10 @@ function formatDate(dateStr: string | null | undefined): string {
           <span class="stat-value">{{ formatDate(userStore.user?.createdAt) }}</span>
           <span class="stat-label">加入时间</span>
         </div>
+      </div>
+
+      <div class="profile-actions">
+        <el-button type="primary" plain size="small" @click="router.push('/reviews')">查看我的评价</el-button>
       </div>
     </div>
   </div>
@@ -202,6 +208,10 @@ function formatDate(dateStr: string | null | undefined): string {
   width: 1px;
   height: 32px;
   background: $color-border;
+}
+
+.profile-actions {
+  margin-top: $spacing-md;
 }
 
 @media (max-width: 768px) {

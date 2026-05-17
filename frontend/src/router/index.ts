@@ -54,6 +54,12 @@ const router = createRouter({
       meta: { title: '我的收藏', auth: true }
     },
     {
+      path: '/reviews',
+      name: 'MyReviews',
+      component: () => import('@/views/user/reviews.vue'),
+      meta: { title: '我的评价', auth: true }
+    },
+    {
       path: '/my-products',
       name: 'MyProducts',
       component: () => import('@/views/user/myProducts.vue'),
@@ -127,6 +133,12 @@ const router = createRouter({
       name: 'AdminReports',
       component: () => import('@/views/admin/reports.vue'),
       meta: { title: '举报管理', auth: true, admin: true }
+    },
+    {
+      path: '/admin/reviews',
+      name: 'AdminReviews',
+      component: () => import('@/views/admin/reviews.vue'),
+      meta: { title: '评价管理', auth: true, admin: true }
     },
     {
       path: '/admin/banners',

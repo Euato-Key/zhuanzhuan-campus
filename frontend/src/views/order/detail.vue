@@ -25,6 +25,10 @@ import { formatDate } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import PaymentDialog from '@/components/order/PaymentDialog.vue'
+import ReviewFormDialog from '@/components/review/ReviewFormDialog.vue'
+import AppendReviewDialog from '@/components/review/AppendReviewDialog.vue'
+import ReviewCard from '@/components/review/ReviewCard.vue'
+import { getOrderReviewStatus, deleteReview, deleteAppend, type OrderReviewStatus, type ReviewType } from '@/api/modules/review'
 
 const route = useRoute()
 const router = useRouter()
@@ -47,6 +51,13 @@ const returnRejectReason = ref('')
 
 const isBuyer = computed(() => order.value?.buyerId === userStore.user?.id)
 const isSeller = computed(() => order.value?.sellerId === userStore.user?.id)
+
+// 评价相关
+const reviewStatus = ref<OrderReviewStatus | null>(null)
+const reviewDialogVisible = ref(false)
+const appendReviewDialogVisible = ref(false)
+const currentAppendReviewId = ref(0)
+const reviewType = ref<ReviewType>('buyer_to_seller')
 
 const canPay = computed(() => isBuyer.value && order.value?.status === 'pending_payment')
 const canCancel = computed(() => {
@@ -121,12 +132,69 @@ async function fetchOrder() {
     const res = await getOrderDetail(orderId)
     if (res.data.code === 200) {
       order.value = res.data.data
+      fetchReviewStatus()
     }
   } catch (err) {
     showError(err, '获取订单详情失败')
     router.push({ name: 'Orders' })
   } finally {
     loading.value = false
+  }
+}
+
+async function fetchReviewStatus() {
+  if (!order.value) return
+  try {
+    const res = await getOrderReviewStatus(order.value.id)
+    if (res.data.code === 200) {
+      reviewStatus.value = res.data.data
+    }
+  } catch {
+    // 评价状态获取失败不影响页面
+  }
+}
+
+function openReviewDialog(type: ReviewType) {
+  reviewType.value = type
+  reviewDialogVisible.value = true
+}
+
+function openAppendDialog(reviewId: number) {
+  currentAppendReviewId.value = reviewId
+  appendReviewDialogVisible.value = true
+}
+
+function handleReviewSuccess() {
+  fetchReviewStatus()
+}
+
+async function handleDeleteReview(reviewId: number) {
+  try {
+    await ElMessageBox.confirm('确定要删除该评价吗？删除后不可恢复', '提示', { type: 'warning' })
+    const res = await deleteReview(reviewId)
+    if (res.data.code === 200) {
+      showSuccess('评价已删除')
+      fetchReviewStatus()
+    } else {
+      ElMessage.error(res.data.message || '删除失败')
+    }
+  } catch (err) {
+    if (err !== 'cancel') showError(err, '删除失败')
+  }
+}
+
+async function handleDeleteAppend(reviewId: number) {
+  try {
+    await ElMessageBox.confirm('确定要删除追评吗？', '提示', { type: 'warning' })
+    const res = await deleteAppend(reviewId)
+    if (res.data.code === 200) {
+      showSuccess('追评已删除')
+      fetchReviewStatus()
+    } else {
+      ElMessage.error(res.data.message || '删除失败')
+    }
+  } catch (err) {
+    if (err !== 'cancel') showError(err, '删除失败')
   }
 }
 
@@ -537,6 +605,59 @@ onMounted(async () => {
             <el-button type="warning" @click="returnDialogVisible = true">申请退货</el-button>
           </div>
         </div>
+
+        <!-- 评价区域 -->
+        <div class="section-card" v-if="order.status === 'completed' && reviewStatus">
+          <h3 class="section-title">订单评价</h3>
+          <div class="review-status-info">
+            <div class="review-row">
+              <span class="review-label">买家评价</span>
+              <template v-if="reviewStatus.buyerReviewed && reviewStatus.buyerReview">
+                <el-tag type="success" size="small">已评价</el-tag>
+              </template>
+              <template v-else-if="isBuyer && reviewStatus.canReview">
+                <el-button size="small" type="primary" @click="openReviewDialog('buyer_to_seller')">评价卖家</el-button>
+              </template>
+              <template v-else>
+                <el-tag type="info" size="small">未评价</el-tag>
+              </template>
+            </div>
+            <div class="review-row">
+              <span class="review-label">卖家评价</span>
+              <template v-if="reviewStatus.sellerReviewed && reviewStatus.sellerReview">
+                <el-tag type="success" size="small">已评价</el-tag>
+              </template>
+              <template v-else-if="isSeller && reviewStatus.canReview">
+                <el-button size="small" type="primary" @click="openReviewDialog('seller_to_buyer')">评价买家</el-button>
+              </template>
+              <template v-else>
+                <el-tag type="info" size="small">未评价</el-tag>
+              </template>
+            </div>
+          </div>
+
+          <!-- 已有评价展示 -->
+          <div v-if="reviewStatus.buyerReviewed && reviewStatus.buyerReview" class="existing-review">
+            <ReviewCard
+              :review="reviewStatus.buyerReview"
+              :show-append-btn="isBuyer && reviewStatus.canAppend"
+              :show-delete-btn="isBuyer && reviewStatus.buyerReview.status !== 'deleted'"
+              @append="openAppendDialog"
+              @delete="handleDeleteReview"
+              @delete-append="handleDeleteAppend"
+            />
+          </div>
+          <div v-if="reviewStatus.sellerReviewed && reviewStatus.sellerReview" class="existing-review">
+            <ReviewCard
+              :review="reviewStatus.sellerReview"
+              :show-append-btn="isSeller && reviewStatus.canAppend"
+              :show-delete-btn="isSeller && reviewStatus.sellerReview.status !== 'deleted'"
+              @append="openAppendDialog"
+              @delete="handleDeleteReview"
+              @delete-append="handleDeleteAppend"
+            />
+          </div>
+        </div>
       </template>
     </div>
 
@@ -596,6 +717,27 @@ onMounted(async () => {
         <el-button type="primary" @click="handleFillReturnExpress">提交</el-button>
       </template>
     </el-dialog>
+
+    <!-- 评价弹窗 -->
+    <ReviewFormDialog
+      v-model="reviewDialogVisible"
+      :order-id="order?.id || ''"
+      :order-info="order ? {
+        productName: order.productName || order.product?.name || '',
+        productImage: order.productImage || order.product?.images?.[0] || null,
+        buyerId: order.buyerId,
+        sellerId: order.sellerId,
+      } : undefined"
+      :type="reviewType"
+      @success="handleReviewSuccess"
+    />
+
+    <!-- 追评弹窗 -->
+    <AppendReviewDialog
+      v-model="appendReviewDialogVisible"
+      :review-id="currentAppendReviewId"
+      @success="handleReviewSuccess"
+    />
   </AppLayout>
 </template>
 
@@ -890,6 +1032,29 @@ onMounted(async () => {
   margin-top: $spacing-md;
   display: flex;
   gap: $spacing-sm;
+}
+
+// 评价区域
+.review-status-info {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.review-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.review-label {
+  font-size: $font-size-body;
+  color: $color-text-secondary;
+  width: 80px;
+}
+
+.existing-review {
+  margin-top: $spacing-md;
 }
 
 @media (max-width: $breakpoint-sm) {

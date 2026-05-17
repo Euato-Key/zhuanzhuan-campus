@@ -23,6 +23,7 @@ import { showError, showSuccess } from '@/utils/error'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateOrderDialog from '@/components/order/CreateOrderDialog.vue'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
+import ReviewList from '@/components/review/ReviewList.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -424,6 +425,9 @@ onMounted(() => {
           />
         </div>
       </div>
+
+      <!-- 评价列表 -->
+      <ReviewList :product-id="product.id" />
     </template>
 
     <!-- 下单弹窗 - 只有product存在时才渲染 -->

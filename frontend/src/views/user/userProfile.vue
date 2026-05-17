@@ -6,8 +6,10 @@ import { ElMessage } from 'element-plus'
 import { getOssUrl } from '@/utils/oss'
 import { formatDate } from '@/utils/format'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import ReviewCard from '@/components/review/ReviewCard.vue'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
+import { getReceivedReviews, type ReviewItem } from '@/api/modules/review'
 import api from '@/api/index'
 
 const route = useRoute()
@@ -37,6 +39,11 @@ const products = ref<{
 
 const productsLoading = ref(false)
 const productsTotal = ref(0)
+
+// 收到的评价（仅自己的主页）
+const receivedReviews = ref<ReviewItem[]>([])
+const receivedReviewsTotal = ref(0)
+const reviewsLoading = ref(false)
 
 // 是否是自己的主页
 const isOwnProfile = computed(() => {
@@ -100,6 +107,22 @@ async function fetchUserProducts() {
   }
 }
 
+// 获取收到的评价（仅自己的主页）
+async function fetchReceivedReviews() {
+  reviewsLoading.value = true
+  try {
+    const res = await getReceivedReviews({ page: 1, pageSize: 3 })
+    if (res.data.code === 200) {
+      receivedReviews.value = res.data.data.list
+      receivedReviewsTotal.value = res.data.data.total
+    }
+  } catch {
+    // 评价获取失败不影响页面
+  } finally {
+    reviewsLoading.value = false
+  }
+}
+
 // 联系卖家
 function contactUser() {
   if (!userStore.isLoggedIn) {
@@ -126,6 +149,9 @@ function goBack() {
 onMounted(() => {
   fetchUser().then(() => {
     fetchUserProducts()
+    if (isOwnProfile.value) {
+      fetchReceivedReviews()
+    }
   })
 })
 </script>
@@ -200,6 +226,33 @@ onMounted(() => {
 
             <el-empty v-if="!productsLoading && products.length === 0" description="暂无在售商品" />
           </div>
+        </div>
+
+        <!-- 收到的评价（仅自己主页） -->
+        <div class="reviews-section" v-if="isOwnProfile">
+          <h2>收到的评价 <span class="count">({{ receivedReviewsTotal }}条)</span></h2>
+
+          <div v-loading="reviewsLoading" class="reviews-preview">
+            <template v-if="receivedReviews.length">
+              <ReviewCard
+                v-for="review in receivedReviews"
+                :key="review.id"
+                :review="review"
+              />
+            </template>
+            <el-empty v-if="!reviewsLoading && receivedReviews.length === 0" description="暂无评价" />
+          </div>
+
+          <el-button
+            v-if="receivedReviewsTotal > 3"
+            type="primary"
+            plain
+            size="small"
+            @click="router.push('/reviews')"
+            class="view-all-btn"
+          >
+            查看全部评价
+          </el-button>
         </div>
       </template>
     </div>
@@ -295,6 +348,7 @@ onMounted(() => {
   border-radius: $radius-lg;
   padding: $spacing-lg;
   box-shadow: $shadow-sm;
+  margin-bottom: $spacing-lg;
 
   h2 {
     font-size: $font-size-h3;
@@ -307,6 +361,33 @@ onMounted(() => {
       color: $color-text-secondary;
     }
   }
+}
+
+.reviews-section {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-sm;
+
+  h2 {
+    font-size: $font-size-h3;
+    font-weight: $font-weight-semibold;
+    margin: 0 0 $spacing-lg;
+    color: $color-text-primary;
+
+    .count {
+      font-size: $font-size-body;
+      color: $color-text-secondary;
+    }
+  }
+}
+
+.reviews-preview {
+  min-height: 100px;
+}
+
+.view-all-btn {
+  margin-top: $spacing-md;
 }
 
 .products-grid {
