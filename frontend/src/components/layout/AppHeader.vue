@@ -5,10 +5,12 @@ import { useAuthDialog } from '@/composables/useAuthDialog'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, SwitchButton, Star, Bell, ChatDotRound, ShoppingBag, Location, Setting, Goods } from '@element-plus/icons-vue'
 import { getOssUrl } from '@/utils/oss'
+import { useChatStore } from '@/stores/chat'
 
 const router = useRouter()
 const userStore = useUserStore()
 const authDialog = useAuthDialog()
+const chatStore = useChatStore()
 
 async function handleLogout() {
   try {
@@ -44,6 +46,7 @@ async function handleLogout() {
         <div v-if="userStore.isLoggedIn" class="user-actions logged-in">
           <RouterLink to="/chat" class="action-icon" title="消息">
             <el-icon :size="20"><ChatDotRound /></el-icon>
+            <el-badge v-if="chatStore.totalUnreadCount > 0" :value="chatStore.totalUnreadCount" :max="99" class="unread-badge" />
           </RouterLink>
           <RouterLink to="/notifications" class="action-icon" title="通知">
             <el-icon :size="20"><Bell /></el-icon>
@@ -176,10 +179,24 @@ async function handleLogout() {
   border-radius: $radius-md;
   color: $color-text-secondary;
   transition: all $transition-fast;
+  position: relative;
 
   &:hover {
     color: $color-primary;
     background: $color-primary-pale;
+  }
+}
+
+.unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+
+  :deep(.el-badge__content) {
+    font-size: 10px;
+    height: 16px;
+    line-height: 16px;
+    padding: 0 4px;
   }
 }
 

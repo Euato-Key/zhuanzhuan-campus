@@ -19,6 +19,7 @@ import {
   ORDER_STATUS_TAG_TYPE,
 } from '@/api/modules/order'
 import { useUserStore } from '@/stores/user'
+import { useChatStore } from '@/stores/chat'
 import { showError, showSuccess } from '@/utils/error'
 import { formatDate } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
@@ -28,6 +29,7 @@ import PaymentDialog from '@/components/order/PaymentDialog.vue'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const chatStore = useChatStore()
 
 const loading = ref(true)
 const order = ref<OrderDetail | null>(null)
@@ -275,10 +277,13 @@ async function handleConfirmReturnReceived() {
   }
 }
 
-function goToChat() {
+async function goToChat() {
   if (!order.value) return
   const targetUserId = isBuyer.value ? order.value.sellerId : order.value.buyerId
-  router.push({ name: 'Chat', query: { userId: targetUserId } })
+  const conversationId = await chatStore.openConversation(targetUserId)
+  if (conversationId) {
+    router.push({ name: 'ChatRoom', params: { id: conversationId } })
+  }
 }
 
 function goToProduct() {

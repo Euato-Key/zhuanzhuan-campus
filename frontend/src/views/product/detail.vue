@@ -16,6 +16,7 @@ import {
   getItemConditionLabel,
 } from '@/api/modules/product'
 import { useUserStore } from '@/stores/user'
+import { useChatStore } from '@/stores/chat'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { getOssUrl } from '@/utils/oss'
 import { showError, showSuccess } from '@/utils/error'
@@ -26,6 +27,7 @@ import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const chatStore = useChatStore()
 const authDialog = useAuthDialog()
 
 const loading = ref(true)
@@ -134,17 +136,16 @@ async function toggleFavorite() {
 }
 
 // 联系卖家
-function contactSeller() {
+async function contactSeller() {
   if (!userStore.isLoggedIn) {
     authDialog.open('login')
     return
   }
   if (!product.value) return
-  // TODO: 跳转聊天页面
-  router.push({
-    name: 'Chat',
-    query: { userId: product.value.user.id },
-  })
+  const conversationId = await chatStore.openConversation(product.value.user.id)
+  if (conversationId) {
+    router.push({ name: 'ChatRoom', params: { id: conversationId } })
+  }
 }
 
 // 立即购买
