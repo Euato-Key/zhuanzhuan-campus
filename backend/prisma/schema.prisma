@@ -145,6 +145,13 @@ enum ComplaintStatus {
   closed
 }
 
+enum MessageType {
+  text
+  image
+  product
+  order
+}
+
 model User {
   id              Int       @id @default(autoincrement())
   email           String    @unique(map: "uk_email") @db.VarChar(255)
@@ -178,6 +185,12 @@ model User {
   complaintsMade  Complaint[]   @relation("ComplainantComplaints")
   complaintsReceived Complaint[] @relation("RespondentComplaints")
   complaintsHandled  Complaint[] @relation("HandlerComplaints")
+  conversationsUser1 Conversation[] @relation("User1Conversations")
+  conversationsUser2 Conversation[] @relation("User2Conversations")
+  sentMessages    Message[]     @relation("SenderMessages")
+  blacklistEntries Blacklist[]  @relation("BlockerBlacklist")
+  blacklistedBy   Blacklist[]   @relation("BlockedBlacklist")
+  quickReplies    QuickReply[]
 
   @@index([role], map: "idx_role")
   @@index([isBlocked], map: "idx_is_blocked")
@@ -486,4 +499,69 @@ model Complaint {
   handler     User?  @relation("HandlerComplaints", fields: [handlerId], references: [id], onDelete: SetNull, map: "fk_complaints_handler_id")
 
   @@map("complaints")
+}
+
+model Conversation {
+  id            Int       @id @default(autoincrement())
+  user1Id       Int       @map("user1_id")
+  user2Id       Int       @map("user2_id")
+  lastMessageId BigInt?   @map("last_message_id")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.DateTime
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.DateTime
+
+  user1    User      @relation("User1Conversations", fields: [user1Id], references: [id], onDelete: Cascade, map: "fk_conversations_user1_id")
+  user2    User      @relation("User2Conversations", fields: [user2Id], references: [id], onDelete: Cascade, map: "fk_conversations_user2_id")
+  messages Message[]
+
+  @@unique([user1Id, user2Id], map: "uk_users_pair")
+  @@index([user1Id], map: "idx_user1_id")
+  @@index([user2Id], map: "idx_user2_id")
+  @@map("conversations")
+}
+
+model Message {
+  id             BigInt      @id @default(autoincrement())
+  conversationId Int         @map("conversation_id")
+  senderId       Int         @map("sender_id")
+  type           MessageType
+  content        String      @db.Text
+  readAt         DateTime?   @map("read_at") @db.DateTime
+  createdAt      DateTime    @default(now()) @map("created_at") @db.DateTime
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade, map: "fk_messages_conversation_id")
+  sender       User         @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Cascade, map: "fk_messages_sender_id")
+
+  @@index([conversationId], map: "idx_conversation_id")
+  @@index([senderId], map: "idx_sender_id")
+  @@index([createdAt], map: "idx_created_at")
+  @@index([conversationId, createdAt], map: "idx_conv_created")
+  @@map("messages")
+}
+
+model Blacklist {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @map("user_id")
+  blockedUserId  Int      @map("blocked_user_id")
+  createdAt      DateTime @default(now()) @map("created_at") @db.DateTime
+
+  user         User @relation("BlockerBlacklist", fields: [userId], references: [id], onDelete: Cascade, map: "fk_blacklist_user_id")
+  blockedUser  User @relation("BlockedBlacklist", fields: [blockedUserId], references: [id], onDelete: Cascade, map: "fk_blacklist_blocked_user_id")
+
+  @@unique([userId, blockedUserId], map: "uk_user_blocked")
+  @@index([userId], map: "idx_user_id")
+  @@index([blockedUserId], map: "idx_blocked_user_id")
+  @@map("blacklist")
+}
+
+model QuickReply {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  content   String   @db.VarChar(255)
+  sort      Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_quick_replies_user_id")
+
+  @@index([userId], map: "idx_user_id")
+  @@map("quick_replies")
 }

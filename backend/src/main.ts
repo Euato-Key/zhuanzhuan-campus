@@ -1,8 +1,11 @@
 import express, { Request, Response, NextFunction } from 'express';
+import http from 'http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import { prisma } from './config/prisma';
+import { initSocketServer } from './config/socket';
+import { registerChatSocketEvents } from './modules/chat/chat.socket';
 import { startCleanupJobs } from './common/cleanup';
 import { AppError } from './common/errors';
 import { fail } from './utils/response';
@@ -15,6 +18,7 @@ import orderRoutes from './modules/order/order.routes';
 import addressRoutes from './modules/address/address.routes';
 import regionRoutes from './modules/region/region.routes';
 import universityRoutes from './modules/university/university.routes';
+import chatRoutes from './modules/chat/chat.routes';
 
 const app = express();
 
@@ -34,6 +38,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/regions', regionRoutes);
 app.use('/api/universities', universityRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ code: 200, data: { status: 'ok' }, message: 'success' });
@@ -47,14 +52,18 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   return fail(res, '服务器内部错误', 500);
 });
 
-const server = app.listen(env.PORT, () => {
+const httpServer = http.createServer(app);
+const io = initSocketServer(httpServer);
+registerChatSocketEvents(io);
+
+httpServer.listen(env.PORT, () => {
   console.log(`Server running on http://localhost:${env.PORT}`);
   startCleanupJobs();
 });
 
 process.on('SIGINT', async () => {
   await prisma.$disconnect();
-  server.close();
+  httpServer.close();
   process.exit(0);
 });
 

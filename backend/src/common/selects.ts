@@ -104,3 +104,14 @@ export const CATEGORY_CHILDREN_SELECT = {
   icon: true,
   sort: true,
 } as const;
+
+/**
+ * 聊天用户字段（会话列表中的对方用户信息）
+ */
+export const CHAT_USER_SELECT = {
+  id: true,
+  username: true,
+  avatar: true,
+  school: true,
+  campus: true,
+} as const;

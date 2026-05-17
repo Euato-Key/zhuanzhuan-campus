@@ -1,0 +1,1668 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "聊天模块 API",
+    "description": "转转校园二手平台 - 聊天模块接口文档",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "会话接口",
+      "description": "会话管理相关接口（需登录）"
+    },
+    {
+      "name": "消息接口",
+      "description": "消息收发与搜索相关接口（需登录）"
+    },
+    {
+      "name": "黑名单接口",
+      "description": "拉黑/解除拉黑相关接口（需登录）"
+    },
+    {
+      "name": "快捷回复接口",
+      "description": "快捷回复模板管理接口（需登录）"
+    },
+    {
+      "name": "议价模板接口",
+      "description": "商品议价模板接口（需登录）"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "请求参数错误",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": 400,
+              "data": null,
+              "message": "请求参数错误"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未授权",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": 401,
+              "data": null,
+              "message": "未授权"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "无权限",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": 403,
+              "data": null,
+              "message": "无权限"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "资源不存在",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "code": 404,
+              "data": null,
+              "message": "资源不存在"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "nullable": true
+          }
+        }
+      },
+      "ChatUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string",
+            "nullable": true
+          },
+          "school": {
+            "type": "string",
+            "nullable": true
+          },
+          "campus": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "LastMessage": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "消息ID（BigInt序列化为字符串）"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image",
+              "product",
+              "order"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "senderId": {
+            "type": "integer",
+            "description": "发送者ID"
+          }
+        }
+      },
+      "ConversationListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "otherUser": {
+            "$ref": "#/components/schemas/ChatUser"
+          },
+          "lastMessage": {
+            "$ref": "#/components/schemas/LastMessage"
+          },
+          "unreadCount": {
+            "type": "integer"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ConversationDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "otherUser": {
+            "$ref": "#/components/schemas/ChatUser"
+          },
+          "lastMessage": {
+            "$ref": "#/components/schemas/LastMessage"
+          },
+          "unreadCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MessageItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "消息ID（BigInt序列化为字符串）"
+          },
+          "conversationId": {
+            "type": "integer"
+          },
+          "senderId": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image",
+              "product",
+              "order"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "文本消息为文字内容；图片消息为URL；商品/订单消息为JSON字符串"
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sender": {
+            "$ref": "#/components/schemas/ChatUser"
+          }
+        }
+      },
+      "ProductCardContent": {
+        "type": "object",
+        "description": "商品卡片消息的content字段（JSON字符串解析后）",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string",
+            "nullable": true
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      },
+      "OrderCardContent": {
+        "type": "object",
+        "description": "订单卡片消息的content字段（JSON字符串解析后）",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "orderNo": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "productImage": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "BlacklistItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "blockedUser": {
+            "$ref": "#/components/schemas/ChatUser"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "QuickReplyItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "userId": {
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BargainTemplate": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "string",
+            "description": "议价模板消息"
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "currentPrice": {
+                "type": "number"
+              },
+              "bargain": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "PaginatedConversations": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "success"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "list": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ConversationListItem"
+                }
+              },
+              "total": {
+                "type": "integer"
+              },
+              "page": {
+                "type": "integer"
+              },
+              "pageSize": {
+                "type": "integer"
+              },
+              "totalPages": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "PaginatedMessages": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "success"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "list": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MessageItem"
+                }
+              },
+              "total": {
+                "type": "integer"
+              },
+              "page": {
+                "type": "integer"
+              },
+              "pageSize": {
+                "type": "integer"
+              },
+              "totalPages": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "PaginatedBlacklist": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "success"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "list": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BlacklistItem"
+                }
+              },
+              "total": {
+                "type": "integer"
+              },
+              "page": {
+                "type": "integer"
+              },
+              "pageSize": {
+                "type": "integer"
+              },
+              "totalPages": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "CreateConversationRequest": {
+        "type": "object",
+        "required": [
+          "targetUserId"
+        ],
+        "properties": {
+          "targetUserId": {
+            "type": "integer",
+            "description": "对方用户ID"
+          }
+        }
+      },
+      "SendMessageRequest": {
+        "type": "object",
+        "required": [
+          "type",
+          "content"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image",
+              "product",
+              "order"
+            ],
+            "description": "消息类型"
+          },
+          "content": {
+            "type": "string",
+            "description": "消息内容。text=文字内容；image=图片URL；product/order=JSON字符串含ID"
+          }
+        }
+      },
+      "CreateQuickReplyRequest": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "快捷回复内容"
+          },
+          "sort": {
+            "type": "integer",
+            "default": 0,
+            "description": "排序值"
+          }
+        }
+      },
+      "UpdateQuickReplyRequest": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "快捷回复内容"
+          },
+          "sort": {
+            "type": "integer",
+            "description": "排序值"
+          }
+        }
+      },
+      "BatchSortRequest": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "sort"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "sort": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/chat/conversations": {
+      "get": {
+        "tags": [
+          "会话接口"
+        ],
+        "summary": "获取会话列表",
+        "description": "获取当前用户的会话列表，包含对方用户信息、最新消息摘要、未读消息数",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页数量",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedConversations"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "会话接口"
+        ],
+        "summary": "创建或获取会话",
+        "description": "与指定用户创建会话，如已存在则返回现有会话。不能和自己聊天，不能和被拉黑的用户创建会话。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功（已存在会话）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ConversationDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "成功（新建会话）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ConversationDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/chat/conversations/{id}": {
+      "get": {
+        "tags": [
+          "会话接口"
+        ],
+        "summary": "获取会话详情",
+        "description": "获取指定会话的详细信息，包含对方用户信息和未读数",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "会话ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ConversationDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/chat/conversations/{id}/messages": {
+      "get": {
+        "tags": [
+          "消息接口"
+        ],
+        "summary": "获取消息历史",
+        "description": "分页获取指定会话的消息历史，支持游标分页（before参数）用于无限滚动",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "会话ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页数量",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "游标：返回ID小于此值的消息（用于无限滚动加载更早消息）",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedMessages"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "消息接口"
+        ],
+        "summary": "发送消息",
+        "description": "在指定会话中发送消息。支持文本、图片、商品卡片、订单卡片四种类型。商品/订单卡片消息的content由服务端根据ID查库构造，客户端只需传入含ID的JSON。商品消息要求商品在售中且属于当前会话的某一方（我的宝贝或对方宝贝），订单消息要求订单未取消且买卖双方恰好是当前会话的两个人。",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "会话ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "发送成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "消息发送成功"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MessageItem"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/chat/conversations/{id}/messages/read": {
+      "put": {
+        "tags": [
+          "消息接口"
+        ],
+        "summary": "标记消息已读",
+        "description": "将指定会话中对方发送的未读消息全部标记为已读，并通过WebSocket通知对方",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "会话ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "readCount": {
+                          "type": "integer",
+                          "description": "标记已读的消息数"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/chat/conversations/{id}/messages/search": {
+      "get": {
+        "tags": [
+          "消息接口"
+        ],
+        "summary": "搜索消息",
+        "description": "在指定会话中按关键词搜索消息内容",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "会话ID",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "description": "搜索关键词（最多100个字符）",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页数量",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedMessages"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/chat/blacklist": {
+      "get": {
+        "tags": [
+          "黑名单接口"
+        ],
+        "summary": "获取黑名单列表",
+        "description": "获取当前用户的黑名单列表，包含被拉黑用户的公开信息",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页数量",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedBlacklist"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "黑名单接口"
+        ],
+        "summary": "拉黑用户",
+        "description": "将指定用户加入黑名单，拉黑后双方无法互相发送消息",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "blockedUserId"
+                ],
+                "properties": {
+                  "blockedUserId": {
+                    "type": "integer",
+                    "description": "要拉黑的用户ID"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "已拉黑该用户"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BlacklistItem"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "已经拉黑该用户",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "code": 409,
+                  "data": null,
+                  "message": "已经拉黑了该用户"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chat/blacklist/check": {
+      "get": {
+        "tags": [
+          "黑名单接口"
+        ],
+        "summary": "检查拉黑状态",
+        "description": "检查当前用户与指定用户之间的拉黑关系（双向检查）",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "description": "对方用户ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "isBlocked": {
+                          "type": "boolean",
+                          "description": "是否存在拉黑关系（任一方拉黑即为true）"
+                        },
+                        "blockedByMe": {
+                          "type": "boolean",
+                          "description": "我是否拉黑了对方"
+                        },
+                        "blockedByOther": {
+                          "type": "boolean",
+                          "description": "对方是否拉黑了我"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/chat/blacklist/{blockedUserId}": {
+      "delete": {
+        "tags": [
+          "黑名单接口"
+        ],
+        "summary": "解除拉黑",
+        "description": "将指定用户从黑名单中移除，移除后双方可恢复聊天",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "blockedUserId",
+            "in": "path",
+            "required": true,
+            "description": "要解除拉黑的用户ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                          "example": "已解除拉黑"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/chat/quick-replies": {
+      "get": {
+        "tags": [
+          "快捷回复接口"
+        ],
+        "summary": "获取快捷回复列表",
+        "description": "获取当前用户的快捷回复模板列表，按sort升序排列",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QuickReplyItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "快捷回复接口"
+        ],
+        "summary": "创建快捷回复",
+        "description": "创建一条快捷回复模板",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQuickReplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "创建成功"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/QuickReplyItem"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/chat/quick-replies/sort": {
+      "put": {
+        "tags": [
+          "快捷回复接口"
+        ],
+        "summary": "批量更新排序",
+        "description": "批量更新快捷回复的排序值",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchSortRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                          "example": "排序已更新"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/chat/quick-replies/{id}": {
+      "put": {
+        "tags": [
+          "快捷回复接口"
+        ],
+        "summary": "修改快捷回复",
+        "description": "修改指定快捷回复的内容或排序",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "快捷回复ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateQuickReplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/QuickReplyItem"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "快捷回复接口"
+        ],
+        "summary": "删除快捷回复",
+        "description": "删除指定的快捷回复模板",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "快捷回复ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "删除成功"
+                    },
+                    "data": {
+                      "type": "object",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/chat/bargain-template/{productId}": {
+      "get": {
+        "tags": [
+          "议价模板接口"
+        ],
+        "summary": "获取议价模板",
+        "description": "获取指定商品的议价消息模板，仅当商品支持议价时返回",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "description": "商品ID",
+            "schema": {
+              "type": "string",
+              "description": "BigInt序列化为字符串"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BargainTemplate"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  }
+}
