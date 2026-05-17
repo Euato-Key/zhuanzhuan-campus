@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { Check, Loading } from '@element-plus/icons-vue'
 import type { PaymentMethod } from '@/api/modules/order'
 
 const props = defineProps<{
