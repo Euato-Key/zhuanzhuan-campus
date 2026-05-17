@@ -2,6 +2,7 @@
 import type { ConversationListItem } from '@/api/modules/chat'
 import { formatRelativeTime } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
+import { useChatStore } from '@/stores/chat'
 import OnlineDot from './OnlineDot.vue'
 
 defineProps<{
@@ -12,6 +13,8 @@ defineProps<{
 defineEmits<{
   click: []
 }>()
+
+const chatStore = useChatStore()
 
 function getLastMessagePreview(msg: ConversationListItem['lastMessage']): string {
   if (!msg) return ''
@@ -30,7 +33,7 @@ function getLastMessagePreview(msg: ConversationListItem['lastMessage']): string
       <el-avatar :size="48" :src="conversation.otherUser.avatar ? getOssUrl(conversation.otherUser.avatar) : undefined">
         {{ conversation.otherUser.username?.charAt(0) || '?' }}
       </el-avatar>
-      <OnlineDot :online="false" />
+      <OnlineDot :online="chatStore.onlineStatusMap.get(conversation.otherUser.id) ?? false" />
     </div>
     <div class="conv-info">
       <div class="conv-top-row">

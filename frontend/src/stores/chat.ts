@@ -1,6 +1,5 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { ElMessage } from 'element-plus'
 import { useSocket } from '@/composables/useSocket'
 import {
   getConversations,
@@ -24,11 +23,12 @@ import {
   type ConversationListItem,
   type ConversationDetail,
   type MessageItem,
+  type LastMessage,
   type BlockStatus,
   type QuickReplyItem,
   type BlacklistItem,
 } from '@/api/modules/chat'
-import { showError } from '@/utils/error'
+import { showError, showSuccess } from '@/utils/error'
 
 export const useChatStore = defineStore('chat', () => {
   const socketComposable = useSocket()
@@ -81,44 +81,37 @@ export const useChatStore = defineStore('chat', () => {
     return onlineStatusMap.value.get(currentConversation.value.otherUser.id) ?? false
   })
 
+  function toLastMessage(msg: MessageItem): LastMessage {
+    return { id: msg.id, type: msg.type, content: msg.content, createdAt: msg.createdAt, senderId: msg.senderId }
+  }
+
   // ─── Socket Event Handlers ───
   function handleNewMessage(data: { message: MessageItem }) {
     const msg = data.message
     appendMessage(msg.conversationId, msg)
 
-    // Update conversation list
     const idx = conversations.value.findIndex(c => c.id === msg.conversationId)
     if (idx !== -1) {
       const conv = conversations.value[idx]
-      conv.lastMessage = {
-        id: msg.id,
-        type: msg.type,
-        content: msg.content,
-        createdAt: msg.createdAt,
-        senderId: msg.senderId,
-      }
-      // Increment unread if not current conversation
+      conv.lastMessage = toLastMessage(msg)
       if (msg.conversationId !== currentConversationId.value) {
         conv.unreadCount += 1
       }
-      // Move to top
-      conversations.value.splice(idx, 1)
-      conversations.value.unshift(conv)
+      conversations.value = [conv, ...conversations.value.filter(c => c.id !== msg.conversationId)]
     }
 
-    // Auto mark as read if in current conversation
     if (msg.conversationId === currentConversationId.value) {
-      setTimeout(() => markConversationRead(msg.conversationId), 500)
+      debounceMarkRead(msg.conversationId)
     }
   }
 
   function handleMessageRead(data: { conversationId: number; userId: number }) {
     const msgs = messagesMap.value.get(data.conversationId)
     if (!msgs) return
-    // Mark own messages as read
+    const now = new Date().toISOString()
     msgs.forEach(m => {
-      if (m.conversationId === data.conversationId && m.readAt === null) {
-        m.readAt = new Date().toISOString()
+      if (m.senderId === data.userId && m.readAt === null) {
+        m.readAt = now
       }
     })
   }
@@ -147,17 +140,25 @@ export const useChatStore = defineStore('chat', () => {
     onlineStatusMap.value.set(data.userId, data.online)
   }
 
+  function refreshBlockStatus(otherUserId: number) {
+    if (currentConversation.value?.otherUser.id === otherUserId) {
+      checkBlock(otherUserId)
+    }
+  }
+
   function handleBlocked(data: { blockedBy: number; blockedUser: number }) {
-    if (!currentConversation.value) return
-    if (data.blockedUser === currentConversation.value.otherUser.id || data.blockedBy === currentConversation.value.otherUser.id) {
-      checkBlock(currentConversation.value.otherUser.id)
+    const otherId = currentConversation.value?.otherUser.id
+    if (!otherId) return
+    if (data.blockedUser === otherId || data.blockedBy === otherId) {
+      checkBlock(otherId)
     }
   }
 
   function handleUnblocked(data: { unblockedBy: number; unblockedUser: number }) {
-    if (!currentConversation.value) return
-    if (data.unblockedUser === currentConversation.value.otherUser.id || data.unblockedBy === currentConversation.value.otherUser.id) {
-      checkBlock(currentConversation.value.otherUser.id)
+    const otherId = currentConversation.value?.otherUser.id
+    if (!otherId) return
+    if (data.unblockedUser === otherId || data.unblockedBy === otherId) {
+      checkBlock(otherId)
     }
   }
 
@@ -268,13 +269,14 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function clearCurrentConversation() {
-    if (currentConversationId.value) {
-      socketComposable.leaveConversation(currentConversationId.value)
+    const oldId = currentConversationId.value
+    if (oldId) {
+      socketComposable.leaveConversation(oldId)
     }
     currentConversation.value = null
     currentConversationId.value = null
     blockStatus.value = null
-    typingMap.value.delete(currentConversationId.value ?? 0)
+    if (oldId) typingMap.value.delete(oldId)
   }
 
   // ─── Actions: Messages ───
@@ -329,14 +331,8 @@ export const useChatStore = defineStore('chat', () => {
         // Update conversation list lastMessage
         const idx = conversations.value.findIndex(c => c.id === convId)
         if (idx !== -1) {
-          conversations.value[idx].lastMessage = {
-            id: msg.id,
-            type: msg.type,
-            content: msg.content,
-            createdAt: msg.createdAt,
-            senderId: msg.senderId,
-          }
-          conversations.value.unshift(conversations.value.splice(idx, 1)[0])
+          conversations.value[idx].lastMessage = toLastMessage(msg)
+          conversations.value = [conversations.value[idx], ...conversations.value.filter(c => c.id !== convId)]
         }
 
         // Stop typing
@@ -348,10 +344,12 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  const messageIds = ref<Set<string>>(new Set())
+
   function appendMessage(conversationId: number, msg: MessageItem) {
+    if (messageIds.value.has(msg.id)) return
+    messageIds.value.add(msg.id)
     const list = messagesMap.value.get(conversationId) || []
-    // Deduplicate
-    if (list.some(m => m.id === msg.id)) return
     list.push(msg)
     messagesMap.value.set(conversationId, list)
   }
@@ -370,6 +368,15 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  let markReadTimer: ReturnType<typeof setTimeout> | null = null
+  function debounceMarkRead(conversationId: number) {
+    if (markReadTimer) clearTimeout(markReadTimer)
+    markReadTimer = setTimeout(() => {
+      markConversationRead(conversationId)
+      markReadTimer = null
+    }, 500)
+  }
+
   // ─── Actions: Blacklist ───
   async function checkBlock(userId: number) {
     try {
@@ -386,7 +393,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const res = await blockUser(userId)
       if (res.data.code === 200) {
-        ElMessage.success('已拉黑该用户')
+        showSuccess('已拉黑该用户')
         checkBlock(userId)
       }
     } catch (err) {
@@ -398,7 +405,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const res = await unblockUser(userId)
       if (res.data.code === 200) {
-        ElMessage.success('已取消拉黑')
+        showSuccess('已取消拉黑')
         checkBlock(userId)
       }
     } catch (err) {
@@ -583,6 +590,7 @@ export const useChatStore = defineStore('chat', () => {
     currentConversation.value = null
     currentConversationId.value = null
     messagesMap.value.clear()
+    messageIds.value.clear()
     messagesLoading.value = false
     messagesHasMore.value = true
     messagesCursor.value = null
@@ -596,6 +604,10 @@ export const useChatStore = defineStore('chat', () => {
     if (typingTimer) {
       clearTimeout(typingTimer)
       typingTimer = null
+    }
+    if (markReadTimer) {
+      clearTimeout(markReadTimer)
+      markReadTimer = null
     }
   }
 

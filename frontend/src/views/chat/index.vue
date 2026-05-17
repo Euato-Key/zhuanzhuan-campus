@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
 import ConversationItem from '@/components/chat/ConversationItem.vue'
 
 const route = useRoute()
+const router = useRouter()
 const chatStore = useChatStore()
 
 const isDesktop = ref(window.innerWidth >= 768)
@@ -27,13 +28,12 @@ const activeConversationId = computed(() => {
 })
 
 function openConversation(id: number) {
-  chatStore.selectConversation(id)
+  router.push({ name: 'ChatRoom', params: { id } })
 }
 </script>
 
 <template>
   <div class="chat-layout" :class="{ desktop: isDesktop }">
-    <!-- Desktop: side-by-side layout -->
     <template v-if="isDesktop">
       <aside class="chat-sidebar">
         <div class="sidebar-header">
@@ -58,7 +58,6 @@ function openConversation(id: number) {
       </main>
     </template>
 
-    <!-- Mobile: full-width router-view -->
     <template v-else>
       <router-view />
     </template>

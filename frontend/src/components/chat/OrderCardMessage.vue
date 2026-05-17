@@ -1,19 +1,25 @@
 <script setup lang="ts">
 import type { OrderCardContent } from '@/api/modules/chat'
+import { ORDER_STATUS_LABELS, ORDER_STATUS_TAG_TYPE } from '@/api/modules/order'
 
 defineProps<{
   content: OrderCardContent
 }>()
 
 const statusLabels: Record<string, string> = {
-  pending_payment: '待付款',
+  ...ORDER_STATUS_LABELS,
   paid: '已付款',
   shipped: '已发货',
   delivered: '已收货',
-  completed: '已完成',
-  cancelled: '已取消',
   refunding: '退款中',
-  refunded: '已退款',
+}
+
+const statusTagType: Record<string, string> = {
+  ...ORDER_STATUS_TAG_TYPE,
+  paid: 'primary',
+  shipped: 'primary',
+  delivered: 'info',
+  refunding: 'warning',
 }
 </script>
 
@@ -21,7 +27,7 @@ const statusLabels: Record<string, string> = {
   <router-link :to="`/orders/${content.orderId}`" class="order-card-msg">
     <div class="order-header">
       <span class="order-no">订单号: {{ content.orderNo }}</span>
-      <el-tag size="small" :type="content.status === 'completed' ? 'success' : 'info'">
+      <el-tag size="small" :type="statusTagType[content.status] || 'info'">
         {{ statusLabels[content.status] || content.status }}
       </el-tag>
     </div>

@@ -15,7 +15,6 @@ import {
   updateAvatar as updateAvatarApi,
   type UserProfile
 } from '@/api/modules/user'
-import { useChatStore } from '@/stores/chat'
 
 interface User {
   id: number
@@ -95,8 +94,6 @@ export const useUserStore = defineStore('user', () => {
     try {
       await logoutApi()
     } finally {
-      const chatStore = useChatStore()
-      chatStore.cleanup()
       clearAuth()
     }
   }

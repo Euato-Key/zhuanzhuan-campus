@@ -5,6 +5,8 @@ const socket = ref<Socket | null>(null)
 const connected = ref(false)
 const connecting = ref(false)
 
+const eventHandlers = new Map<string, Set<(...args: unknown[]) => void>>()
+
 function getSocketUrl(): string {
   return import.meta.env.VITE_SOCKET_URL || '/'
 }
@@ -36,6 +38,10 @@ export function useSocket() {
     s.on('connect', () => {
       connected.value = true
       connecting.value = false
+      // Re-register all event handlers on reconnect
+      eventHandlers.forEach((handlers, event) => {
+        handlers.forEach(handler => s.on(event, handler))
+      })
     })
 
     s.on('disconnect', () => {
@@ -46,7 +52,6 @@ export function useSocket() {
       connecting.value = false
     })
 
-    // Re-auth on reconnect (token may have been refreshed)
     s.on('reconnect_attempt', () => {
       const newToken = getAuthToken()
       if (newToken) {
@@ -72,11 +77,21 @@ export function useSocket() {
   }
 
   function on(event: string, handler: (...args: unknown[]) => void) {
+    if (!eventHandlers.has(event)) {
+      eventHandlers.set(event, new Set())
+    }
+    eventHandlers.get(event)!.add(handler)
     socket.value?.on(event, handler)
   }
 
   function off(event: string, handler?: (...args: unknown[]) => void) {
-    socket.value?.off(event, handler)
+    if (handler) {
+      eventHandlers.get(event)?.delete(handler)
+      socket.value?.off(event, handler)
+    } else {
+      eventHandlers.delete(event)
+      socket.value?.off(event)
+    }
   }
 
   function joinConversation(id: number) {

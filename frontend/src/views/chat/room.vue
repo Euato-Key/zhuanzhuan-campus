@@ -6,6 +6,7 @@ import { useChatStore } from '@/stores/chat'
 import { useUserStore } from '@/stores/user'
 import { getOssUrl } from '@/utils/oss'
 import { formatRelativeTime, formatDate } from '@/utils/format'
+import type { MessageType } from '@/api/modules/chat'
 import { useChatInfiniteScroll } from '@/composables/useChatInfiniteScroll'
 import MessageBubble from '@/components/chat/MessageBubble.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
@@ -42,19 +43,25 @@ const isInputDisabled = computed(() => {
   return chatStore.isBlockedByMe || chatStore.isBlockedByOther
 })
 
-// Group messages by date
+// Group messages by date with pre-computed flags
 const groupedMessages = computed(() => {
   const messages = chatStore.currentMessages
-  const groups: Array<{ date: string; messages: typeof messages }> = []
+  const groups: Array<{ date: string; items: Array<MessageItem & { _showAvatar: boolean; _showTime: boolean }> }> = []
   let currentDate = ''
 
   for (const msg of messages) {
     const msgDate = formatDate(msg.createdAt, 'date')
     if (msgDate !== currentDate) {
       currentDate = msgDate
-      groups.push({ date: msgDate, messages: [] })
+      groups.push({ date: msgDate, items: [] })
     }
-    groups[groups.length - 1].messages.push(msg)
+    const group = groups[groups.length - 1]
+    const prev = group.items.length > 0 ? group.items[group.items.length - 1] : null
+    group.items.push({
+      ...msg,
+      _showAvatar: msg.senderId !== currentUserId.value && (!prev || prev.senderId !== msg.senderId),
+      _showTime: !prev || formatRelativeTime(msg.createdAt) !== formatRelativeTime(prev.createdAt),
+    })
   }
 
   return groups
@@ -100,7 +107,7 @@ function goBack() {
   router.push({ name: 'Chat' })
 }
 
-function handleSend(type: 'text' | 'image' | 'product' | 'order', content: string) {
+function handleSend(type: MessageType, content: string) {
   chatStore.sendMessage(type, content)
   nextTick(() => scrollToBottom())
 }
@@ -136,7 +143,6 @@ function scrollToNewMessage() {
 
 <template>
   <div class="chat-room-page">
-    <!-- Header -->
     <div class="room-header">
       <div class="header-left">
         <el-button link class="back-btn" @click="goBack">
@@ -175,7 +181,6 @@ function scrollToNewMessage() {
       </div>
     </div>
 
-    <!-- Search Panel -->
     <SearchPanel
       v-if="showSearch"
       :results="chatStore.searchResults"
@@ -186,7 +191,6 @@ function scrollToNewMessage() {
       @select-result="showSearch = false"
     />
 
-    <!-- Block Banner -->
     <BlockBanner
       v-if="chatStore.isCurrentBlocked"
       :blocked-by-me="chatStore.isBlockedByMe"
@@ -194,7 +198,6 @@ function scrollToNewMessage() {
       @unblock="handleUnblock"
     />
 
-    <!-- Messages Area -->
     <div ref="messageContainer" class="messages-area" :class="{ 'has-banner': chatStore.isCurrentBlocked }">
       <div v-if="chatStore.messagesLoading" class="messages-loading" v-loading="true" />
       <template v-else>
@@ -202,21 +205,19 @@ function scrollToNewMessage() {
         <template v-for="group in groupedMessages" :key="group.date">
           <div class="date-divider">{{ group.date }}</div>
           <MessageBubble
-            v-for="(msg, idx) in group.messages"
+            v-for="msg in group.items"
             :key="msg.id"
             :message="msg"
             :is-own="msg.senderId === currentUserId"
-            :show-avatar="msg.senderId !== currentUserId && (idx === 0 || group.messages[idx - 1].senderId !== msg.senderId)"
-            :show-time="idx === 0 || formatRelativeTime(msg.createdAt) !== formatRelativeTime(group.messages[idx - 1].createdAt)"
+            :show-avatar="msg._showAvatar"
+            :show-time="msg._showTime"
           />
         </template>
         <div v-if="!chatStore.currentMessages.length" class="no-messages">暂无消息，发送第一条消息吧</div>
       </template>
 
-      <!-- Typing Indicator -->
       <TypingIndicator :visible="chatStore.isOtherTyping" />
 
-      <!-- New Message Button -->
       <Transition name="fade">
         <el-button
           v-if="showNewMessage"
@@ -231,7 +232,6 @@ function scrollToNewMessage() {
       </Transition>
     </div>
 
-    <!-- Quick Reply Panel -->
     <QuickReplyPanel
       v-if="showQuickReplies"
       :replies="chatStore.quickReplies"
@@ -240,7 +240,6 @@ function scrollToNewMessage() {
       @manage="showBlacklistDialog = true"
     />
 
-    <!-- Chat Input -->
     <ChatInput
       :disabled="isInputDisabled"
       @send="handleSend"
@@ -248,7 +247,6 @@ function scrollToNewMessage() {
       @stop-typing="handleStopTyping"
     />
 
-    <!-- Blacklist Dialog -->
     <BlacklistDialog v-model="showBlacklistDialog" />
   </div>
 </template>

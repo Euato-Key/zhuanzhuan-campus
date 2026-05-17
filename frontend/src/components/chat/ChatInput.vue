@@ -2,6 +2,7 @@
 import { ref, nextTick } from 'vue'
 import { Camera, Goods, List, Promotion } from '@element-plus/icons-vue'
 import { uploadImage } from '@/api/modules/upload'
+import type { MessageType } from '@/api/modules/chat'
 import { showError } from '@/utils/error'
 
 const props = defineProps<{
@@ -9,7 +10,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  send: [type: 'text' | 'image' | 'product' | 'order', content: string]
+  send: [type: MessageType, content: string]
   typing: []
   stopTyping: []
 }>()
@@ -18,14 +19,8 @@ const inputText = ref('')
 const imageUploading = ref(false)
 const showQuickReplies = ref(false)
 
-let typingTimer: ReturnType<typeof setTimeout> | null = null
-
 function handleInput() {
   emit('typing')
-  if (typingTimer) clearTimeout(typingTimer)
-  typingTimer = setTimeout(() => {
-    emit('stopTyping')
-  }, 3000)
 }
 
 function handleSend() {
@@ -34,10 +29,6 @@ function handleSend() {
   emit('send', 'text', text)
   inputText.value = ''
   emit('stopTyping')
-  if (typingTimer) {
-    clearTimeout(typingTimer)
-    typingTimer = null
-  }
   nextTick(() => {
     const textarea = document.querySelector('.chat-input-area textarea') as HTMLTextAreaElement
     textarea?.focus()
@@ -66,7 +57,7 @@ async function handleImageUpload(e: Event) {
   try {
     const res = await uploadImage(file, 'chat')
     if (res.data.code === 200) {
-      emit('send', 'image', res.data.data.path)
+      emit('send', 'image', res.data.data.ossPath)
     }
   } catch (err) {
     showError(err, '图片上传失败')

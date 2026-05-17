@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { MessageItem, ProductCardContent, OrderCardContent } from '@/api/modules/chat'
 import { formatRelativeTime } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
@@ -13,13 +14,19 @@ const props = defineProps<{
   showTime: boolean
 }>()
 
-function parseCardContent(content: string): ProductCardContent | OrderCardContent | null {
+const parsedContent = computed(() => {
+  if (props.message.type !== 'product' && props.message.type !== 'order') return null
   try {
-    return JSON.parse(content)
+    return JSON.parse(props.message.content) as ProductCardContent | OrderCardContent
   } catch {
     return null
   }
-}
+})
+
+const imageUrl = computed(() => {
+  if (props.message.type !== 'image') return ''
+  return getOssUrl(props.message.content)
+})
 </script>
 
 <template>
@@ -34,27 +41,23 @@ function parseCardContent(content: string): ProductCardContent | OrderCardConten
       </template>
       <div class="msg-content">
         <div class="bubble" :class="`type-${message.type}`">
-          <!-- Text -->
           <template v-if="message.type === 'text'">
             <span class="text-content">{{ message.content }}</span>
           </template>
-          <!-- Image -->
           <template v-else-if="message.type === 'image'">
             <el-image
-              :src="getOssUrl(message.content)"
-              :preview-src-list="[getOssUrl(message.content)]"
+              :src="imageUrl"
+              :preview-src-list="[imageUrl]"
               fit="cover"
               class="image-content"
             />
           </template>
-          <!-- Product card -->
           <template v-else-if="message.type === 'product'">
-            <ProductCardMessage v-if="parseCardContent(message.content)" :content="parseCardContent(message.content) as ProductCardContent" />
+            <ProductCardMessage v-if="parsedContent" :content="parsedContent as ProductCardContent" />
             <span v-else class="text-content">[商品卡片]</span>
           </template>
-          <!-- Order card -->
           <template v-else-if="message.type === 'order'">
-            <OrderCardMessage v-if="parseCardContent(message.content)" :content="parseCardContent(message.content) as OrderCardContent" />
+            <OrderCardMessage v-if="parsedContent" :content="parsedContent as OrderCardContent" />
             <span v-else class="text-content">[订单卡片]</span>
           </template>
         </div>

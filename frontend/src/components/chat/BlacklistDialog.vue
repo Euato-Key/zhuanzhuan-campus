@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { Unlock } from '@element-plus/icons-vue'
 import type { BlacklistItem } from '@/api/modules/chat'
 import { useChatStore } from '@/stores/chat'
@@ -27,10 +27,6 @@ async function handleUnblock(userId: number) {
   await chatStore.unblockOtherUser(userId)
   await loadBlacklist()
 }
-
-onMounted(() => {
-  loadBlacklist()
-})
 </script>
 
 <template>

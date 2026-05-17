@@ -1,22 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-
 defineProps<{
   visible: boolean
 }>()
-
-const dots = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
-
-onMounted(() => {
-  timer = setInterval(() => {
-    dots.value = (dots.value + 1) % 4
-  }, 400)
-})
-
-onUnmounted(() => {
-  if (timer) clearInterval(timer)
-})
 </script>
 
 <template>
@@ -24,7 +9,9 @@ onUnmounted(() => {
     <div v-if="visible" class="typing-indicator">
       <span class="typing-text">对方正在输入</span>
       <span class="typing-dots">
-        <span v-for="i in 3" :key="i" class="dot" :class="{ active: i <= dots }">.</span>
+        <span class="dot dot-1">.</span>
+        <span class="dot dot-2">.</span>
+        <span class="dot dot-3">.</span>
       </span>
     </div>
   </Transition>
@@ -44,11 +31,16 @@ onUnmounted(() => {
 
 .typing-dots .dot {
   opacity: 0.3;
-  transition: opacity 0.2s ease;
+  animation: dot-blink 1.2s infinite;
+}
 
-  &.active {
-    opacity: 1;
-  }
+.dot-1 { animation-delay: 0s; }
+.dot-2 { animation-delay: 0.4s; }
+.dot-3 { animation-delay: 0.8s; }
+
+@keyframes dot-blink {
+  0%, 60%, 100% { opacity: 0.3; }
+  30% { opacity: 1; }
 }
 
 .slide-enter-active,
