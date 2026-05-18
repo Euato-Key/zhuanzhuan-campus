@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { Search, Document, Picture, Goods, Tickets } from '@element-plus/icons-vue'
 import type { MessageItem, MessageType, ChatUser } from '@/api/modules/chat'
 import { formatRelativeTime, formatDate } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
@@ -256,7 +257,7 @@ watch(
           @keyup.enter="doSearch()"
         >
           <template #prefix>
-            <el-icon><i-ep-search /></el-icon>
+            <el-icon><Search /></el-icon>
           </template>
         </el-input>
         <el-button type="primary" :loading="loading" @click="doSearch()">搜索</el-button>
@@ -358,10 +359,10 @@ watch(
               <div class="result-content">
                 <div class="result-header-row">
                   <span class="result-type-icon">
-                    <i-ep-document v-if="msg.type === 'text'" />
-                    <i-ep-picture v-else-if="msg.type === 'image'" />
-                    <i-ep-goods v-else-if="msg.type === 'product'" />
-                    <i-ep-tickets v-else-if="msg.type === 'order'" />
+                    <Document v-if="msg.type === 'text'" />
+                    <Picture v-else-if="msg.type === 'image'" />
+                    <Goods v-else-if="msg.type === 'product'" />
+                    <Tickets v-else-if="msg.type === 'order'" />
                   </span>
                   <span class="result-preview">{{ getMessagePreview(msg) }}</span>
                 </div>
