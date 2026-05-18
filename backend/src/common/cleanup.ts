@@ -3,12 +3,14 @@ import { prisma } from '../config/prisma';
 import { FileService } from '../services/file.service';
 import { TokenUtil } from './token';
 import { OrderService } from '../modules/order/order.service';
+import { WantBuyStatus } from '@prisma/client';
 
 const CLEANUP_CONFIG = {
   refreshToken: { enabled: true, schedule: '0 3 * * *' },
   emailCode: { enabled: true, schedule: '0 4 * * *' },
   ossTempFiles: { enabled: true, schedule: '0 5 * * *', olderThanDays: 30 },
   expiredLocks: { enabled: true, schedule: '*/5 * * * *' },
+  expiredWantBuys: { enabled: true, schedule: '0 2 * * *' },
 };
 
 async function cleanupExpiredRefreshTokens(): Promise<number> {
@@ -94,6 +96,20 @@ async function deleteOssObjects(names: string[]): Promise<void> {
   await client.deleteMulti(names, {});
 }
 
+async function cleanupExpiredWantBuys(): Promise<number> {
+  const result = await prisma.wantBuy.updateMany({
+    where: {
+      status: WantBuyStatus.active,
+      expireTime: { lt: new Date() },
+    },
+    data: {
+      status: WantBuyStatus.expired,
+    },
+  });
+  console.log(`[Cleanup] Marked ${result.count} want-buys as expired`);
+  return result.count;
+}
+
 export function startCleanupJobs() {
   if (CLEANUP_CONFIG.refreshToken.enabled) {
     cron.schedule(CLEANUP_CONFIG.refreshToken.schedule, async () => {
@@ -139,10 +155,22 @@ export function startCleanupJobs() {
     });
     console.log('[Cleanup] Expired product lock cleanup job scheduled');
   }
+
+  if (CLEANUP_CONFIG.expiredWantBuys.enabled) {
+    cron.schedule(CLEANUP_CONFIG.expiredWantBuys.schedule, async () => {
+      try {
+        await cleanupExpiredWantBuys();
+      } catch (error) {
+        console.error('[Cleanup] Failed to cleanup expired want-buys:', error);
+      }
+    });
+    console.log('[Cleanup] Expired want-buys cleanup job scheduled');
+  }
 }
 
 export const CleanupService = {
   cleanupExpiredRefreshTokens,
   cleanupExpiredEmailCodes,
   cleanupAllOssTempFiles,
+  cleanupExpiredWantBuys,
 };

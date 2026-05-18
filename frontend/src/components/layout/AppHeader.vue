@@ -3,7 +3,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, SwitchButton, Star, Bell, ChatDotRound, ShoppingBag, Location, Setting, Goods, Comment } from '@element-plus/icons-vue'
+import { User, SwitchButton, Star, Bell, ChatDotRound, ShoppingBag, Location, Setting, Goods, Comment, ShoppingCart } from '@element-plus/icons-vue'
 import { getOssUrl } from '@/utils/oss'
 import { useChatStore } from '@/stores/chat'
 
@@ -54,6 +54,7 @@ async function handleLogout() {
           <el-dropdown trigger="click" @command="(cmd: string) => {
             if (cmd === 'profile') router.push('/profile')
             else if (cmd === 'myProducts') router.push('/my-products')
+            else if (cmd === 'wantBuys') router.push('/my-want-buys')
             else if (cmd === 'orders') router.push('/orders')
             else if (cmd === 'favorites') router.push('/favorites')
             else if (cmd === 'reviews') router.push('/reviews')
@@ -74,6 +75,9 @@ async function handleLogout() {
                 </el-dropdown-item>
                 <el-dropdown-item command="myProducts">
                   <el-icon><Goods /></el-icon>我的商品
+                </el-dropdown-item>
+                <el-dropdown-item command="wantBuys">
+                  <el-icon><ShoppingCart /></el-icon>我的求购
                 </el-dropdown-item>
                 <el-dropdown-item command="orders">
                   <el-icon><ShoppingBag /></el-icon>我的订单

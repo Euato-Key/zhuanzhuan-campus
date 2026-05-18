@@ -3,9 +3,11 @@ import { ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ProductCard from '@/components/product/ProductCard.vue'
+import WantBuyCard from '@/components/want-buy/WantBuyCard.vue'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { getProductList, getCategoryTree, type ProductListItem, type Category } from '@/api/modules/product'
+import { getWantBuyList, type WantBuyListItem } from '@/api/modules/want-buy'
 import { showError } from '@/utils/error'
 
 const router = useRouter()
@@ -14,15 +16,17 @@ const authDialog = useAuthDialog()
 
 const categories = ref<Category[]>([])
 const hotProducts = ref<ProductListItem[]>([])
+const hotWantBuys = ref<WantBuyListItem[]>([])
 const loading = ref(false)
 
 async function fetchData() {
   loading.value = true
   try {
-    // 并行获取分类和热门商品
-    const [catRes, prodRes] = await Promise.all([
+    // 并行获取分类、热门商品和热门求购
+    const [catRes, prodRes, wantBuyRes] = await Promise.all([
       getCategoryTree(),
-      getProductList({ sortBy: 'favorite', sortOrder: 'desc', pageSize: 8 })
+      getProductList({ sortBy: 'favorite', sortOrder: 'desc', pageSize: 8 }),
+      getWantBuyList({ sortBy: 'view', sortOrder: 'desc', pageSize: 4, status: 'active' }),
     ])
 
     if (catRes.data.code === 200) {
@@ -30,6 +34,9 @@ async function fetchData() {
     }
     if (prodRes.data.code === 200) {
       hotProducts.value = prodRes.data.data.list
+    }
+    if (wantBuyRes.data.code === 200) {
+      hotWantBuys.value = wantBuyRes.data.data.list
     }
   } catch (err) {
     showError(err, '获取数据失败')
@@ -51,6 +58,7 @@ onMounted(fetchData)
           <RouterLink to="/products" class="btn btn-primary">浏览商品</RouterLink>
           <a v-if="userStore.isLoggedIn" class="btn btn-secondary" @click="router.push('/publish')">发布商品</a>
           <a v-else class="btn btn-secondary" @click="authDialog.open('login')">发布商品</a>
+          <RouterLink to="/want-buy" class="btn btn-outline">求购社区</RouterLink>
         </div>
       </div>
       <div class="hero-stats">
@@ -100,6 +108,22 @@ onMounted(fetchData)
           :product="product"
         />
         <el-empty v-if="!loading && hotProducts.length === 0" description="暂无热门商品" />
+      </div>
+    </section>
+
+    <section class="hot-want-buys">
+      <div class="section-header">
+        <h3 class="section-title">热门求购</h3>
+        <RouterLink to="/want-buy" class="more-link">查看更多 →</RouterLink>
+      </div>
+      <div class="want-buy-grid" v-loading="loading">
+        <WantBuyCard
+          v-for="item in hotWantBuys"
+          :key="item.id"
+          :want-buy="item"
+          @click="(id: number) => router.push({ name: 'WantBuyDetail', params: { id } })"
+        />
+        <el-empty v-if="!loading && hotWantBuys.length === 0" description="暂无求购信息" />
       </div>
     </section>
   </AppLayout>
@@ -245,5 +269,39 @@ onMounted(fetchData)
     border: 1px solid $color-primary;
     &:hover { background: $color-primary-pale; }
   }
+
+  &-outline {
+    background: transparent;
+    color: $color-primary;
+    border: 1px solid $color-primary;
+    &:hover { background: $color-primary-pale; }
+  }
+}
+
+// ─── Hot want-buys ───
+.hot-want-buys {
+  margin-bottom: 40px;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .more-link {
+    font-size: 14px;
+    color: $color-primary;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+.want-buy-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+
+  @media (max-width: 992px) { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

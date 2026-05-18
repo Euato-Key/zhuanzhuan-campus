@@ -20,6 +20,7 @@ import regionRoutes from './modules/region/region.routes';
 import universityRoutes from './modules/university/university.routes';
 import chatRoutes from './modules/chat/chat.routes';
 import reviewRoutes from './modules/review/review.routes';
+import wantBuyRoutes from './modules/want-buy/want-buy.routes';
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use('/api/regions', regionRoutes);
 app.use('/api/universities', universityRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/want-buys', wantBuyRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ code: 200, data: { status: 'ok' }, message: 'success' });

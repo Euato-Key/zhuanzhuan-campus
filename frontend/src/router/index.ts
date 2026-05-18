@@ -24,6 +24,18 @@ const router = createRouter({
       meta: { title: '求购列表' }
     },
     {
+      path: '/want-buy/:id',
+      name: 'WantBuyDetail',
+      component: () => import('@/views/want-buy/detail.vue'),
+      meta: { title: '求购详情' }
+    },
+    {
+      path: '/my-want-buys',
+      name: 'MyWantBuys',
+      component: () => import('@/views/user/myWantBuys.vue'),
+      meta: { title: '我的求购', auth: true }
+    },
+    {
       path: '/products/:id',
       name: 'ProductDetail',
       component: () => import('@/views/product/detail.vue'),
@@ -145,6 +157,12 @@ const router = createRouter({
       name: 'AdminBanners',
       component: () => import('@/views/admin/banners.vue'),
       meta: { title: 'Banner管理', auth: true, admin: true }
+    },
+    {
+      path: '/admin/want-buys',
+      name: 'AdminWantBuys',
+      component: () => import('@/views/admin/wantBuys.vue'),
+      meta: { title: '求购管理', auth: true, admin: true }
     },
     {
       path: '/admin/settings',

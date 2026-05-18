@@ -38,7 +38,8 @@ CREATE TABLE `want_buy_comments` (
     `id` INT PRIMARY KEY AUTO_INCREMENT COMMENT '评论ID',
     `want_buy_id` INT NOT NULL COMMENT '求购贴ID',
     `user_id` INT NOT NULL COMMENT '评论人ID',
-    `parent_id` INT DEFAULT NULL COMMENT '父评论ID(回复)',
+    `parent_id` INT DEFAULT NULL COMMENT '父评论ID(一级评论ID)',
+    `reply_to_id` INT DEFAULT NULL COMMENT '回复的目标评论ID(用于显示"回复@xxx")',
     `content` TEXT NOT NULL COMMENT '评论内容',
     `like_count` INT DEFAULT 0 COMMENT '点赞数',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -46,10 +47,12 @@ CREATE TABLE `want_buy_comments` (
     KEY `idx_want_buy_id` (`want_buy_id`),
     KEY `idx_user_id` (`user_id`),
     KEY `idx_parent_id` (`parent_id`),
+    KEY `idx_reply_to_id` (`reply_to_id`),
     KEY `idx_created_at` (`created_at`),
     FOREIGN KEY (`want_buy_id`) REFERENCES `want_buys`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`parent_id`) REFERENCES `want_buy_comments`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`parent_id`) REFERENCES `want_buy_comments`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`reply_to_id`) REFERENCES `want_buy_comments`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='求购评论表';
 
 -- 求购评论点赞表

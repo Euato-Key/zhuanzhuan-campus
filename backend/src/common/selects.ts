@@ -134,3 +134,104 @@ export const REVIEW_ORDER_SELECT = {
   productName: true,
   productImage: true,
 } as const;
+
+/**
+ * 求购贴用户字段
+ */
+export const WANT_BUY_USER_SELECT = {
+  id: true,
+  username: true,
+  avatar: true,
+  school: true,
+  campus: true,
+} as const;
+
+/**
+ * 求购贴分类字段
+ */
+export const WANT_BUY_CATEGORY_SELECT = {
+  id: true,
+  name: true,
+} as const;
+
+/**
+ * 求购贴列表字段
+ */
+export const WANT_BUY_LIST_SELECT = {
+  id: true,
+  userId: true,
+  name: true,
+  categoryId: true,
+  description: true,
+  tags: true,
+  budgetMin: true,
+  budgetMax: true,
+  quantity: true,
+  images: true,
+  status: true,
+  validDays: true,
+  expireTime: true,
+  viewCount: true,
+  commentCount: true,
+  createdAt: true,
+  updatedAt: true,
+  user: { select: WANT_BUY_USER_SELECT },
+  category: { select: WANT_BUY_CATEGORY_SELECT },
+} as const;
+
+/**
+ * 求购贴详情字段
+ */
+export const WANT_BUY_DETAIL_SELECT = {
+  id: true,
+  userId: true,
+  name: true,
+  categoryId: true,
+  description: true,
+  tags: true,
+  budgetMin: true,
+  budgetMax: true,
+  quantity: true,
+  images: true,
+  status: true,
+  validDays: true,
+  expireTime: true,
+  viewCount: true,
+  commentCount: true,
+  createdAt: true,
+  updatedAt: true,
+  user: { select: WANT_BUY_USER_SELECT },
+  category: { select: WANT_BUY_CATEGORY_SELECT },
+} as const;
+
+/**
+ * 求购评论用户字段
+ */
+export const WANT_BUY_COMMENT_USER_SELECT = {
+  id: true,
+  username: true,
+  avatar: true,
+} as const;
+
+/**
+ * 求购评论字段
+ */
+export const WANT_BUY_COMMENT_SELECT = {
+  id: true,
+  wantBuyId: true,
+  userId: true,
+  parentId: true,
+  replyToId: true,
+  content: true,
+  likeCount: true,
+  createdAt: true,
+  updatedAt: true,
+  user: { select: WANT_BUY_COMMENT_USER_SELECT },
+  replyTo: {
+    select: {
+      id: true,
+      userId: true,
+      user: { select: WANT_BUY_COMMENT_USER_SELECT },
+    },
+  },
+} as const;

@@ -152,6 +152,13 @@ enum MessageType {
   order
 }
 
+enum WantBuyStatus {
+  active
+  found
+  closed
+  expired
+}
+
 model User {
   id              Int       @id @default(autoincrement())
   email           String    @unique(map: "uk_email") @db.VarChar(255)
@@ -191,6 +198,9 @@ model User {
   blacklistEntries Blacklist[]  @relation("BlockerBlacklist")
   blacklistedBy   Blacklist[]   @relation("BlockedBlacklist")
   quickReplies    QuickReply[]
+  wantBuys        WantBuy[]
+  wantBuyComments WantBuyComment[]
+  wantBuyCommentLikes WantBuyCommentLike[]
 
   @@index([role], map: "idx_role")
   @@index([isBlocked], map: "idx_is_blocked")
@@ -261,6 +271,7 @@ model Category {
   parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict, map: "fk_categories_parent_id")
   children Category[] @relation("CategoryHierarchy")
   products Product[]
+  wantBuys WantBuy[]
 
   @@index([parentId], map: "idx_category_parent")
   @@map("categories")
@@ -564,4 +575,76 @@ model QuickReply {
 
   @@index([userId], map: "idx_user_id")
   @@map("quick_replies")
+}
+
+model WantBuy {
+  id           Int           @id @default(autoincrement())
+  userId       Int           @map("user_id")
+  name         String        @db.VarChar(100)
+  categoryId   Int?          @map("category_id")
+  description  String?       @db.Text
+  tags         Json?
+  budgetMin    Decimal?      @map("budget_min") @db.Decimal(10, 2)
+  budgetMax    Decimal?      @map("budget_max") @db.Decimal(10, 2)
+  quantity     Int           @default(1)
+  images       Json?
+  status       WantBuyStatus @default(active)
+  validDays    Int           @default(30) @map("valid_days")
+  expireTime   DateTime?     @map("expire_time") @db.DateTime
+  viewCount    Int           @default(0) @map("view_count")
+  commentCount Int           @default(0) @map("comment_count")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.DateTime
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.DateTime
+
+  user     User?           @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_want_buys_user_id")
+  category Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull, map: "fk_want_buys_category_id")
+  comments WantBuyComment[]
+
+  @@index([userId], map: "idx_wb_user_id")
+  @@index([categoryId], map: "idx_wb_category_id")
+  @@index([status], map: "idx_wb_status")
+  @@index([expireTime], map: "idx_wb_expire_time")
+  @@index([createdAt], map: "idx_wb_created_at")
+  @@map("want_buys")
+}
+
+model WantBuyComment {
+  id          Int      @id @default(autoincrement())
+  wantBuyId   Int      @map("want_buy_id")
+  userId      Int      @map("user_id")
+  parentId    Int?     @map("parent_id")
+  replyToId   Int?     @map("reply_to_id") // 回复的目标评论ID（用于显示"回复@xxx"）
+  content     String   @db.Text
+  likeCount   Int      @default(0) @map("like_count")
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime
+
+  wantBuy   WantBuy         @relation(fields: [wantBuyId], references: [id], onDelete: Cascade, map: "fk_wbc_want_buy_id")
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_wbc_user_id")
+  parent    WantBuyComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade, map: "fk_wbc_parent_id")
+  replies   WantBuyComment[] @relation("CommentReplies")
+  replyTo   WantBuyComment? @relation("CommentReplyTo", fields: [replyToId], references: [id], onDelete: SetNull, map: "fk_wbc_reply_to_id")
+  repliedBy WantBuyComment[] @relation("CommentReplyTo")
+  likes     WantBuyCommentLike[]
+
+  @@index([wantBuyId], map: "idx_wbc_want_buy_id")
+  @@index([userId], map: "idx_wbc_user_id")
+  @@index([parentId], map: "idx_wbc_parent_id")
+  @@index([createdAt], map: "idx_wbc_created_at")
+  @@map("want_buy_comments")
+}
+
+model WantBuyCommentLike {
+  id        Int      @id @default(autoincrement())
+  commentId Int      @map("comment_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime
+
+  comment WantBuyComment @relation(fields: [commentId], references: [id], onDelete: Cascade, map: "fk_wbcl_comment_id")
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_wbcl_user_id")
+
+  @@unique([commentId, userId], map: "uk_wbcl_comment_user")
+  @@index([commentId], map: "idx_wbcl_comment_id")
+  @@index([userId], map: "idx_wbcl_user_id")
+  @@map("want_buy_comment_likes")
 }
