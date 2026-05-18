@@ -389,6 +389,7 @@ watch(
 
 <style scoped lang="scss">
 @use '@/assets/styles/variables' as *;
+@use '@/assets/styles/mixins' as *;
 
 .search-dialog-content {
   display: flex;
