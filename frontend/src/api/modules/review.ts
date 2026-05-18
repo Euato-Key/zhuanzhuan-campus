@@ -43,6 +43,7 @@ export interface ReviewItem {
   appendAt: string | null
   createdAt: string
   reviewer: ReviewUser | null
+  reviewed: ReviewUser | null
   order: ReviewOrder
 }
 

@@ -9,8 +9,6 @@ import {
   getReceivedReviews,
   deleteReview,
   deleteAppend,
-  REVIEW_TYPE_LABELS,
-  REVIEW_STATUS_LABELS,
   type ReviewItem,
   type ReviewStatus,
   type ReviewType,
@@ -223,7 +221,6 @@ onMounted(() => {
             :review="review"
             :show-delete-btn="activeTab === 'sent'"
             :show-status="activeTab === 'sent'"
-            :show-type="activeTab === 'received'"
             @delete="handleDeleteReview"
             @delete-append="handleDeleteAppend"
           />

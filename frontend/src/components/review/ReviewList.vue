@@ -19,14 +19,14 @@ const summary = ref<ReviewSummary>({
 const queryParams = reactive({
   page: 1,
   pageSize: 10,
-  rating: undefined as number | undefined,
+  rating: '' as number | string,
   hasImage: false,
   sortBy: 'time' as 'time' | 'rating',
   sortOrder: 'desc' as 'asc' | 'desc',
 })
 
 const ratingOptions = [
-  { label: '全部', value: undefined },
+  { label: '全部', value: '' },
   { label: '5星', value: 5 },
   { label: '4星', value: 4 },
   { label: '3星', value: 3 },
@@ -39,11 +39,36 @@ const maxRatingCount = computed(() => {
   return Math.max(...Object.values(dist), 1)
 })
 
+// 将评价列表配对：卖家评价嵌套到对应买家评价下
+interface PairedReview {
+  buyer: ReviewItem
+  sellerReply: ReviewItem | null
+}
+
+const pairedReviews = computed<PairedReview[]>(() => {
+  const list = reviews.value
+  const sellerMap = new Map<string, ReviewItem>()
+  const buyerList: ReviewItem[] = []
+
+  for (const r of list) {
+    if (r.type === 'seller_to_buyer') {
+      sellerMap.set(r.orderId, r)
+    } else {
+      buyerList.push(r)
+    }
+  }
+
+  return buyerList.map(buyer => ({
+    buyer,
+    sellerReply: sellerMap.get(buyer.orderId) || null,
+  }))
+})
+
 async function fetchReviews() {
   loading.value = true
   try {
     const res = await getProductReviews(props.productId, {
-      rating: queryParams.rating,
+      rating: queryParams.rating || undefined,
       hasImage: queryParams.hasImage || undefined,
       sortBy: queryParams.sortBy,
       sortOrder: queryParams.sortOrder,
@@ -124,9 +149,10 @@ onMounted(() => {
     <!-- 评价列表 -->
     <div class="review-list" v-loading="loading">
       <ReviewCard
-        v-for="review in reviews"
-        :key="review.id"
-        :review="review"
+        v-for="pair in pairedReviews"
+        :key="pair.buyer.id"
+        :review="pair.buyer"
+        :seller-reply="pair.sellerReply"
       />
       <el-empty v-if="!loading && reviews.length === 0" description="暂无评价" />
     </div>

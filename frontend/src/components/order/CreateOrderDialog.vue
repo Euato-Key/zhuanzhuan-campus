@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { ProductDetail } from '@/api/modules/product'
 import type { OrderDeliveryType, PickupInfo } from '@/api/modules/order'
 import { createOrder } from '@/api/modules/order'
 import { getAddresses, type Address } from '@/api/modules/address'
 import { showError } from '@/utils/error'
-import PaymentDialog from './PaymentDialog.vue'
+
+const router = useRouter()
 
 const props = defineProps<{
   modelValue: boolean
@@ -38,16 +40,6 @@ const formData = reactive({
   pickupAddress: '',
   pickupTime: '',
 })
-
-// 支付弹窗
-const paymentDialogVisible = ref(false)
-const createdOrderInfo = ref<{
-  orderId: string
-  orderNo: string
-  productName: string
-  productImage: string | null
-  totalPrice: number
-} | undefined>(undefined)
 
 // 计算属性
 const maxQuantity = computed(() => props.product.stock || 1)
@@ -144,28 +136,14 @@ async function handleSubmit() {
 
     if (res.data.code === 200) {
       const order = res.data.data
-      createdOrderInfo.value = {
-        orderId: order.id,
-        orderNo: order.orderNo,
-        productName: order.productName,
-        productImage: order.productImage,
-        totalPrice: order.totalPrice,
-      }
-      paymentDialogVisible.value = true
+      ElMessage.success('订单创建成功')
+      visible.value = false
+      router.push({ name: 'OrderDetail', params: { id: order.id } })
     }
   } catch (err) {
     showError(err, '创建订单失败')
   } finally {
     loading.value = false
-  }
-}
-
-// 支付成功
-function handlePaymentSuccess() {
-  if (createdOrderInfo.value) {
-    ElMessage.success('支付成功')
-    emit('success', createdOrderInfo.value.orderId)
-    visible.value = false
   }
 }
 
@@ -319,13 +297,6 @@ function goToAddresses() {
         </el-button>
       </div>
     </template>
-
-    <!-- 支付弹窗 -->
-    <PaymentDialog
-      v-model="paymentDialogVisible"
-      :order-info="createdOrderInfo"
-      @success="handlePaymentSuccess"
-    />
   </el-dialog>
 </template>
 

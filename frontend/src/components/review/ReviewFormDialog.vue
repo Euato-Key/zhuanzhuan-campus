@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Close } from '@element-plus/icons-vue'
 import { createReview, type ReviewType } from '@/api/modules/review'
@@ -31,10 +31,14 @@ const form = reactive({
   isAnonymous: false,
 })
 
-const uploading = ref(false)
+// 图片上传状态：记录正在上传的图片数量
+const uploadingCount = ref(0)
+const isUploading = computed(() => uploadingCount.value > 0)
+
+const isBuyerReview = computed(() => props.type === 'buyer_to_seller')
 
 async function handleUpload(file: File) {
-  uploading.value = true
+  uploadingCount.value++
   try {
     const res = await uploadImage(file, 'community')
     if (res.data.code === 200) {
@@ -45,7 +49,7 @@ async function handleUpload(file: File) {
   } catch {
     ElMessage.error('图片上传失败')
   } finally {
-    uploading.value = false
+    uploadingCount.value--
   }
 }
 
@@ -54,8 +58,18 @@ function handleRemove(index: number) {
 }
 
 async function handleSubmit() {
-  if (form.rating < 1) {
+  if (isUploading.value) {
+    ElMessage.warning('图片正在上传中，请等待上传完成后再提交')
+    return
+  }
+
+  if (isBuyerReview.value && form.rating < 1) {
     ElMessage.warning('请选择评分')
+    return
+  }
+
+  if (!form.content.trim()) {
+    ElMessage.warning('请填写评价内容')
     return
   }
 
@@ -63,7 +77,7 @@ async function handleSubmit() {
   try {
     const res = await createReview({
       orderId: props.orderId,
-      rating: form.rating,
+      rating: isBuyerReview.value ? form.rating : 5,
       content: form.content || undefined,
       images: form.images.length > 0 ? form.images : undefined,
       isAnonymous: form.isAnonymous,
@@ -100,7 +114,7 @@ function handleClose() {
   <el-dialog
     :model-value="modelValue"
     @update:model-value="emit('update:modelValue', $event)"
-    title="评价订单"
+    :title="isBuyerReview ? '评价卖家' : '评价买家'"
     width="500px"
     @close="handleClose"
   >
@@ -115,16 +129,17 @@ function handleClose() {
     </div>
 
     <el-form label-position="top" class="review-form">
-      <el-form-item label="评分">
+      <!-- 买家评价才显示星级评分 -->
+      <el-form-item v-if="isBuyerReview" label="评分">
         <el-rate v-model="form.rating" :colors="['#F7BA2A', '#F7BA2A', '#F7BA2A']" show-text :texts="['很差', '较差', '一般', '较好', '很好']" />
       </el-form-item>
 
-      <el-form-item label="评价内容">
+      <el-form-item :label="isBuyerReview ? '评价内容' : '评价买家'">
         <el-input
           v-model="form.content"
           type="textarea"
           :rows="4"
-          placeholder="分享您的购物体验..."
+          :placeholder="isBuyerReview ? '分享您的购物体验...' : '评价买家的交易行为...'"
           maxlength="500"
           show-word-limit
         />
@@ -144,22 +159,24 @@ function handleClose() {
             :before-upload="(file: File) => { handleUpload(file); return false }"
             accept="image/*"
           >
-            <div class="upload-trigger" v-loading="uploading">
+            <div class="upload-trigger" v-loading="isUploading">
               <el-icon :size="24"><Plus /></el-icon>
-              <span>上传图片</span>
+              <span>{{ isUploading ? '上传中...' : '上传图片' }}</span>
             </div>
           </el-upload>
         </div>
       </el-form-item>
 
-      <el-form-item>
+      <el-form-item v-if="isBuyerReview">
         <el-switch v-model="form.isAnonymous" active-text="匿名评价" />
       </el-form-item>
     </el-form>
 
     <template #footer>
       <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" :loading="loading" @click="handleSubmit">提交评价</el-button>
+      <el-button type="primary" :loading="loading || isUploading" :disabled="isUploading" @click="handleSubmit">
+        {{ isUploading ? '等待图片上传...' : '提交评价' }}
+      </el-button>
     </template>
   </el-dialog>
 </template>

@@ -324,6 +324,7 @@ export const ReviewService = {
         orderBy,
         include: {
           reviewer: { select: REVIEW_USER_SELECT },
+          reviewed: { select: REVIEW_USER_SELECT },
           order: { select: REVIEW_ORDER_SELECT },
         },
       }),
@@ -334,6 +335,7 @@ export const ReviewService = {
     const items = list.map(r => ({
       ...r,
       reviewer: maskAnonymousReviewer(r.reviewer as any, r.isAnonymous),
+      reviewed: maskAnonymousReviewer(r.reviewed as any, r.isAnonymous),
     }));
 
     return {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import type { ReviewItem } from '@/api/modules/review'
-import { REVIEW_TYPE_LABELS, REVIEW_STATUS_LABELS, REVIEW_STATUS_TAG_TYPE } from '@/api/modules/review'
+import { REVIEW_STATUS_LABELS, REVIEW_STATUS_TAG_TYPE } from '@/api/modules/review'
 import { getOssUrl } from '@/utils/oss'
 import { formatRelativeTime } from '@/utils/format'
 
@@ -9,10 +9,10 @@ const router = useRouter()
 
 defineProps<{
   review: ReviewItem
+  sellerReply?: ReviewItem | null
   showAppendBtn?: boolean
   showDeleteBtn?: boolean
   showStatus?: boolean
-  showType?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -40,9 +40,6 @@ function viewUserProfile(userId: number) {
         <span class="order-product-name">{{ review.order.productName }}</span>
         <span class="order-no-small">订单号: {{ review.order.orderNo }}</span>
       </div>
-      <el-tag v-if="showType" size="small" type="info" effect="plain" class="type-tag">
-        {{ REVIEW_TYPE_LABELS[review.type] }}
-      </el-tag>
     </div>
 
     <div class="review-header">
@@ -51,8 +48,18 @@ function viewUserProfile(userId: number) {
           {{ review.reviewer?.username?.charAt(0) || '?' }}
         </el-avatar>
         <div class="reviewer-meta">
-          <span class="reviewer-name">{{ review.reviewer?.username || '匿名用户' }}</span>
-          <el-rate :model-value="review.rating" disabled size="small" />
+          <div class="reviewer-name-row">
+            <span class="reviewer-name">{{ review.reviewer?.username || '匿名用户' }}</span>
+            <el-tag
+              :type="review.type === 'buyer_to_seller' ? 'primary' : 'warning'"
+              size="small"
+              effect="plain"
+              class="role-tag"
+            >
+              {{ review.type === 'buyer_to_seller' ? '买家' : '卖家' }}
+            </el-tag>
+          </div>
+          <el-rate v-if="review.type === 'buyer_to_seller'" :model-value="review.rating" disabled size="small" />
         </div>
       </div>
       <div class="review-header-right">
@@ -96,6 +103,49 @@ function viewUserProfile(userId: number) {
       </div>
     </div>
 
+    <!-- 卖家回复 -->
+    <div v-if="sellerReply" class="seller-reply">
+      <div class="seller-reply-header">
+        <div class="seller-reply-user" @click="viewUserProfile(sellerReply.reviewer?.id || 0)">
+          <el-avatar :size="24" :src="sellerReply.reviewer?.avatar ? getOssUrl(sellerReply.reviewer.avatar) : undefined">
+            {{ sellerReply.reviewer?.username?.charAt(0) || '?' }}
+          </el-avatar>
+          <span class="seller-reply-name">{{ sellerReply.reviewer?.username || '匿名用户' }}</span>
+          <el-tag type="warning" size="small" effect="plain" class="role-tag">卖家</el-tag>
+        </div>
+        <span class="review-time">{{ formatRelativeTime(sellerReply.createdAt) }}</span>
+      </div>
+      <div v-if="sellerReply.content" class="seller-reply-content">{{ sellerReply.content }}</div>
+      <div v-if="sellerReply.images && sellerReply.images.length > 0" class="review-images">
+        <el-image
+          v-for="(img, index) in sellerReply.images"
+          :key="index"
+          :src="getOssUrl(img)"
+          :preview-src-list="sellerReply.images.map(i => getOssUrl(i))"
+          fit="cover"
+          class="review-image"
+        />
+      </div>
+      <!-- 卖家追评 -->
+      <div v-if="sellerReply.isAppend && sellerReply.appendContent" class="seller-append">
+        <div class="seller-append-header">
+          <el-tag size="small" type="info" effect="plain">追评</el-tag>
+          <span v-if="sellerReply.appendAt" class="append-time">{{ formatRelativeTime(sellerReply.appendAt) }}</span>
+        </div>
+        <div class="seller-append-content">{{ sellerReply.appendContent }}</div>
+        <div v-if="sellerReply.appendImages && sellerReply.appendImages.length > 0" class="review-images">
+          <el-image
+            v-for="(img, index) in sellerReply.appendImages"
+            :key="index"
+            :src="getOssUrl(img)"
+            :preview-src-list="sellerReply.appendImages.map(i => getOssUrl(i))"
+            fit="cover"
+            class="review-image"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- 操作按钮 -->
     <div v-if="showAppendBtn || (showDeleteBtn && review.status !== 'deleted')" class="review-actions">
       <el-button v-if="showAppendBtn" size="small" type="primary" plain @click="emit('append', review.id)">追评</el-button>
@@ -109,8 +159,8 @@ function viewUserProfile(userId: number) {
 @use '@/assets/styles/mixins' as *;
 
 .review-card {
-  padding: $spacing-md 0;
-  border-bottom: 1px solid $color-border-light;
+  padding: $spacing-lg 0;
+  border-bottom: 1px solid $color-border;
 
   &:last-child {
     border-bottom: none;
@@ -144,14 +194,27 @@ function viewUserProfile(userId: number) {
 
 .reviewer-meta {
   display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.reviewer-name-row {
+  display: flex;
   align-items: center;
-  gap: $spacing-sm;
+  gap: $spacing-xs;
 }
 
 .reviewer-name {
   font-size: $font-size-body;
   font-weight: $font-weight-medium;
   color: $color-text-primary;
+}
+
+.role-tag {
+  font-size: $font-size-tiny;
+  padding: 0 4px;
+  height: 18px;
+  line-height: 18px;
 }
 
 .review-time {
@@ -206,14 +269,73 @@ function viewUserProfile(userId: number) {
   white-space: pre-wrap;
 }
 
-.append-action {
-  margin-top: $spacing-sm;
-}
-
 .review-actions {
   display: flex;
   gap: $spacing-xs;
   margin-top: $spacing-sm;
+}
+
+// 卖家回复
+.seller-reply {
+  margin-top: $spacing-sm;
+  margin-left: 48px;
+  padding: $spacing-sm $spacing-md;
+  background: $color-bg-page;
+  border-radius: $radius-md;
+  border-left: 3px solid $color-warning;
+}
+
+.seller-reply-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.seller-reply-user {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  cursor: pointer;
+  transition: opacity $transition-fast;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.seller-reply-name {
+  font-size: $font-size-small;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.seller-reply-content {
+  margin-top: $spacing-xs;
+  font-size: $font-size-small;
+  color: $color-text-secondary;
+  line-height: $line-height-normal;
+  white-space: pre-wrap;
+}
+
+// 卖家追评
+.seller-append {
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1px dashed $color-border;
+}
+
+.seller-append-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.seller-append-content {
+  font-size: $font-size-small;
+  color: $color-text-secondary;
+  line-height: $line-height-normal;
+  white-space: pre-wrap;
 }
 
 .order-info-row {
@@ -230,10 +352,6 @@ function viewUserProfile(userId: number) {
   &:hover {
     background: darken($color-bg-page, 3%);
   }
-}
-
-.type-tag {
-  flex-shrink: 0;
 }
 
 .order-product-image {
