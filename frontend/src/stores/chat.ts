@@ -289,13 +289,14 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // ─── Actions: Messages ───
-  async function fetchMessages(conversationId: number, before?: string) {
+  async function fetchMessages(conversationId: number, before?: string, around?: string) {
     messagesLoading.value = true
     try {
       const res = await getMessages(conversationId, {
         page: 1,
         pageSize: 30,
         before: before || undefined,
+        around: around || undefined,
       })
       if (res.data.code === 200) {
         const { list } = res.data.data
@@ -305,6 +306,9 @@ export const useChatStore = defineStore('chat', () => {
         if (before) {
           // Prepend older messages
           messagesMap.value.set(conversationId, [...normalized, ...existing])
+        } else if (around) {
+          // Replace messages when loading around a specific message
+          messagesMap.value.set(conversationId, normalized)
         } else {
           messagesMap.value.set(conversationId, normalized)
         }

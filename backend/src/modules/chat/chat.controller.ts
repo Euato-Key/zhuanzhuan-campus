@@ -61,6 +61,7 @@ export const ChatController = {
       page: parsePositiveInt(req.query.page),
       pageSize: parsePositiveInt(req.query.pageSize),
       before: req.query.before as string | undefined,
+      around: req.query.around as string | undefined,
     };
     const result = await ChatService.message.list(conversationId, userId, query);
     return success(res, result);

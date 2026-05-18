@@ -227,6 +227,57 @@ export const ChatService = {
 
       const where: Prisma.MessageWhereInput = { conversationId };
 
+      // Handle 'around' parameter - load messages around a specific message
+      if (query.around) {
+        try {
+          const aroundId = BigInt(query.around);
+          if (aroundId > 0n) {
+            // Get the target message to find its position
+            const targetMsg = await prisma.message.findUnique({
+              where: { id: aroundId },
+              select: { createdAt: true },
+            });
+            if (targetMsg) {
+              // Load messages around the target (15 before + 15 after = 31 total)
+              const messages = await prisma.message.findMany({
+                where: { conversationId },
+                orderBy: { createdAt: 'asc' },
+                take: 31,
+                skip: Math.max(0, await prisma.message.count({
+                  where: {
+                    conversationId,
+                    createdAt: { lt: targetMsg.createdAt },
+                  },
+                }) - 15),
+                include: {
+                  sender: { select: CHAT_USER_SELECT },
+                },
+              });
+              const list = messages.map(m => serializeBigInt({
+                id: m.id,
+                conversationId: m.conversationId,
+                senderId: m.senderId,
+                type: m.type,
+                content: m.content,
+                readAt: m.readAt,
+                createdAt: m.createdAt,
+                sender: m.sender,
+              }));
+              const total = await prisma.message.count({ where: { conversationId } });
+              return {
+                list,
+                total,
+                page: 1,
+                pageSize: 31,
+                totalPages: Math.ceil(total / 31),
+              };
+            }
+          }
+        } catch {
+          throw badRequest('无效的around参数');
+        }
+      }
+
       // Cursor-based pagination for infinite scroll
       if (query.before) {
         try {

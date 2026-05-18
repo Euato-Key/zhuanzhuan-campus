@@ -15,6 +15,7 @@ const props = defineProps<{
   isOwn: boolean
   showAvatar: boolean
   showTime: boolean
+  highlight?: boolean
 }>()
 
 const parsedContent = computed(() => {
@@ -33,7 +34,11 @@ const imageUrl = computed(() => {
 </script>
 
 <template>
-  <div class="message-bubble" :class="{ own: isOwn, other: !isOwn }">
+  <div
+    class="message-bubble"
+    :class="{ own: isOwn, other: !isOwn, highlight: props.highlight }"
+    :data-message-id="message.id"
+  >
     <div v-if="showTime" class="msg-time">{{ formatRelativeTime(message.createdAt) }}</div>
     <div class="msg-row">
       <template v-if="!isOwn">
@@ -85,8 +90,14 @@ const imageUrl = computed(() => {
   flex-direction: column;
   max-width: 75%;
 
-  &.own { align-items: flex-end; }
-  &.other { align-items: flex-start; }
+  &.own {
+    align-items: flex-end;
+    margin-left: auto;
+  }
+  &.other {
+    align-items: flex-start;
+    margin-right: auto;
+  }
 }
 
 .msg-time {
@@ -160,5 +171,18 @@ const imageUrl = computed(() => {
 
 .type-image .bubble {
   padding: $spacing-xs;
+}
+
+.message-bubble.highlight {
+  animation: highlight-pulse 2s ease-out;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    background: rgba($color-primary, 0.3);
+  }
+  100% {
+    background: transparent;
+  }
 }
 </style>

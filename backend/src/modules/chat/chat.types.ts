@@ -24,6 +24,7 @@ export interface MessageQuery {
   page?: number;
   pageSize?: number;
   before?: string;
+  around?: string;
 }
 
 export interface MessageSearchQuery {

@@ -127,7 +127,7 @@ export function getConversation(id: number) {
 
 export function getMessages(
   conversationId: number,
-  params?: { page?: number; pageSize?: number; before?: string }
+  params?: { page?: number; pageSize?: number; before?: string; around?: string }
 ) {
   return api.get<{ code: number; data: PaginatedResponse<MessageItem>; message: string }>(
     `/chat/conversations/${conversationId}/messages`,

@@ -6,7 +6,7 @@ import { useChatStore } from '@/stores/chat'
 import { useUserStore } from '@/stores/user'
 import { getOssUrl } from '@/utils/oss'
 import { formatRelativeTime, formatDate } from '@/utils/format'
-import type { MessageType } from '@/api/modules/chat'
+import type { MessageType,MessageItem } from '@/api/modules/chat'
 import { useChatInfiniteScroll } from '@/composables/useChatInfiniteScroll'
 import MessageBubble from '@/components/chat/MessageBubble.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
@@ -31,6 +31,7 @@ const showSearch = ref(false)
 const showQuickReplies = ref(false)
 const showBlacklistDialog = ref(false)
 const showNewMessage = ref(false)
+const highlightMessageId = ref<string | null>(null)
 
 const currentUserId = computed(() => userStore.user?.id)
 const otherUser = computed(() => chatStore.currentConversation?.otherUser)
@@ -139,6 +140,35 @@ function scrollToNewMessage() {
   showNewMessage.value = false
   scrollToBottom()
 }
+
+async function handleSelectSearchResult(messageId: string) {
+  showSearch.value = false
+
+  const messages = chatStore.currentMessages
+  const targetIndex = messages.findIndex(m => m.id === messageId)
+
+  if (targetIndex !== -1) {
+    scrollToMessage(messageId)
+  } else {
+    // Load messages around the target message
+    await chatStore.fetchMessages(chatStore.currentConversationId!, undefined, messageId)
+    await nextTick()
+    scrollToMessage(messageId)
+  }
+}
+
+function scrollToMessage(messageId: string) {
+  highlightMessageId.value = messageId
+  nextTick(() => {
+    const el = document.querySelector(`[data-message-id="${messageId}"]`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    setTimeout(() => {
+      highlightMessageId.value = null
+    }, 2000)
+  })
+}
 </script>
 
 <template>
@@ -188,7 +218,7 @@ function scrollToNewMessage() {
       :loading="chatStore.searchLoading"
       @search="handleSearch"
       @close="showSearch = false; chatStore.clearSearch()"
-      @select-result="showSearch = false"
+      @select-result="handleSelectSearchResult"
     />
 
     <BlockBanner
@@ -211,6 +241,7 @@ function scrollToNewMessage() {
             :is-own="msg.senderId === currentUserId"
             :show-avatar="msg._showAvatar"
             :show-time="msg._showTime"
+            :highlight="msg.id === highlightMessageId"
           />
         </template>
         <div v-if="!chatStore.currentMessages.length" class="no-messages">暂无消息，发送第一条消息吧</div>
