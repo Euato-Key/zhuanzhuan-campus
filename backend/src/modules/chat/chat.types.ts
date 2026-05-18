@@ -31,6 +31,10 @@ export interface MessageSearchQuery {
   keyword: string;
   page?: number;
   pageSize?: number;
+  type?: MessageType;
+  senderId?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface SendMessageData {

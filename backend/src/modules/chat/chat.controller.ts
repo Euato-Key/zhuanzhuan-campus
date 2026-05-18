@@ -92,8 +92,17 @@ export const ChatController = {
     const userId = ValidationUtil.requireUserId(req);
     const conversationId = parseConversationId(req);
     const keyword = typeof req.query.keyword === 'string' ? req.query.keyword : '';
+    const type = req.query.type as MessageType | undefined;
+    const senderId = req.query.senderId ? parseInt(req.query.senderId as string, 10) : undefined;
+    const startDate = typeof req.query.startDate === 'string' ? req.query.startDate : undefined;
+    const endDate = typeof req.query.endDate === 'string' ? req.query.endDate : undefined;
+
     const result = await ChatService.message.search(conversationId, userId, {
       keyword,
+      type,
+      senderId,
+      startDate,
+      endDate,
       page: parsePositiveInt(req.query.page),
       pageSize: parsePositiveInt(req.query.pageSize),
     });

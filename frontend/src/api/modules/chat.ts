@@ -153,7 +153,15 @@ export function markAsRead(conversationId: number) {
 
 export function searchMessages(
   conversationId: number,
-  params: { keyword: string; page?: number; pageSize?: number }
+  params: {
+    keyword?: string
+    type?: MessageType
+    senderId?: number
+    startDate?: string
+    endDate?: string
+    page?: number
+    pageSize?: number
+  }
 ) {
   return api.get<{ code: number; data: PaginatedResponse<MessageItem>; message: string }>(
     `/chat/conversations/${conversationId}/messages/search`,

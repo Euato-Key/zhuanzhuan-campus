@@ -809,6 +809,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "around",
+            "in": "query",
+            "description": "定位：返回包含指定消息ID前后各15条消息（共31条），用于搜索结果定位跳转。与before参数互斥，同时提供时around优先",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -975,7 +983,7 @@
           "消息接口"
         ],
         "summary": "搜索消息",
-        "description": "在指定会话中按关键词搜索消息内容",
+        "description": "在指定会话中搜索消息，支持关键词搜索、消息类型筛选、发送者筛选、时间范围筛选。所有筛选参数可选，可组合使用。",
         "security": [
           {
             "BearerAuth": []
@@ -994,11 +1002,47 @@
           {
             "name": "keyword",
             "in": "query",
-            "required": true,
-            "description": "搜索关键词（最多100个字符）",
+            "description": "搜索关键词（最多100个字符），可选。不提供时仅按筛选条件查询",
             "schema": {
               "type": "string",
               "maxLength": 100
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "消息类型筛选",
+            "schema": {
+              "type": "string",
+              "enum": ["text", "image", "product", "order"]
+            }
+          },
+          {
+            "name": "senderId",
+            "in": "query",
+            "description": "发送者ID筛选，必须是会话参与者之一",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "开始日期（格式：YYYY-MM-DD）",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2024-01-01"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "结束日期（格式：YYYY-MM-DD），会包含该日期全天的消息",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2024-01-31"
             }
           },
           {
@@ -1030,6 +1074,101 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PaginatedMessages"
+                },
+                "examples": {
+                  "keywordSearch": {
+                    "summary": "关键词搜索",
+                    "value": {
+                      "code": 200,
+                      "message": "success",
+                      "data": {
+                        "list": [
+                          {
+                            "id": "123456789",
+                            "conversationId": 1,
+                            "senderId": 2,
+                            "type": "text",
+                            "content": "这个商品价格可以便宜一点吗",
+                            "readAt": null,
+                            "createdAt": "2024-01-15T14:30:00.000Z",
+                            "sender": {
+                              "id": 2,
+                              "username": "买家小明",
+                              "avatar": "/uploads/avatar2.jpg",
+                              "school": "北京大学",
+                              "campus": "主校区"
+                            }
+                          }
+                        ],
+                        "total": 5,
+                        "page": 1,
+                        "pageSize": 10,
+                        "totalPages": 1
+                      }
+                    }
+                  },
+                  "typeFilter": {
+                    "summary": "按类型筛选图片消息",
+                    "value": {
+                      "code": 200,
+                      "message": "success",
+                      "data": {
+                        "list": [
+                          {
+                            "id": "123456790",
+                            "conversationId": 1,
+                            "senderId": 1,
+                            "type": "image",
+                            "content": "/uploads/chat/img123.jpg",
+                            "readAt": "2024-01-15T15:00:00.000Z",
+                            "createdAt": "2024-01-15T14:00:00.000Z",
+                            "sender": {
+                              "id": 1,
+                              "username": "卖家小红",
+                              "avatar": "/uploads/avatar1.jpg",
+                              "school": "清华大学",
+                              "campus": null
+                            }
+                          }
+                        ],
+                        "total": 3,
+                        "page": 1,
+                        "pageSize": 10,
+                        "totalPages": 1
+                      }
+                    }
+                  },
+                  "combinedFilter": {
+                    "summary": "组合筛选：对方发送的近7天文字消息",
+                    "value": {
+                      "code": 200,
+                      "message": "success",
+                      "data": {
+                        "list": [
+                          {
+                            "id": "123456791",
+                            "conversationId": 1,
+                            "senderId": 2,
+                            "type": "text",
+                            "content": "好的，那我们明天交易",
+                            "readAt": "2024-01-16T10:00:00.000Z",
+                            "createdAt": "2024-01-16T09:30:00.000Z",
+                            "sender": {
+                              "id": 2,
+                              "username": "买家小明",
+                              "avatar": "/uploads/avatar2.jpg",
+                              "school": "北京大学",
+                              "campus": "主校区"
+                            }
+                          }
+                        ],
+                        "total": 8,
+                        "page": 1,
+                        "pageSize": 10,
+                        "totalPages": 1
+                      }
+                    }
+                  }
                 }
               }
             }

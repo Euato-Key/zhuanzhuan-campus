@@ -465,10 +465,9 @@ export const ChatService = {
         throw forbidden('无权搜索此会话消息');
       }
 
-      if (!query.keyword || !query.keyword.trim()) {
-        throw badRequest('请输入搜索关键词');
-      }
-      if (query.keyword.trim().length > 100) {
+      // Allow empty keyword when filtering by type/sender/date
+      const hasKeyword = query.keyword && query.keyword.trim();
+      if (hasKeyword && query.keyword.trim().length > 100) {
         throw badRequest('搜索关键词不能超过100个字符');
       }
 
@@ -476,8 +475,47 @@ export const ChatService = {
 
       const where: Prisma.MessageWhereInput = {
         conversationId,
-        content: { contains: query.keyword.trim() },
       };
+
+      // Keyword filter
+      if (hasKeyword) {
+        where.content = { contains: query.keyword.trim() };
+      }
+
+      // Type filter
+      if (query.type) {
+        where.type = query.type;
+      }
+
+      // Sender filter
+      if (query.senderId) {
+        // Validate sender is participant
+        if (query.senderId !== conversation.user1Id && query.senderId !== conversation.user2Id) {
+          throw badRequest('发送者不是会话参与者');
+        }
+        where.senderId = query.senderId;
+      }
+
+      // Date range filter
+      if (query.startDate || query.endDate) {
+        where.createdAt = {};
+        if (query.startDate) {
+          const start = new Date(query.startDate);
+          if (isNaN(start.getTime())) {
+            throw badRequest('开始日期格式不正确');
+          }
+          where.createdAt.gte = start;
+        }
+        if (query.endDate) {
+          const end = new Date(query.endDate);
+          if (isNaN(end.getTime())) {
+            throw badRequest('结束日期格式不正确');
+          }
+          // Include the entire end date
+          end.setHours(23, 59, 59, 999);
+          where.createdAt.lte = end;
+        }
+      }
 
       const [total, messages] = await Promise.all([
         prisma.message.count({ where }),

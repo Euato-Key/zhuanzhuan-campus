@@ -12,7 +12,7 @@ import MessageBubble from '@/components/chat/MessageBubble.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import TypingIndicator from '@/components/chat/TypingIndicator.vue'
 import BlockBanner from '@/components/chat/BlockBanner.vue'
-import SearchPanel from '@/components/chat/SearchPanel.vue'
+import MessageSearchDialog from '@/components/chat/MessageSearchDialog.vue'
 import QuickReplyPanel from '@/components/chat/QuickReplyPanel.vue'
 import BlacklistDialog from '@/components/chat/BlacklistDialog.vue'
 
@@ -121,11 +121,6 @@ function handleStopTyping() {
   chatStore.emitStopTyping()
 }
 
-function handleSearch(keyword: string) {
-  if (!chatStore.currentConversationId) return
-  chatStore.searchInConversation(chatStore.currentConversationId, keyword)
-}
-
 function handleBlock() {
   if (!otherUser.value) return
   chatStore.blockOtherUser(otherUser.value.id)
@@ -211,13 +206,12 @@ function scrollToMessage(messageId: string) {
       </div>
     </div>
 
-    <SearchPanel
-      v-if="showSearch"
-      :results="chatStore.searchResults"
-      :keyword="chatStore.searchKeyword"
-      :loading="chatStore.searchLoading"
-      @search="handleSearch"
-      @close="showSearch = false; chatStore.clearSearch()"
+    <MessageSearchDialog
+      :visible="showSearch"
+      :conversation-id="chatStore.currentConversationId"
+      :current-user-id="currentUserId"
+      :other-user="otherUser"
+      @close="showSearch = false"
       @select-result="handleSelectSearchResult"
     />
 
