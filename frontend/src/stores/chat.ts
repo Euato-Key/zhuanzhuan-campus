@@ -289,7 +289,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // ─── Actions: Messages ───
-  async function fetchMessages(conversationId: number, before?: string, around?: string) {
+  async function fetchMessages(conversationId: number, before?: string, around?: string): Promise<boolean> {
     messagesLoading.value = true
     try {
       const res = await getMessages(conversationId, {
@@ -318,12 +318,15 @@ export const useChatStore = defineStore('chat', () => {
           messagesCursor.value = list[0].id
         }
         messagesHasMore.value = list.length >= 30
+
+        return list.length > 0
       }
     } catch (err) {
       showError(err, '获取消息失败')
     } finally {
       messagesLoading.value = false
     }
+    return false
   }
 
   async function sendMessage(type: MessageType, content: string) {
@@ -371,9 +374,9 @@ export const useChatStore = defineStore('chat', () => {
     messagesMap.value.set(conversationId, list)
   }
 
-  async function loadMoreMessages() {
-    if (!currentConversationId.value || !messagesHasMore.value || messagesLoading.value) return
-    await fetchMessages(currentConversationId.value, messagesCursor.value ?? undefined)
+  async function loadMoreMessages(): Promise<boolean> {
+    if (!currentConversationId.value || !messagesHasMore.value || messagesLoading.value) return false
+    return await fetchMessages(currentConversationId.value, messagesCursor.value ?? undefined)
   }
 
   async function markConversationRead(conversationId: number) {

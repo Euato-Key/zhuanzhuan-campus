@@ -2,7 +2,7 @@ import { ref, onMounted, onUnmounted, type Ref } from 'vue'
 
 export function useChatInfiniteScroll(
   containerRef: Ref<HTMLElement | null>,
-  onLoadMore: () => Promise<void>,
+  onLoadMore: () => Promise<boolean>,
   options = { threshold: 50 }
 ) {
   const isLoadingMore = ref(false)
@@ -16,15 +16,18 @@ export function useChatInfiniteScroll(
       isLoadingMore.value = true
       oldScrollHeight = el.scrollHeight
 
-      await onLoadMore()
+      const hasLoaded = await onLoadMore()
 
-      // Restore scroll position after prepending messages
-      requestAnimationFrame(() => {
-        if (containerRef.value) {
-          containerRef.value.scrollTop = containerRef.value.scrollHeight - oldScrollHeight + containerRef.value.scrollTop
-        }
-        isLoadingMore.value = false
-      })
+      // Only restore scroll position if new messages were actually loaded
+      if (hasLoaded) {
+        requestAnimationFrame(() => {
+          if (containerRef.value) {
+            containerRef.value.scrollTop = containerRef.value.scrollHeight - oldScrollHeight + containerRef.value.scrollTop
+          }
+        })
+      }
+
+      isLoadingMore.value = false
     }
   }
 
