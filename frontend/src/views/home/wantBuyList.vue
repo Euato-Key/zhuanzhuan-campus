@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import WantBuyCard from '@/components/want-buy/WantBuyCard.vue'
 import PublishWantBuyDialog from '@/components/want-buy/PublishWantBuyDialog.vue'
 import {
   getWantBuyList,
-  deleteWantBuy,
   type WantBuyListItem,
   type WantBuyStatus,
   WANT_BUY_STATUS_LABELS,
@@ -151,26 +150,6 @@ function handleCardClick(id: number) {
   router.push({ name: 'WantBuyDetail', params: { id } })
 }
 
-// 编辑
-function handleEdit(id: number) {
-  editId.value = id
-  publishDialogVisible.value = true
-}
-
-// 删除
-async function handleDelete(id: number) {
-  try {
-    await ElMessageBox.confirm('确定要删除这条求购吗？', '提示', { type: 'warning' })
-    const res = await deleteWantBuy(id)
-    if (res.data.code === 200) {
-      ElMessage.success('删除成功')
-      fetchWantBuys()
-    }
-  } catch (err) {
-    if (err !== 'cancel') showError(err, '删除失败')
-  }
-}
-
 // 发布成功
 function handlePublishSuccess() {
   fetchWantBuys()
@@ -274,10 +253,7 @@ watch([keyword], () => {
           v-for="item in wantBuys"
           :key="item.id"
           :want-buy="item"
-          :show-actions="userStore.user?.id === item.userId"
           @click="handleCardClick"
-          @edit="handleEdit"
-          @delete="handleDelete"
         />
       </div>
 
