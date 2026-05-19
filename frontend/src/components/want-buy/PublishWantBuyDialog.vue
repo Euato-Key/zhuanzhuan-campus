@@ -8,14 +8,14 @@ import {
   getCategoryTree,
   type Category,
   type CreateWantBuyData,
-  type WantBuyDetail,
+  type WantBuyListItem,
   VALID_DAYS_OPTIONS,
 } from '@/api/modules/want-buy'
 import { uploadImage } from '@/api/modules/upload'
 
 const props = defineProps<{
   modelValue: boolean
-  wantBuy?: WantBuyDetail // 编辑时传入
+  wantBuy?: WantBuyListItem // 编辑时传入
 }>()
 
 const emit = defineEmits<{

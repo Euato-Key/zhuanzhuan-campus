@@ -1,0 +1,312 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "通知模块 API",
+    "description": "转转校园二手平台 - 通知模块接口文档",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "通知接口",
+      "description": "通知相关接口（需登录）"
+    }
+  ],
+  "paths": {
+    "/api/notifications": {
+      "get": {
+        "tags": ["通知接口"],
+        "summary": "获取通知列表",
+        "description": "获取当前用户的通知列表，支持按类型筛选和分页",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["system", "product", "order", "chat", "review", "interaction"]
+            },
+            "description": "通知类型筛选"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "页码"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 10 },
+            "description": "每页数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "list": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Notification" }
+                        },
+                        "total": { "type": "integer" },
+                        "page": { "type": "integer" },
+                        "pageSize": { "type": "integer" },
+                        "totalPages": { "type": "integer" }
+                      }
+                    },
+                    "message": { "type": "string", "example": "success" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/unread-count": {
+      "get": {
+        "tags": ["通知接口"],
+        "summary": "获取未读通知数量",
+        "description": "获取当前用户的未读通知总数和按类型分组的未读数量",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "total": { "type": "integer", "description": "未读总数" },
+                        "byType": {
+                          "type": "object",
+                          "description": "按类型分组的未读数量",
+                          "additionalProperties": { "type": "integer" }
+                        }
+                      }
+                    },
+                    "message": { "type": "string", "example": "success" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/read-all": {
+      "put": {
+        "tags": ["通知接口"],
+        "summary": "批量标记已读",
+        "description": "将当前用户的所有未读通知标记为已读，可按类型筛选",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["system", "product", "order", "chat", "review", "interaction"],
+                    "description": "仅标记指定类型的未读通知，不传则标记全部"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "count": { "type": "integer", "description": "标记已读的通知数量" }
+                      }
+                    },
+                    "message": { "type": "string", "example": "success" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/{id}": {
+      "get": {
+        "tags": ["通知接口"],
+        "summary": "获取通知详情",
+        "description": "获取指定通知的详情，未读通知会自动标记为已读",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "通知ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": { "$ref": "#/components/schemas/Notification" },
+                    "message": { "type": "string", "example": "success" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "通知不存在" },
+          "403": { "description": "无权查看此通知" }
+        }
+      },
+      "delete": {
+        "tags": ["通知接口"],
+        "summary": "删除通知",
+        "description": "删除指定通知，仅已读通知可删除",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "通知ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": { "type": "string", "example": "通知已删除" }
+                      }
+                    },
+                    "message": { "type": "string", "example": "success" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "未读通知不可删除" },
+          "404": { "description": "通知不存在" },
+          "403": { "description": "无权删除此通知" }
+        }
+      }
+    },
+    "/api/notifications/{id}/read": {
+      "put": {
+        "tags": ["通知接口"],
+        "summary": "标记通知已读",
+        "description": "将指定通知标记为已读",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "通知ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": { "$ref": "#/components/schemas/Notification" },
+                    "message": { "type": "string", "example": "success" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "通知不存在" },
+          "403": { "description": "无权操作此通知" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "通知ID" },
+          "userId": { "type": "integer", "description": "用户ID" },
+          "type": {
+            "type": "string",
+            "enum": ["system", "product", "order", "chat", "review", "interaction"],
+            "description": "通知类型"
+          },
+          "title": { "type": "string", "description": "通知标题" },
+          "content": { "type": "string", "description": "通知内容" },
+          "relatedId": { "type": "string", "description": "关联对象ID（BigInt字符串）" },
+          "relatedType": {
+            "type": "string",
+            "enum": ["order", "product", "review", "user", "want_buy"],
+            "description": "关联对象类型"
+          },
+          "isRead": { "type": "boolean", "description": "是否已读" },
+          "createdAt": { "type": "string", "format": "date-time", "description": "创建时间" }
+        }
+      }
+    }
+  }
+}
