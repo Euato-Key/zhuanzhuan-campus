@@ -3,9 +3,10 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, SwitchButton, Star, Bell, ChatDotRound, ShoppingBag, Location, Setting, Goods, Comment, ShoppingCart } from '@element-plus/icons-vue'
+import { User, SwitchButton, Star, ChatDotRound, ShoppingBag, Location, Setting, Goods, Comment, ShoppingCart } from '@element-plus/icons-vue'
 import { getOssUrl } from '@/utils/oss'
 import { useChatStore } from '@/stores/chat'
+import NotificationPopover from '@/components/notification/NotificationPopover.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -48,9 +49,9 @@ async function handleLogout() {
             <el-icon :size="20"><ChatDotRound /></el-icon>
             <el-badge v-if="chatStore.totalUnreadCount > 0" :value="chatStore.totalUnreadCount" :max="99" class="unread-badge" />
           </RouterLink>
-          <RouterLink to="/notifications" class="action-icon" title="通知">
-            <el-icon :size="20"><Bell /></el-icon>
-          </RouterLink>
+          <span class="action-icon" title="通知">
+            <NotificationPopover />
+          </span>
           <el-dropdown trigger="click" @command="(cmd: string) => {
             if (cmd === 'profile') router.push('/profile')
             else if (cmd === 'myProducts') router.push('/my-products')
