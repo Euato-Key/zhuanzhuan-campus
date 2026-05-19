@@ -3,6 +3,7 @@ import { prisma } from '../../config/prisma';
 import { Prisma, OrderStatus, OrderDeliveryType, PaymentMethod, ReturnStatus, ProductStatus } from '@prisma/client';
 import { badRequest, notFound, forbidden, conflict } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
+import { NotificationService } from '../notification/notification.service';
 
 // ============================================
 // Types
@@ -273,6 +274,16 @@ export const OrderService = {
       return newOrder;
     });
 
+    // 通知卖家有新订单
+    await NotificationService.create({
+      userId: product.userId,
+      type: 'order',
+      title: '收到新订单',
+      content: `买家下单了商品「${product.name}」，订单号：${orderNo}`,
+      relatedId: order.id,
+      relatedType: 'order',
+    });
+
     return order;
   },
 
@@ -433,6 +444,17 @@ export const OrderService = {
       return updatedOrder;
     });
 
+    // 通知卖家买家已支付
+    const statusLabel = newStatus === OrderStatus.pending_pickup ? '待自提' : '待发货';
+    await NotificationService.create({
+      userId: order.sellerId,
+      type: 'order',
+      title: '买家已支付',
+      content: `订单「${order.orderNo}」买家已支付，当前状态：${statusLabel}`,
+      relatedId: order.id,
+      relatedType: 'order',
+    });
+
     return updated;
   },
 
@@ -499,12 +521,20 @@ export const OrderService = {
       return updatedOrder;
     });
 
+    // 通知对方订单已取消
+    const otherUserId = userId === order.buyerId ? order.sellerId : order.buyerId;
+    const cancelBy = userId === order.buyerId ? '买家' : '卖家';
+    await NotificationService.create({
+      userId: otherUserId,
+      type: 'order',
+      title: '订单已取消',
+      content: `订单「${order.orderNo}」已被${cancelBy}取消`,
+      relatedId: order.id,
+      relatedType: 'order',
+    });
+
     return updated;
   },
-
-  /**
-   * 卖家发货
-   */
   async ship(userId: number, orderId: bigint, data: ShipOrderData) {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -536,6 +566,16 @@ export const OrderService = {
       },
     });
 
+    // 通知买家卖家已发货
+    await NotificationService.create({
+      userId: order.buyerId,
+      type: 'order',
+      title: '卖家已发货',
+      content: `订单「${order.orderNo}」卖家已发货，快递：${data.expressCompany} ${data.expressNo}`,
+      relatedId: order.id,
+      relatedType: 'order',
+    });
+
     return updated;
   },
 
@@ -565,6 +605,16 @@ export const OrderService = {
         status: OrderStatus.pending_confirm,
         confirmPickupTime: new Date(),
       },
+    });
+
+    // 通知买家卖家已确认取货
+    await NotificationService.create({
+      userId: order.buyerId,
+      type: 'order',
+      title: '卖家已确认取货',
+      content: `订单「${order.orderNo}」卖家已确认您取货，请确认收货`,
+      relatedId: order.id,
+      relatedType: 'order',
     });
 
     return updated;
@@ -603,6 +653,16 @@ export const OrderService = {
         receiveTime: new Date(),
         confirmTime: new Date(),
       },
+    });
+
+    // 通知卖家订单已完成
+    await NotificationService.create({
+      userId: order.sellerId,
+      type: 'order',
+      title: '订单已完成',
+      content: `订单「${order.orderNo}」买家已确认收货，交易完成`,
+      relatedId: order.id,
+      relatedType: 'order',
     });
 
     return updated;
@@ -661,6 +721,16 @@ export const OrderService = {
       },
     });
 
+    // 通知卖家买家申请退货
+    await NotificationService.create({
+      userId: order.sellerId,
+      type: 'order',
+      title: '买家申请退货',
+      content: `订单「${order.orderNo}」买家申请退货，理由：${data.reason}`,
+      relatedId: order.id,
+      relatedType: 'order',
+    });
+
     return updated;
   },
 
@@ -694,6 +764,17 @@ export const OrderService = {
           status: OrderStatus.returning,
         },
       });
+
+      // 通知买家退货申请已通过
+      await NotificationService.create({
+        userId: order.buyerId,
+        type: 'order',
+        title: '退货申请已通过',
+        content: `订单「${order.orderNo}」退货申请已通过，请填写退货快递信息`,
+        relatedId: order.id,
+        relatedType: 'order',
+      });
+
       return updated;
     } else {
       // 拒绝退货
@@ -707,6 +788,17 @@ export const OrderService = {
           returnRejectReason: rejectReason,
         },
       });
+
+      // 通知买家退货申请被拒绝
+      await NotificationService.create({
+        userId: order.buyerId,
+        type: 'order',
+        title: '退货申请被拒绝',
+        content: `订单「${order.orderNo}」退货申请被拒绝，原因：${rejectReason}`,
+        relatedId: order.id,
+        relatedType: 'order',
+      });
+
       return updated;
     }
   },
@@ -741,6 +833,16 @@ export const OrderService = {
         returnCompany: data.company,
         returnExpressNo: data.expressNo,
       },
+    });
+
+    // 通知卖家买家已填写退货快递信息
+    await NotificationService.create({
+      userId: order.sellerId,
+      type: 'order',
+      title: '买家已填写退货快递',
+      content: `订单「${order.orderNo}」买家已填写退货快递，${data.company} ${data.expressNo}`,
+      relatedId: order.id,
+      relatedType: 'order',
     });
 
     return updated;
@@ -791,6 +893,16 @@ export const OrderService = {
       return updatedOrder;
     });
 
+    // 通知买家退货已完成，已退款
+    await NotificationService.create({
+      userId: order.buyerId,
+      type: 'order',
+      title: '退货已完成',
+      content: `订单「${order.orderNo}」退货已完成，退款将原路返回`,
+      relatedId: order.id,
+      relatedType: 'order',
+    });
+
     return updated;
   },
 
@@ -813,6 +925,16 @@ export const OrderService = {
             status: OrderStatus.cancelled,
             cancelReason: '支付超时自动取消',
           },
+        });
+
+        // 通知买家订单因超时自动取消
+        await NotificationService.create({
+          userId: lock.order.buyerId,
+          type: 'order',
+          title: '订单已超时取消',
+          content: `订单「${lock.order.orderNo}」因支付超时已自动取消`,
+          relatedId: lock.order.id,
+          relatedType: 'order',
         });
       }
       // 删除锁

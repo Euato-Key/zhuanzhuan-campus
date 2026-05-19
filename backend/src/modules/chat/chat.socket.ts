@@ -2,6 +2,7 @@ import type { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import type { SendMessagePayload, TypingPayload, MarkReadPayload, JoinConversationPayload, LeaveConversationPayload } from './chat.types';
 import type { JwtPayload } from '../../middlewares/auth';
+import { registerNotificationSocket } from '../notification/notification.socket';
 
 const onlineUsers = new Map<number, Set<string>>();
 const typingTimeouts = new Map<string, NodeJS.Timeout>();
@@ -52,6 +53,9 @@ export function registerChatSocketEvents(io: Server) {
 
     // Join personal room for targeted events
     socket.join(getUserRoomKey(userId));
+
+    // Initialize notification socket (push unread count)
+    registerNotificationSocket(socket);
 
     // Send all currently online users to this newly connected socket
     const onlineList: Array<{ userId: number; online: boolean }> = [];

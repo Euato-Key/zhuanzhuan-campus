@@ -2,6 +2,7 @@ import { prisma } from '../../config/prisma';
 import { Prisma, WantBuyStatus } from '@prisma/client';
 import { badRequest, notFound, forbidden } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
+import { NotificationService } from '../notification/notification.service';
 import { WANT_BUY_LIST_SELECT, WANT_BUY_DETAIL_SELECT, WANT_BUY_COMMENT_SELECT, WANT_BUY_COMMENT_USER_SELECT } from '../../common/selects';
 
 export type { WantBuyStatus };
@@ -578,6 +579,35 @@ export const WantBuyService = {
       data: { commentCount: { increment: 1 } },
     });
 
+    // 通知帖子作者收到评论
+    if (wantBuy.userId !== userId) {
+      await NotificationService.create({
+        userId: wantBuy.userId,
+        type: 'interaction',
+        title: '求购贴收到新评论',
+        content: `您的求购贴「${wantBuy.name}」收到了新评论`,
+        relatedId: wantBuy.id,
+        relatedType: 'want_buy',
+      });
+    }
+
+    // 通知被回复的评论作者
+    if (replyToId) {
+      const replyToComment = await prisma.wantBuyComment.findUnique({
+        where: { id: replyToId },
+      });
+      if (replyToComment && replyToComment.userId !== userId) {
+        await NotificationService.create({
+          userId: replyToComment.userId,
+          type: 'interaction',
+          title: '您的评论收到回复',
+          content: `您在求购贴「${wantBuy.name}」中的评论收到了回复`,
+          relatedId: wantBuy.id,
+          relatedType: 'want_buy',
+        });
+      }
+    }
+
     // 返回时添加 isLiked 和 replies 字段
     return {
       ...comment,
@@ -673,6 +703,18 @@ export const WantBuyService = {
         data: { likeCount: { increment: 1 } },
       }),
     ]);
+
+    // 通知评论作者收到点赞
+    if (comment.userId !== userId) {
+      await NotificationService.create({
+        userId: comment.userId,
+        type: 'interaction',
+        title: '评论收到点赞',
+        content: '您的求购贴评论收到了一个赞',
+        relatedId: comment.wantBuyId,
+        relatedType: 'want_buy',
+      });
+    }
 
     // 获取更新后的点赞数
     const updated = await prisma.wantBuyComment.findUnique({

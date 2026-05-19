@@ -2,6 +2,7 @@ import { prisma } from '../../config/prisma';
 import { Prisma, ReviewType, ReviewStatus, AppendStatus, OrderStatus } from '@prisma/client';
 import { badRequest, notFound, forbidden, conflict } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
+import { NotificationService } from '../notification/notification.service';
 import { REVIEW_USER_SELECT, REVIEW_ORDER_SELECT } from '../../common/selects';
 
 // ============================================
@@ -193,6 +194,16 @@ export const ReviewService = {
       },
     });
 
+    // 通知被评价人收到了评价
+    await NotificationService.create({
+      userId: reviewedId,
+      type: 'review',
+      title: '收到新评价',
+      content: `您收到了一条${type === 'buyer_to_seller' ? '买家' : '卖家'}评价，${data.rating}星`,
+      relatedId: review.id,
+      relatedType: 'review',
+    });
+
     return review;
   },
 
@@ -233,6 +244,16 @@ export const ReviewService = {
         reviewer: { select: REVIEW_USER_SELECT },
         order: { select: REVIEW_ORDER_SELECT },
       },
+    });
+
+    // 通知被评价人收到了追评
+    await NotificationService.create({
+      userId: review.reviewedId,
+      type: 'review',
+      title: '收到追评',
+      content: `评价人对您的评价进行了追评：${data.appendContent.trim().slice(0, 50)}`,
+      relatedId: review.id,
+      relatedType: 'review',
     });
 
     return updated;
@@ -519,6 +540,16 @@ export const ReviewService = {
       },
     });
 
+    // 通知评价人审核通过
+    await NotificationService.create({
+      userId: review.reviewerId,
+      type: 'review',
+      title: '评价审核通过',
+      content: '您的评价已通过审核',
+      relatedId: review.id,
+      relatedType: 'review',
+    });
+
     return updated;
   },
 
@@ -541,6 +572,17 @@ export const ReviewService = {
           appendAuditCount,
         },
       });
+
+      // 通知评价人追评审核拒绝
+      await NotificationService.create({
+        userId: review.reviewerId,
+        type: 'review',
+        title: '追评审核未通过',
+        content: `您的追评未通过审核，原因：${rejectReason.trim()}`,
+        relatedId: review.id,
+        relatedType: 'review',
+      });
+
       return { message: '追评已拒绝' };
     }
 
@@ -549,17 +591,24 @@ export const ReviewService = {
     }
 
     const auditCount = review.auditCount + 1;
-    const finalStatus = auditCount >= MAX_AUDIT_COUNT
-      ? ReviewStatus.rejected
-      : ReviewStatus.rejected;
 
     await prisma.review.update({
       where: { id: reviewId },
       data: {
-        status: finalStatus,
+        status: ReviewStatus.rejected,
         rejectReason: rejectReason.trim(),
         auditCount,
       },
+    });
+
+    // 通知评价人审核拒绝
+    await NotificationService.create({
+      userId: review.reviewerId,
+      type: 'review',
+      title: '评价审核未通过',
+      content: `您的评价未通过审核，原因：${rejectReason.trim()}`,
+      relatedId: review.id,
+      relatedType: 'review',
     });
 
     return { message: auditCount >= MAX_AUDIT_COUNT ? '评价已拒绝，审核次数已达上限' : '评价已拒绝' };

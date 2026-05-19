@@ -2,6 +2,7 @@ import { prisma } from '../../config/prisma';
 import { Prisma, ItemCondition, DeliveryType, ProductStatus } from '@prisma/client';
 import { badRequest, notFound, forbidden } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
+import { NotificationService } from '../notification/notification.service';
 import { PRODUCT_CATEGORY_SELECT, PRODUCT_USER_SELECT, PRODUCT_DETAIL_USER_SELECT, PRODUCT_DETAIL_CATEGORY_SELECT, USER_ADMIN_SELECT } from '../../common/selects';
 
 export type { ItemCondition, DeliveryType, ProductStatus };
@@ -589,11 +590,21 @@ export const ProductService = {
       },
     });
 
+    // 通知卖家商品审核通过
+    await NotificationService.create({
+      userId: product.userId,
+      type: 'product',
+      title: '商品审核通过',
+      content: `商品「${product.name}」审核已通过，已上架展示`,
+      relatedId: product.id,
+      relatedType: 'product',
+    });
+
     return updated;
   },
 
   async reject(_adminId: number, productId: bigint, reason: string) {
-    await findProductOrThrow(productId, {
+    const product = await findProductOrThrow(productId, {
       allowedStatuses: [ProductStatus.pending],
     });
 
@@ -603,6 +614,16 @@ export const ProductService = {
         status: ProductStatus.audit_failed,
         rejectReason: reason,
       },
+    });
+
+    // 通知卖家商品审核拒绝
+    await NotificationService.create({
+      userId: product.userId,
+      type: 'product',
+      title: '商品审核未通过',
+      content: `商品「${product.name}」审核未通过，原因：${reason}`,
+      relatedId: product.id,
+      relatedType: 'product',
     });
 
     return updated;
@@ -623,11 +644,21 @@ export const ProductService = {
       },
     });
 
+    // 通知卖家商品被封禁
+    await NotificationService.create({
+      userId: product.userId,
+      type: 'product',
+      title: '商品已被封禁',
+      content: `商品「${product.name}」已被管理员封禁，原因：${reason}`,
+      relatedId: product.id,
+      relatedType: 'product',
+    });
+
     return updated;
   },
 
   async unban(_adminId: number, productId: bigint) {
-    await findProductOrThrow(productId, {
+    const product = await findProductOrThrow(productId, {
       allowedStatuses: [ProductStatus.banned],
     });
 
@@ -639,11 +670,21 @@ export const ProductService = {
       },
     });
 
+    // 通知卖家商品已解封
+    await NotificationService.create({
+      userId: product.userId,
+      type: 'product',
+      title: '商品已解封',
+      content: `商品「${product.name}」已被管理员解封，将重新进入审核`,
+      relatedId: product.id,
+      relatedType: 'product',
+    });
+
     return updated;
   },
 
   async forceOffline(_adminId: number, productId: bigint, reason: string) {
-    await findProductOrThrow(productId, {
+    const product = await findProductOrThrow(productId, {
       allowedStatuses: [ProductStatus.active],
     });
 
@@ -653,6 +694,16 @@ export const ProductService = {
         status: ProductStatus.offline,
         rejectReason: reason,
       },
+    });
+
+    // 通知卖家商品被强制下架
+    await NotificationService.create({
+      userId: product.userId,
+      type: 'product',
+      title: '商品被强制下架',
+      content: `商品「${product.name}」被管理员强制下架，原因：${reason}`,
+      relatedId: product.id,
+      relatedType: 'product',
     });
 
     return updated;
