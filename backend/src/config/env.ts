@@ -49,4 +49,13 @@ export const env = {
   OSS_ROLE_ARN: process.env.OSS_ROLE_ARN || '',
 
   AMAP_API_KEY: process.env.AMAP_API_KEY || '',
+
+  // AI 服务配置（阿里云百炼 / DashScope）
+  DASHSCOPE_API_KEY: process.env.DASHSCOPE_API_KEY || '',
+  AI_MODEL_NAME: process.env.AI_MODEL_NAME || 'kimi-k2.6',
+  AI_BASE_URL: process.env.AI_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  AI_ENABLE_THINKING: process.env.AI_ENABLE_THINKING === 'true',
+  AI_TEMPERATURE: parseFloat(process.env.AI_TEMPERATURE || '0.6'),
+  AI_TIMEOUT: parseInt(process.env.AI_TIMEOUT || '30000', 10),
+  AI_MAX_RETRIES: parseInt(process.env.AI_MAX_RETRIES || '2', 10),
 } as const;

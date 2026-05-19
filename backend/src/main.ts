@@ -22,6 +22,7 @@ import chatRoutes from './modules/chat/chat.routes';
 import reviewRoutes from './modules/review/review.routes';
 import wantBuyRoutes from './modules/want-buy/want-buy.routes';
 import { notificationRoutes } from './modules/notification/notification.routes';
+import aiRoutes from './modules/ai/ai.routes';
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/want-buys', wantBuyRoutes);
 app.use('/api/notifications', notificationRoutes);
+  app.use('/api/ai', aiRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ code: 200, data: { status: 'ok' }, message: 'success' });

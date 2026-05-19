@@ -253,10 +253,19 @@ async function cleanupTempFiles(type: string, userId: number, olderThanDays = 30
   return objectsToDelete.length;
 }
 
+function getSignedReadUrl(ossPath: string, expiresSeconds: number = SIGNED_URL_EXPIRES_SECONDS): string {
+  if (ossPath.includes('..') || !/^[\w/.-]+$/.test(ossPath)) {
+    throw badRequest('非法的文件路径');
+  }
+  const client = getOSSClient();
+  return client.signatureUrl(ossPath, { method: 'GET', expires: expiresSeconds });
+}
+
 export const FileService = {
   getOSSClient,
   getSTSCredentials,
   getSignedUrl,
+  getSignedReadUrl,
   moveFileToPermanent,
   cleanupTempFiles,
   generateTempPath,
