@@ -8,7 +8,7 @@ interface ApiResponse<T = unknown> {
 }
 
 // 递归转换特殊类型为可序列化的值
-function serializeData(obj: unknown): unknown {
+export function serializeData(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
     return obj;
   }
