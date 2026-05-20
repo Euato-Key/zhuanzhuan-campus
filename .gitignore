@@ -1,6 +1,6 @@
 # 依赖
 node_modules/
-
+.trae/
 
 # 构建输出
 dist/
