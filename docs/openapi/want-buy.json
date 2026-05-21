@@ -109,10 +109,7 @@
           "categoryId": { "type": "integer", "description": "分类ID" },
           "description": { "type": "string", "description": "商品描述" },
           "tags": { "type": "array", "items": { "type": "string" }, "description": "标签" },
-          "budgetMin": { "type": "number", "description": "预算最低价" },
-          "budgetMax": { "type": "number", "description": "预算最高价" },
-          "quantity": { "type": "integer", "minimum": 1, "description": "求购数量" },
-          "images": { "type": "array", "items": { "type": "string" }, "maxItems": 9, "description": "图片URL数组" },
+          "maxPrice": { "type": "number", "description": "期望最高价格" },
           "validDays": { "type": "integer", "enum": [7, 15, 30], "description": "有效期（天）" }
         }
       },
