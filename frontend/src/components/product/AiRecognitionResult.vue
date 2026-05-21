@@ -3,6 +3,8 @@ import { ref, computed, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { createProduct } from '@/api/modules/product'
 import { getOssUrl } from '@/utils/oss'
+import { useUserStore } from '@/stores/user'
+import { useAuthDialog } from '@/composables/useAuthDialog'
 import type { RecognitionResult, RecognitionData, SuggestedSpec } from '@/api/modules/ai'
 
 const props = defineProps<{
@@ -48,6 +50,11 @@ const conditionLabel: Record<string, string> = {
 }
 
 async function handlePublish() {
+  if (!useUserStore().isLoggedIn) {
+    useAuthDialog().open('login')
+    return
+  }
+
   if (!props.result) return
 
   const data = props.result.data

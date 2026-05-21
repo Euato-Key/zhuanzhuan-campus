@@ -56,7 +56,7 @@ onMounted(fetchData)
         <p class="hero-desc">买卖二手商品，就来转转校园 · 闲置物品再利用，环保又省钱</p>
         <div class="hero-actions">
           <RouterLink to="/products" class="btn btn-primary">浏览商品</RouterLink>
-          <a v-if="userStore.isLoggedIn" class="btn btn-secondary" @click="router.push('/publish')">发布商品</a>
+          <a v-if="userStore.isLoggedIn" class="btn btn-secondary" @click="router.push('/products')">发布商品</a>
           <a v-else class="btn btn-secondary" @click="authDialog.open('login')">发布商品</a>
           <RouterLink to="/want-buy" class="btn btn-outline">求购社区</RouterLink>
         </div>

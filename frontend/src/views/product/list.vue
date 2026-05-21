@@ -17,6 +17,8 @@ import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
 import AiPublishModal from '@/components/product/AiPublishModal.vue'
 import ProductCard from '@/components/product/ProductCard.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import { useUserStore } from '@/stores/user'
+import { useAuthDialog } from '@/composables/useAuthDialog'
 
 const route = useRoute()
 
@@ -163,6 +165,24 @@ function handlePageChange(page: number) {
 function handlePublishSuccess() {
   ElMessage.success('商品发布成功，等待审核')
   fetchProducts()
+}
+
+// 打开发布弹窗（需登录）
+function openPublishDialog() {
+  if (!useUserStore().isLoggedIn) {
+    useAuthDialog().open('login')
+    return
+  }
+  publishDialogVisible.value = true
+}
+
+// 打开AI发布弹窗（需登录）
+function openAiPublish() {
+  if (!useUserStore().isLoggedIn) {
+    useAuthDialog().open('login')
+    return
+  }
+  aiPublishVisible.value = true
 }
 
 // 从URL读取查询参数
@@ -383,7 +403,7 @@ onMounted(() => {
       />
 
       <el-empty v-if="!loading && products.length === 0" description="暂无商品">
-        <el-button type="primary" @click="publishDialogVisible = true">发布商品</el-button>
+        <el-button type="primary" @click="openPublishDialog()">发布商品</el-button>
       </el-empty>
     </div>
 
@@ -407,12 +427,12 @@ onMounted(() => {
         :icon="Plus"
         circle
         size="large"
-        @click="publishDialogVisible = true"
+        @click="openPublishDialog()"
       />
       <el-button
         class="ai-publish-btn"
         size="large"
-        @click="aiPublishVisible = true"
+        @click="openAiPublish()"
       >
         <svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 20px; height: 20px">
           <path d="M12 2L14.5 9H22L16 13.5L18.5 21L12 16.5L5.5 21L8 13.5L2 9H9.5L12 2Z" fill="currentColor" opacity="0.6"/>

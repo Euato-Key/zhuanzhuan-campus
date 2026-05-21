@@ -13,6 +13,8 @@ import {
   type ProductSpec,
 } from '@/api/modules/product'
 import { uploadImage } from '@/api/modules/upload'
+import { useUserStore } from '@/stores/user'
+import { useAuthDialog } from '@/composables/useAuthDialog'
 
 const props = defineProps<{
   modelValue: boolean
@@ -237,6 +239,11 @@ function removeSpec(index: number) {
 
 // 提交表单
 async function handleSubmit() {
+  if (!useUserStore().isLoggedIn) {
+    useAuthDialog().open('login')
+    return
+  }
+
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 

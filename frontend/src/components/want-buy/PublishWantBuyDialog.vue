@@ -12,6 +12,8 @@ import {
   VALID_DAYS_OPTIONS,
 } from '@/api/modules/want-buy'
 import { uploadImage } from '@/api/modules/upload'
+import { useUserStore } from '@/stores/user'
+import { useAuthDialog } from '@/composables/useAuthDialog'
 
 const props = defineProps<{
   modelValue: boolean
@@ -149,6 +151,11 @@ function removeTag(index: number) {
 
 // 提交表单
 async function handleSubmit() {
+  if (!useUserStore().isLoggedIn) {
+    useAuthDialog().open('login')
+    return
+  }
+
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
