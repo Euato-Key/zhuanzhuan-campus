@@ -31,4 +31,41 @@ export const AIController = {
     const result = await AIService.recognition.analyze(userId, { images, name, brand });
     return success(res, result, 'AI识别完成');
   }),
+
+  recognizeProductStream: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+    const { images, name, brand } = req.body;
+
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      throw badRequest('至少上传一张商品图片');
+    }
+    if (images.length > 9) {
+      throw badRequest('商品图片最多9张');
+    }
+    for (const img of images) {
+      if (typeof img !== 'string' || !img.startsWith('products/')) {
+        throw badRequest('图片路径格式不正确');
+      }
+    }
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    res.write(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
+
+    try {
+      await AIService.recognition.analyzeStream(
+        { images, name, brand },
+        (event) => { res.write(`data: ${JSON.stringify(event)}\n\n`); },
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'AI识别失败';
+      res.write(`data: ${JSON.stringify({ type: 'error', message })}\n\n`);
+    } finally {
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+  }),
 };
