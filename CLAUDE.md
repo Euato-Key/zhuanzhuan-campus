@@ -31,11 +31,24 @@ zhuanzhuan-campus/
 ├── frontend/                # Vue3前端项目
 │   ├── src/
 │   │   ├── api/             # API封装
+│   │   │   └── modules/
+│   │   │       └── ai.ts    # AI识别API模块（类型定义+接口）
 │   │   ├── components/      # 组件
+│   │   │   └── product/
+│   │   │       ├── PublishProductDialog.vue  # 发布商品对话框（支持AI预填充）
+│   │   │       ├── AiPublishButton.vue       # AI智能发布入口按钮
+│   │   │       ├── AiPublishModal.vue        # AI发布模态框（三步流程）
+│   │   │       ├── AiRecognitionProgress.vue # AI识别多阶段进度展示
+│   │   │       └── AiRecognitionResult.vue   # AI识别结果预览与确认
 │   │   ├── composables/     # 组合式函数
+│   │   │   └── useAiRecognition.ts  # AI识别状态管理
 │   │   ├── router/          # 路由配置
 │   │   ├── stores/          # Pinia状态管理
 │   │   └── views/           # 页面视图
+│   │       ├── product/
+│   │       │   └── list.vue # 商品列表页（含AI发布入口）
+│   │       └── user/
+│   │           └── myProducts.vue  # 我的商品页（含AI发布入口）
 │   └── vite.config.ts
 ├── backend/                 # Express后端项目
 │   ├── src/
@@ -58,6 +71,15 @@ zhuanzhuan-campus/
 3. **数据库**: 使用Prisma ORM，SQL脚本在Database目录
 4. **API规范**: RESTful风格，响应格式 `{ code: 200, data: {}, message: 'success' }`
 5. **WebSocket**: 使用Socket.io实现实时聊天，命名空间隔离业务
+6. **AI智能发布**: 通过上传商品图片，AI自动识别后执行多阶段流程（图片识别→联网搜索→页面抓取→信息融合），返回结构化商品数据预填充到发布表单。MCP服务不可用时自动降级为纯AI图片识别模式。
+
+### AI发布前端架构
+- **入口**: 商品列表页和我的商品页均有"AI 智能发布"按钮（绿色渐变主题，与常规发布区分）
+- **流程**: 三步模态框（上传图片 → 实时查看识别进度 → 确认结果），每步展示阶段详情
+- **集成点**: 
+  - `PublishProductDialog` 支持 `aiData` prop，自动预填充 AI 识别结果
+  - 分类ID自动校验，不存在时警告提示
+- **样式**: AI相关样式集中在 `assets/styles/_ai-recognition.scss`，遵循品牌色彩系统
 
 ---
 
