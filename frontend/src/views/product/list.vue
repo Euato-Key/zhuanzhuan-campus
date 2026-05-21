@@ -14,6 +14,7 @@ import {
   type DeliveryType,
 } from '@/api/modules/product'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
+import AiPublishModal from '@/components/product/AiPublishModal.vue'
 import ProductCard from '@/components/product/ProductCard.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 
@@ -44,6 +45,7 @@ const priceRange = ref<[number | undefined, number | undefined]>([undefined, und
 
 // 发布弹窗
 const publishDialogVisible = ref(false)
+const aiPublishVisible = ref(false)
 
 // 计算一级分类
 const levelOneCategories = computed(() => {
@@ -398,18 +400,37 @@ onMounted(() => {
     </div>
 
     <!-- 发布按钮 -->
-    <el-button
-      type="primary"
-      class="publish-btn"
-      :icon="Plus"
-      circle
-      size="large"
-      @click="publishDialogVisible = true"
-    />
+    <div class="publish-actions">
+      <el-button
+        type="primary"
+        class="publish-btn"
+        :icon="Plus"
+        circle
+        size="large"
+        @click="publishDialogVisible = true"
+      />
+      <el-button
+        class="ai-publish-btn"
+        size="large"
+        @click="aiPublishVisible = true"
+      >
+        <svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 20px; height: 20px">
+          <path d="M12 2L14.5 9H22L16 13.5L18.5 21L12 16.5L5.5 21L8 13.5L2 9H9.5L12 2Z" fill="currentColor" opacity="0.6"/>
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        </svg>
+        AI
+      </el-button>
+    </div>
 
     <!-- 发布商品弹窗 -->
     <PublishProductDialog
       v-model="publishDialogVisible"
+      @success="handlePublishSuccess"
+    />
+
+    <!-- AI 发布弹窗 -->
+    <AiPublishModal
+      v-model="aiPublishVisible"
       @success="handlePublishSuccess"
     />
   </div>
@@ -547,14 +568,53 @@ onMounted(() => {
   margin-top: $spacing-xl;
 }
 
-.publish-btn {
+.publish-actions {
   position: fixed;
   right: 40px;
   bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100;
+}
+
+.publish-btn {
   width: 56px;
   height: 56px;
   box-shadow: $shadow-primary;
-  z-index: 100;
+}
+
+.ai-publish-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  color: #fff;
+  font-size: $font-size-small;
+  font-weight: $font-weight-semibold;
+  background: linear-gradient(135deg, #4CAF50, #2196F3);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: all $transition-normal;
+
+  .ai-icon {
+    animation: ai-sparkle 2s ease-in-out infinite;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  }
+}
+
+@keyframes ai-sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.15); }
 }
 
 @media (max-width: $breakpoint-md) {

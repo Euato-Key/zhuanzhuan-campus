@@ -16,7 +16,8 @@ import { uploadImage } from '@/api/modules/upload'
 
 const props = defineProps<{
   modelValue: boolean
-  product?: ProductDetail // 编辑时传入
+  product?: ProductDetail
+  aiData?: Partial<CreateProductData>
 }>()
 
 const emit = defineEmits<{
@@ -30,7 +31,10 @@ const visible = computed({
 })
 
 const isEdit = computed(() => !!props.product)
-const dialogTitle = computed(() => isEdit.value ? '编辑商品' : '发布商品')
+const isAiAssist = computed(() => !!props.aiData && !props.product)
+const dialogTitle = computed(() => isEdit.value ? '编辑商品' : isAiAssist.value ? 'AI 辅助完善' : '发布商品')
+
+const showAiWarning = ref(false)
 
 // 表单
 const formRef = ref<FormInstance>()
@@ -295,6 +299,45 @@ function initEditData() {
   }
 }
 
+function initAiData() {
+  if (props.aiData) {
+    const ai = props.aiData
+
+    if (ai.name) formData.value.name = ai.name
+    if (ai.description) formData.value.description = ai.description
+    if (ai.currentPrice != null) formData.value.currentPrice = ai.currentPrice
+    if (ai.originalPrice != null) formData.value.originalPrice = ai.originalPrice
+    if (ai.bargain != null) formData.value.bargain = ai.bargain
+    if (ai.deliveryType) formData.value.deliveryType = ai.deliveryType
+    if (ai.itemCondition) formData.value.itemCondition = ai.itemCondition
+    if (ai.brand) formData.value.brand = ai.brand
+
+    if (ai.tags?.length) {
+      tags.value = ai.tags
+      formData.value.tags = ai.tags
+    }
+
+    if (ai.specs?.length) {
+      specs.value = ai.specs
+      formData.value.specs = ai.specs
+    }
+
+    if (ai.categoryId != null) {
+      const found = flatCategories.value.find(c => c.id === ai.categoryId)
+      if (found) {
+        formData.value.categoryId = ai.categoryId
+        showAiWarning.value = false
+      } else {
+        showAiWarning.value = true
+      }
+    }
+
+    if (ai.validDays != null) {
+      formData.value.validDays = ai.validDays
+    }
+  }
+}
+
 // 重置表单
 function resetForm() {
   formData.value = {
@@ -325,12 +368,16 @@ function resetForm() {
 // 监听弹窗打开
 watch(visible, (val) => {
   if (val) {
-    fetchCategories()
-    if (isEdit.value) {
-      initEditData()
-    } else {
-      resetForm()
-    }
+    fetchCategories().then(() => {
+      if (isEdit.value) {
+        initEditData()
+      } else if (isAiAssist.value) {
+        resetForm()
+        initAiData()
+      } else {
+        resetForm()
+      }
+    })
   }
 })
 </script>
@@ -384,6 +431,14 @@ watch(visible, (val) => {
             :style="{ paddingLeft: cat.level * 20 + 'px' }"
           />
         </el-select>
+        <el-alert
+          v-if="showAiWarning"
+          title="AI 返回的分类ID在当前系统中不存在，请手动选择分类"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-top: 8px"
+        />
       </el-form-item>
 
       <!-- 商品图片 -->

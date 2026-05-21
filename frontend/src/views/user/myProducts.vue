@@ -5,6 +5,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Bottom, Top, Delete, Search, Goods } from '@element-plus/icons-vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
+import AiPublishModal from '@/components/product/AiPublishModal.vue'
 import {
   getMyProducts,
   getProductById,
@@ -37,6 +38,7 @@ const queryParams = reactive({
 
 // 发布/编辑弹窗
 const publishDialogVisible = ref(false)
+const aiPublishVisible = ref(false)
 const editingProduct = ref<ProductDetail | undefined>(undefined)
 
 // 状态统计
@@ -214,7 +216,19 @@ onMounted(() => {
             <p>管理我发布的商品，随时上下架</p>
           </div>
         </div>
-        <el-button type="primary" :icon="Plus" round @click="handlePublish">发布商品</el-button>
+        <div class="header-actions">
+          <el-button
+            class="ai-publish-header-btn"
+            @click="aiPublishVisible = true"
+          >
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px">
+              <path d="M12 2L14.5 9H22L16 13.5L18.5 21L12 16.5L5.5 21L8 13.5L2 9H9.5L12 2Z" fill="currentColor" opacity="0.6"/>
+              <circle cx="12" cy="12" r="3" fill="currentColor"/>
+            </svg>
+            AI 智能发布
+          </el-button>
+          <el-button type="primary" :icon="Plus" round @click="handlePublish">发布商品</el-button>
+        </div>
       </div>
 
       <!-- 状态统计卡片 -->
@@ -319,6 +333,7 @@ onMounted(() => {
         <!-- 空状态 -->
         <el-empty v-else description="暂无商品">
           <el-button type="primary" @click="handlePublish">发布商品</el-button>
+          <el-button class="ai-empty-btn" @click="aiPublishVisible = true">AI 智能发布</el-button>
         </el-empty>
       </div>
 
@@ -338,6 +353,12 @@ onMounted(() => {
       <PublishProductDialog
         v-model="publishDialogVisible"
         :product="editingProduct"
+        @success="handlePublishSuccess"
+      />
+
+      <!-- AI 发布弹窗 -->
+      <AiPublishModal
+        v-model="aiPublishVisible"
         @success="handlePublishSuccess"
       />
     </div>
@@ -394,6 +415,45 @@ onMounted(() => {
       font-size: 13px;
       color: $color-text-secondary;
     }
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-publish-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: $radius-full;
+  font-size: $font-size-small;
+  font-weight: $font-weight-semibold;
+  color: #fff;
+  background: linear-gradient(135deg, #4CAF50, #2196F3);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.25);
+  cursor: pointer;
+  transition: all $transition-normal;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.35);
+  }
+}
+
+.ai-empty-btn {
+  background: linear-gradient(135deg, #4CAF50, #2196F3);
+  border: none;
+  color: #fff;
+  margin-left: 8px;
+
+  &:hover {
+    opacity: 0.9;
+    color: #fff;
   }
 }
 
