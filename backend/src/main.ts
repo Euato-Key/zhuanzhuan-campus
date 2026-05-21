@@ -7,6 +7,7 @@ import { prisma } from './config/prisma';
 import { initSocketServer } from './config/socket';
 import { registerChatSocketEvents } from './modules/chat/chat.socket';
 import { startCleanupJobs } from './common/cleanup';
+import { MCPClientService } from './services/mcp-client.service';
 import { AppError } from './common/errors';
 import { fail } from './utils/response';
 import authRoutes from './modules/auth/auth.routes';
@@ -70,6 +71,14 @@ httpServer.listen(env.PORT, () => {
 });
 
 process.on('SIGINT', async () => {
+  await MCPClientService.disconnect();
+  await prisma.$disconnect();
+  httpServer.close();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await MCPClientService.disconnect();
   await prisma.$disconnect();
   httpServer.close();
   process.exit(0);
