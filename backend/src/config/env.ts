@@ -58,4 +58,9 @@ export const env = {
   AI_TEMPERATURE: parseFloat(process.env.AI_TEMPERATURE || '0.6'),
   AI_TIMEOUT: parseInt(process.env.AI_TIMEOUT || '30000', 10),
   AI_MAX_RETRIES: parseInt(process.env.AI_MAX_RETRIES || '2', 10),
+
+  MCP_ENABLED: process.env.MCP_ENABLED !== 'false',
+  MCP_SERVER_PATH: process.env.MCP_SERVER_PATH || 'mcp-servers/web-search-mcp/dist/index.js',
+  MCP_SEARCH_MAX_RESULTS: parseInt(process.env.MCP_SEARCH_MAX_RESULTS || '8', 10),
+  MCP_FETCH_MAX_PAGES: parseInt(process.env.MCP_FETCH_MAX_PAGES || '3', 10),
 } as const;
