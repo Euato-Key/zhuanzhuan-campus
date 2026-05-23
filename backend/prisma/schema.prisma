@@ -582,6 +582,15 @@ model QuickReply {
   @@map("quick_replies")
 }
 
+enum AIMessageType {
+  text
+  product_card
+  order_card
+  chart
+  link
+  mixed
+}
+
 model AIConversation {
   id        Int         @id @default(autoincrement())
   userId    Int         @map("user_id")
@@ -602,7 +611,7 @@ model AIMessage {
   conversationId Int             @map("conversation_id")
   role           String          @db.VarChar(20)
   content        String          @db.Text
-  msgType        String          @default("text") @map("msg_type") @db.VarChar(20)
+  msgType        AIMessageType   @default(text) @map("msg_type")
   extraData      Json?           @map("extra_data")
   createdAt      DateTime        @default(now()) @map("created_at")
 

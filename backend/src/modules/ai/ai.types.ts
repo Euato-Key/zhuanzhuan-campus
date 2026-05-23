@@ -61,6 +61,24 @@ export const VALID_ITEM_CONDITIONS = ['new', '99new', '95new', '90new', '80new']
 export const VALID_DELIVERY_TYPES = ['self', 'express', 'both'] as const;
 export const VALID_VALID_DAYS = [7, 15, 30, null] as const;
 
+// --- Stream Event Types ---
+
+export type StreamEvent =
+  | { type: 'phase_start'; phase: string; message: string; keywords?: string[]; urls?: string[] }
+  | { type: 'thinking'; phase: string; content: string }
+  | { type: 'phase_complete'; phase: string; durationMs: number; count?: number; pagesOk?: number }
+  | { type: 'phase_results'; phase: string; results?: any[] }
+  | { type: 'done'; result: AIRecognitionResult }
+  | { type: 'error'; message: string; phase?: string };
+
+export type AssistantStreamEvent =
+  | { type: 'token'; content: string }
+  | { type: 'card'; msg_type: string; data: any; content?: string }
+  | { type: 'status'; phase: string; message: string }
+  | { type: 'meta'; conversationId: number }
+  | { type: 'done'; conversationId: number; messageId: number }
+  | { type: 'error'; message: string };
+
 export interface Phase1Identification {
   brand: string | null;
   model: string | null;

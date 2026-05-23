@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, markRaw } from 'vue'
+import { useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { TrendCharts, User, Goods, Document, ChatDotRound } from '@element-plus/icons-vue'
 import api from '@/api'
+
+const router = useRouter()
 
 interface DashboardStats {
   totalUsers: number
@@ -76,6 +79,14 @@ function formatRelativeTime(iso: string): string {
   const days = Math.floor(hours / 24)
   return `${days}天前`
 }
+
+function viewAllReviews() {
+  router.push('/admin/products?status=pending')
+}
+
+function reviewProduct(_id: number) {
+  router.push('/admin/products')
+}
 </script>
 
 <template>
@@ -121,7 +132,7 @@ function formatRelativeTime(iso: string): string {
             <el-icon><Goods /></el-icon>
             待审核商品
           </h3>
-          <el-button type="primary" text size="small">查看全部</el-button>
+          <el-button type="primary" text size="small" @click="viewAllReviews">查看全部</el-button>
         </div>
         <div class="review-list">
           <div v-for="item in pendingReviews" :key="item.id" class="review-item">
@@ -130,7 +141,7 @@ function formatRelativeTime(iso: string): string {
               <span class="review-meta">卖家：{{ item.seller }} · {{ item.time }}</span>
             </div>
             <div class="review-actions">
-              <el-button type="primary" size="small">审核</el-button>
+              <el-button type="primary" size="small" @click="reviewProduct(item.id)">审核</el-button>
             </div>
           </div>
         </div>

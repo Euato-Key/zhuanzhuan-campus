@@ -1,109 +1,118 @@
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue'
+import { ref, onMounted } from 'vue'
+import { Plus, Clock, Close } from '@element-plus/icons-vue'
 import { useAiAssistantStore } from '@/stores/ai-assistant'
-import { ChatDotRound, Delete, Plus, Close } from '@element-plus/icons-vue'
-import AiMessageBubble from './AiMessageBubble.vue'
-import AiQuickQuestions from './AiQuickQuestions.vue'
+import AiChatView from './AiChatView.vue'
+import AiHistoryView from './AiHistoryView.vue'
+import AiWelcomeView from './AiWelcomeView.vue'
 
 const store = useAiAssistantStore()
 const inputText = ref('')
-const msgListRef = ref<HTMLElement>()
+const activeTab = ref<'chat' | 'history'>('chat')
 
-async function handleSend() {
-  if (!inputText.value.trim() || store.isLoading) return
-  const text = inputText.value
+function handleSend() {
+  const text = inputText.value.trim()
+  if (!text || store.isLoading) return
   inputText.value = ''
-  await store.sendMessage(text)
-  await nextTick()
-  scrollToBottom()
+  store.sendMessage(text)
 }
 
-function handleQuickAsk(q: string) {
-  store.sendMessage(q)
-  nextTick(() => scrollToBottom())
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
 }
 
-function scrollToBottom() {
-  if (msgListRef.value) {
-    msgListRef.value.scrollTop = msgListRef.value.scrollHeight
-  }
+function handleNewChat() {
+  store.newConversation()
+  activeTab.value = 'chat'
 }
 
-function handleNewChat() { store.newConversation() }
-function handleDeleteConv(id: number) { store.deleteConversation(id) }
-function handleKeydown(e: KeyboardEvent) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }
-
-watch(() => store.messages.length, () => nextTick(() => scrollToBottom()))
+onMounted(() => { if (!store.conversations.length) store.loadConversations() })
 </script>
 
 <template>
-  <Teleport to="body">
-    <!-- 遮罩 -->
-    <div v-if="store.panelVisible" class="ai-overlay" @click="store.close()" />
-    
-    <!-- 面板 -->
-    <div :class="['ai-panel', { visible: store.panelVisible }]">
-      <div class="panel-header">
-        <el-icon :size="18"><ChatDotRound /></el-icon>
-        <span class="panel-title">转转小助手</span>
-        <span class="context-hint">记忆{{ store.messages.length }}条</span>
-        <el-button :icon="Plus" size="small" text @click="handleNewChat" />
-        <el-button :icon="Close" size="small" text @click="store.close()" />
-      </div>
-
-      <div class="panel-body" ref="msgListRef">
-        <el-empty v-if="store.messages.length === 0" description="你好！我是转转小助手" :image-size="80" />
-        
-        <AiQuickQuestions v-if="store.messages.length === 0" @ask="handleQuickAsk" />
-
-        <div v-for="msg in store.messages" :key="msg.id">
-          <AiMessageBubble :msg="msg" />
+  <transition name="drawer-slide">
+    <div v-if="store.panelVisible" class="ai-drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">转转小助手</span>
+        <div class="header-actions">
+          <el-button text size="small" @click="handleNewChat"><el-icon><Plus /></el-icon></el-button>
+          <el-button text size="small" :type="activeTab === 'history' ? 'primary' : ''" @click="activeTab = activeTab === 'history' ? 'chat' : 'history'">
+            <el-icon><Clock /></el-icon>
+          </el-button>
+          <el-button text size="small" @click="store.close"><el-icon><Close /></el-icon></el-button>
         </div>
       </div>
 
-      <div class="panel-footer">
-        <el-input
-          v-model="inputText"
-          placeholder="输入问题，按Enter发送..."
-          :disabled="store.isLoading"
-          :maxlength="500"
-          show-word-limit
-          @keydown="handleKeydown"
-        >
-          <template #append>
-            <el-button 
-              :loading="store.isLoading" 
-              :icon="store.isLoading ? undefined : ChatDotRound"
-              @click="store.isLoading ? store.stopGeneration() : handleSend()"
-            >
-              {{ store.isLoading ? '停止' : '发送' }}
-            </el-button>
-          </template>
-        </el-input>
+      <div class="drawer-body">
+        <AiWelcomeView v-if="activeTab === 'chat' && !store.messages.length" />
+        <AiChatView v-else-if="activeTab === 'chat'" />
+        <AiHistoryView v-else @select="activeTab = 'chat'" />
+      </div>
+
+      <div v-if="activeTab === 'chat'" class="drawer-input">
+        <el-input v-model="inputText" placeholder="输入消息..." :disabled="store.isLoading"
+                  @keydown="handleKeydown" size="default" :rows="1" type="textarea" resize="none" autosize />
+        <button v-if="store.isLoading" class="send-btn stop-btn" @click="store.stopGeneration()">
+          <svg viewBox="0 0 24 24" width="18" height="18"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>
+        </button>
+        <button v-else class="send-btn" :class="{ active: inputText.trim() }" @click="handleSend"
+                :disabled="!inputText.trim()">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor"/></svg>
+        </button>
       </div>
     </div>
-  </Teleport>
+  </transition>
 </template>
 
-<style scoped>
-.ai-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 9998;
-  transition: opacity 0.3s;
+<style scoped lang="scss">
+@use '@/assets/styles/variables' as *;
+
+.ai-drawer {
+  position: fixed; top: 0; right: 0; width: 380px; height: 100vh;
+  background: #fff; box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+  display: flex; flex-direction: column; z-index: 2000;
 }
-.ai-panel {
-  position: fixed; top: 0; right: 0; width: 420px; height: 100vh;
-  background: #fff; box-shadow: -4px 0 24px rgba(0,0,0,0.12);
-  z-index: 9999; display: flex; flex-direction: column;
-  transform: translateX(100%); transition: transform 0.3s ease;
+
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: $spacing-sm $spacing-md; border-bottom: 1px solid $color-border-light;
+  background: $color-primary; color: #fff;
 }
-.ai-panel.visible { transform: translateX(0); }
-.panel-header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 14px 16px; border-bottom: 1px solid #f0f0f0;
-  background: #fafafa; flex-shrink: 0;
+.drawer-title { font-size: $font-size-body; font-weight: $font-weight-semibold; }
+.header-actions { display: flex; gap: 2px; }
+.header-actions .el-button { color: #fff !important; }
+
+.drawer-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+.drawer-input {
+  display: flex; align-items: flex-end; gap: $spacing-sm; padding: $spacing-sm $spacing-md;
+  border-top: 1px solid $color-border-light; background: $color-bg-card;
 }
-.panel-title { font-size: 16px; font-weight: 600; flex: 1; }
-.context-hint { font-size: 11px; color: #bbb; }
-.panel-body { flex: 1; overflow-y: auto; padding: 16px; }
-.panel-footer { padding: 12px 16px; border-top: 1px solid #f0f0f0; flex-shrink: 0; }
+.drawer-input .el-textarea { flex: 1; }
+
+.send-btn {
+  width: 32px; height: 32px; border-radius: $radius-full; border: none;
+  background: $color-border-light; color: #fff; cursor: default;
+  display: flex; align-items: center; justify-content: center;
+  transition: all $transition-fast; flex-shrink: 0;
+  &.active {
+    background: $color-primary; cursor: pointer;
+    box-shadow: 0 2px 8px rgba($color-primary, 0.3);
+    &:hover { transform: scale(1.1); }
+    &:active { transform: scale(0.92); }
+  }
+}
+.stop-btn {
+  background: $color-error; cursor: pointer;
+  animation: pulse-stop 1.5s ease-in-out infinite;
+}
+
+.drawer-slide-enter-active, .drawer-slide-leave-active { transition: transform 0.3s ease, opacity 0.2s ease; }
+.drawer-slide-enter-from, .drawer-slide-leave-to { transform: translateX(100%); opacity: 0; }
+
+@keyframes pulse-stop { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+@media (max-width: 480px) {
+  .ai-drawer { width: 100vw; }
+}
 </style>

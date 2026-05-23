@@ -6,8 +6,8 @@ import type { PaginatedResponse } from '../types'
 // ============================================================
 
 export type ReportTargetType = 'product' | 'want_buy' | 'user' | 'comment' | 'review'
-export type ReportReason = 'fake' | 'fraud' | 'harassment' | 'spam' | 'inappropriate' | 'other'
-export type ReportStatus = 'pending' | 'processing' | 'resolved' | 'dismissed'
+export type ReportReason = 'fraud' | 'prohibited' | 'inappropriate' | 'spam' | 'other'
+export type ReportStatus = 'pending' | 'dismissed' | 'warning' | 'banned' | 'resolved'
 export type HandleStatus = 'dismissed' | 'warning' | 'banned' | 'resolved'
 
 // ============================================================
@@ -31,26 +31,27 @@ export const REPORT_TARGET_TAG_TYPE: Record<ReportTargetType, string> = {
 }
 
 export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
-  fake: '虚假信息',
   fraud: '欺诈行为',
-  harassment: '骚扰/辱骂',
-  spam: '垃圾广告',
+  prohibited: '违禁品',
   inappropriate: '不当内容',
+  spam: '垃圾广告',
   other: '其他',
 }
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   pending: '待处理',
-  processing: '处理中',
-  resolved: '已处理',
   dismissed: '已驳回',
+  warning: '已警告',
+  banned: '已封禁',
+  resolved: '已解决',
 }
 
 export const REPORT_STATUS_TAG_TYPE: Record<ReportStatus, string> = {
   pending: 'warning',
-  processing: 'primary',
-  resolved: 'success',
   dismissed: 'info',
+  warning: 'primary',
+  banned: 'danger',
+  resolved: 'success',
 }
 
 // ============================================================
@@ -114,13 +115,13 @@ export function getAdminReportList(params?: {
   status?: ReportStatus
   keyword?: string
 }) {
-  return api.get<{ code: number; message: string; data: PaginatedResponse<ReportItem> }>('/admin/reports', { params })
+  return api.get<{ code: number; message: string; data: PaginatedResponse<ReportItem> }>('/reports/admin/list', { params })
 }
 
 export function getAdminReportDetail(id: number) {
-  return api.get<{ code: number; message: string; data: ReportItem }>(`/admin/reports/${id}`)
+  return api.get<{ code: number; message: string; data: ReportItem }>(`/reports/admin/${id}`)
 }
 
 export function handleReport(id: number, data: AdminHandleData) {
-  return api.put<{ code: number; message: string; data: ReportItem }>(`/admin/reports/${id}/handle`, data)
+  return api.put<{ code: number; message: string; data: ReportItem }>(`/reports/admin/${id}/handle`, data)
 }

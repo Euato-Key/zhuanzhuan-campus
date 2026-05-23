@@ -1,62 +1,127 @@
 <script setup lang="ts">
-import type { UIMessage } from '@/stores/ai-assistant'
-import { getOssUrl } from '@/utils/oss'
-import { useRouter } from 'vue-router'
+import { computed } from 'vue'
+import type { UIMessage, CardData } from '@/stores/ai-assistant'
+import AiTextMessage from './AiTextMessage.vue'
+import AiProductCard from './AiProductCard.vue'
+import AiOrderCard from './AiOrderCard.vue'
 
 const props = defineProps<{ msg: UIMessage }>()
-const router = useRouter()
 
-function goProduct(id: number) { router.push({ name: 'ProductDetail', params: { id } }) }
-function goOrder(id: number) { router.push({ name: 'OrderDetail', params: { id } }) }
+function formatTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+}
+
+function normalizeProducts(data: any): any[] {
+  return Array.isArray(data) ? data : (data?.products || [])
+}
+
+function normalizeOrders(data: any): any[] {
+  if (Array.isArray(data)) return data
+  if (data?.orders) return data.orders
+  const all: any[] = []
+  if (data?.bought) all.push(...data.bought.map((o: any) => ({ ...o, type: o.type || '买入' })))
+  if (data?.sold) all.push(...data.sold.map((o: any) => ({ ...o, type: o.type || '卖出' })))
+  return all
+}
+
+// Split content into text segments interleaved with cards
+// When textBeforeLength is available (streaming), we can interleave text precisely.
+// When missing (history), fall back to showing all text before all cards.
+interface TextSegment { text: string; afterCard?: boolean }
+const textSegments = computed<TextSegment[]>(() => {
+  if (props.msg.msgType !== 'mixed' || !props.msg.cards?.length) return []
+  const content = props.msg.content
+  const cards = props.msg.cards!
+  const hasPositions = cards.some(c => c.textBeforeLength !== undefined)
+
+  if (!hasPositions) {
+    // History message: show all text before cards
+    return content.trim() ? [{ text: content.trim() }] : []
+  }
+
+  const segments: TextSegment[] = []
+  for (let idx = 0; idx < cards.length; idx++) {
+    const start = idx === 0 ? 0 : (cards[idx - 1].textBeforeLength ?? 0)
+    const end = cards[idx].textBeforeLength ?? content.length
+    const textSlice = content.slice(start, end).trim()
+    if (textSlice) segments.push({ text: textSlice })
+  }
+
+  // Text after last card (streaming continuation)
+  const lastEnd = cards[cards.length - 1].textBeforeLength ?? 0
+  const tailText = content.slice(lastEnd).trim()
+  if (tailText) segments.push({ text: tailText, afterCard: true })
+
+  return segments
+})
 </script>
+
 <template>
   <div :class="['msg-bubble', msg.role === 'user' ? 'user' : 'ai']">
-    <!-- 文本消息 -->
-    <div v-if="msg.msgType === 'text'" class="text-content">{{ msg.content }}<span v-if="msg.isLoading" class="typing-dot">▌</span></div>
+    <!-- User message: plain text -->
+    <template v-if="msg.role === 'user'">
+      <AiTextMessage :content="msg.content" :is-loading="false" :role="msg.role" />
+    </template>
 
-    <!-- 商品卡片 -->
-    <div v-if="msg.msgType === 'product_card' && msg.cardData" class="card-list">
-      <div v-for="p in (msg.cardData.products || msg.cardData.product ? [msg.cardData.product || msg.cardData] : (msg.cardData || []))" 
-        :key="p?.id || 0" class="product-card" @click="goProduct(p?.id)">
-        <img :src="p?.images?.[0] ? getOssUrl(p.images[0]) : '/placeholder.png'" class="card-img" />
-        <div class="card-info">
-          <div class="card-name">{{ p?.name }}</div>
-          <div class="card-price">¥{{ p?.currentPrice || p?.price }}</div>
-        </div>
-      </div>
-    </div>
+    <!-- AI message: mixed (text + cards interleaved) -->
+    <template v-else-if="msg.msgType === 'mixed' && msg.cards && msg.cards.length">
+      <!-- History mode: text before all cards -->
+      <template v-if="!msg.cards.some(c => c.textBeforeLength !== undefined)">
+        <AiTextMessage
+          v-if="msg.content.trim()"
+          :content="msg.content.trim()"
+          :is-loading="false"
+          :role="msg.role"
+        />
+        <template v-for="(card, idx) in msg.cards" :key="'c' + idx">
+          <AiProductCard v-if="card.cardType === 'product_card'" :products="normalizeProducts(card.data)" />
+          <AiOrderCard v-else-if="card.cardType === 'order_card'" :orders="normalizeOrders(card.data)" />
+        </template>
+      </template>
+      <!-- Streaming mode: interleaved text + cards -->
+      <template v-else>
+        <template v-for="(card, idx) in msg.cards" :key="'c' + idx">
+          <AiTextMessage
+            v-if="idx < textSegments.length && !textSegments[idx].afterCard && textSegments[idx].text"
+            :content="textSegments[idx].text"
+            :is-loading="false"
+            :role="msg.role"
+          />
+          <AiProductCard v-if="card.cardType === 'product_card'" :products="normalizeProducts(card.data)" />
+          <AiOrderCard v-else-if="card.cardType === 'order_card'" :orders="normalizeOrders(card.data)" />
+        </template>
+        <AiTextMessage
+          v-if="textSegments.length > msg.cards.length && textSegments[msg.cards.length].text"
+          :content="textSegments[msg.cards.length].text"
+          :is-loading="msg.isLoading ?? false"
+          :role="msg.role"
+        />
+      </template>
+    </template>
 
-    <!-- 订单卡片 -->
-    <div v-if="msg.msgType === 'order_card' && msg.cardData" class="card-list">
-      <div v-for="o in (msg.cardData.orders || [])" :key="o?.orderNo" class="order-card" @click="goOrder(o?.id)">
-        <div class="card-name">{{ o?.productName }}</div>
-        <div class="card-price">¥{{ o?.totalPrice }}</div>
-        <el-tag size="small">{{ o?.status }}</el-tag>
-      </div>
-    </div>
+    <!-- AI message: single card only -->
+    <template v-else-if="msg.msgType === 'product_card' && msg.cardData">
+      <AiProductCard :products="normalizeProducts(msg.cardData)" />
+    </template>
+    <template v-else-if="msg.msgType === 'order_card' && msg.cardData">
+      <AiOrderCard :orders="normalizeOrders(msg.cardData)" />
+    </template>
 
-    <!-- 图表/统计 -->
-    <div v-if="msg.msgType === 'chart'" class="text-content">{{ msg.content }}</div>
+    <!-- AI message: plain text -->
+    <template v-else>
+      <AiTextMessage :content="msg.content" :is-loading="msg.isLoading ?? false" :role="msg.role" />
+    </template>
 
-    <span class="msg-time">{{ new Date(msg.createdAt).toLocaleTimeString() }}</span>
+    <span class="msg-time">{{ formatTime(msg.createdAt) }}</span>
   </div>
 </template>
-<style scoped>
-.msg-bubble { margin-bottom: 16px; max-width: 85%; }
+
+<style scoped lang="scss">
+@use '@/assets/styles/variables' as *;
+.msg-bubble { margin-bottom: $spacing-md; max-width: 85%; }
 .msg-bubble.user { margin-left: auto; }
 .msg-bubble.ai { margin-right: auto; }
-.text-content { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; word-break: break-word; }
-.user .text-content { background: #1890ff; color: #fff; border-bottom-right-radius: 4px; }
-.ai .text-content { background: #f5f5f5; color: #333; border-bottom-left-radius: 4px; }
-.typing-dot { animation: blink 1s infinite; }
-@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-.msg-time { display: block; font-size: 11px; color: #bbb; margin-top: 4px; }
+.msg-time { display: block; font-size: $font-size-tiny; color: $color-text-placeholder; margin-top: 4px; }
 .user .msg-time { text-align: right; }
 .ai .msg-time { text-align: left; }
-.card-list { display: flex; flex-direction: column; gap: 8px; }
-.product-card, .order-card { display: flex; align-items: center; gap: 10px; padding: 8px; background: #fff; border-radius: 8px; border: 1px solid #f0f0f0; cursor: pointer; }
-.card-img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; }
-.card-info { flex: 1; min-width: 0; }
-.card-name { font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-price { font-size: 14px; font-weight: 600; color: #e4393c; }
 </style>

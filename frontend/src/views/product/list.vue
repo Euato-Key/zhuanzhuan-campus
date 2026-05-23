@@ -421,25 +421,28 @@ onMounted(() => {
 
     <!-- 发布按钮 -->
     <div class="publish-actions">
-      <el-button
-        type="primary"
-        class="publish-btn"
-        :icon="Plus"
-        circle
-        size="large"
-        @click="openPublishDialog()"
-      />
-      <el-button
-        class="ai-publish-btn"
-        size="large"
-        @click="openAiPublish()"
-      >
+      <el-tooltip content="发布商品" placement="left">
+        <el-button
+          size="large"
+          class="publish-btn"
+          @click="openPublishDialog()"
+        >
+          <el-icon :size="22"><Plus /></el-icon>
+        </el-button>
+      </el-tooltip>
+      <el-tooltip content="AI 智能发布" placement="left">
+        <el-button
+          class="ai-publish-btn"
+          size="large"
+          @click="openAiPublish()"
+        >
         <svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 20px; height: 20px">
           <path d="M12 2L14.5 9H22L16 13.5L18.5 21L12 16.5L5.5 21L8 13.5L2 9H9.5L12 2Z" fill="currentColor" opacity="0.6"/>
           <circle cx="12" cy="12" r="3" fill="currentColor"/>
         </svg>
         AI
       </el-button>
+      </el-tooltip>
     </div>
 
     <!-- 发布商品弹窗 -->
@@ -594,20 +597,31 @@ onMounted(() => {
   bottom: 144px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 12px;
   z-index: 100;
 }
 
 .publish-btn {
-  width: 56px;
-  height: 56px;
+  width: 56px !important;
+  height: 56px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: #1890ff !important;
+  color: #fff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   box-shadow: 0 4px 16px rgba(24,144,255,0.3);
   transition: all 0.3s ease;
 }
 .publish-btn:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.05);
   box-shadow: 0 6px 22px rgba(24,144,255,0.4);
 }
+.publish-btn:active { transform: scale(0.95); }
 
 .ai-publish-btn {
   width: 56px;

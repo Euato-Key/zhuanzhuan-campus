@@ -35,16 +35,16 @@ watch(() => userStore.isLoggedIn, (val) => {
   <RouterView />
   <AuthDialog />
   <AiAssistantPanel />
-  <el-button 
-    v-if="isLoggedIn" 
-    class="ai-fab" 
-    color="#fff"
-    circle 
-    size="large" 
-    @click="toggleAiPanel"
-  >
-    <el-icon size="20"><ChatDotRound /></el-icon>
-  </el-button>
+  <el-tooltip content="AI 助手" placement="left" v-if="isLoggedIn">
+    <el-button 
+      class="ai-fab" 
+      circle 
+      size="large" 
+      @click="toggleAiPanel"
+    >
+      <el-icon size="22"><ChatDotRound /></el-icon>
+    </el-button>
+  </el-tooltip>
 </template>
 
 <style>
@@ -53,7 +53,7 @@ watch(() => userStore.isLoggedIn, (val) => {
 }
 .ai-fab {
   position: fixed; bottom: 76px; right: 28px; z-index: 9997;
-  width: 52px; height: 52px;
+  width: 56px !important; height: 56px !important;
   border: none !important;
   background: linear-gradient(135deg, #7C3AED, #3B82F6) !important;
   color: #fff !important;

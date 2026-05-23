@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, ChatDotRound, Van, Location, Clock } from '@element-plus/icons-vue'
@@ -359,10 +359,12 @@ function goToProduct() {
   router.push({ name: 'ProductDetail', params: { id: order.value.productId } })
 }
 
-onMounted(async () => {
-  if (!userStore.user) {
-    await userStore.fetchUser()
-  }
+onMounted(() => {
+  if (!userStore.user) userStore.fetchUser()
+  fetchOrder()
+})
+
+watch(() => route.params.id, () => {
   fetchOrder()
 })
 </script>

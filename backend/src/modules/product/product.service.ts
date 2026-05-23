@@ -3,7 +3,7 @@ import { Prisma, ItemCondition, DeliveryType, ProductStatus } from '@prisma/clie
 import { badRequest, notFound, forbidden } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
 import { NotificationService } from '../notification/notification.service';
-import { AIService } from '../ai/ai.service';
+import { AuditService } from '../ai/audit.service';
 import { PRODUCT_CATEGORY_SELECT, PRODUCT_USER_SELECT, PRODUCT_DETAIL_USER_SELECT, PRODUCT_DETAIL_CATEGORY_SELECT, USER_ADMIN_SELECT } from '../../common/selects';
 
 export type { ItemCondition, DeliveryType, ProductStatus };
@@ -134,13 +134,13 @@ async function findProductOrThrow(productId: bigint, options?: { checkOwnership?
  */
 async function triggerAIAuditIfEnabled(productId: bigint, scene: 'first_publish' | 'edit') {
   try {
-    const shouldAudit = await AIService.audit.shouldAudit(scene);
+    const shouldAudit = await AuditService.shouldAudit(scene);
     if (shouldAudit) {
       console.log(`[AI Audit] Triggering ${scene} audit for product ${productId}`);
       // 重新查询确保产品仍是 pending 状态
       const product = await prisma.product.findUnique({ where: { id: productId } });
       if (product && product.status === 'pending') {
-        await AIService.audit.auditProduct(productId);
+        await AuditService.auditProduct(productId);
       }
     }
   } catch (err) {

@@ -1,27 +1,37 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useUserStore } from './user'
+import { useAiStream } from '@/composables/useAiStream'
 import type { AIConversation } from '@/api/modules/ai'
+
+export interface CardData {
+  cardType: string
+  data: any
+  textBeforeLength?: number
+}
 
 export interface UIMessage {
   id: number
   role: 'user' | 'assistant'
   content: string
-  msgType: string       // text | product_card | order_card | chart
-  cardData?: any         // card types have card data
-  isLoading?: boolean    // AI response in progress
+  msgType: string
+  cardData?: any
+  cards?: CardData[]
+  isLoading?: boolean
   createdAt: string
 }
 
 export const useAiAssistantStore = defineStore('ai-assistant', () => {
   const userStore = useUserStore()
-  
+  const { isStreaming, startStream, abort: abortStream } = useAiStream()
+
   const panelVisible = ref(false)
   const isLoading = ref(false)
   const conversations = ref<AIConversation[]>([])
   const currentConversationId = ref<number | null>(null)
   const messages = ref<UIMessage[]>([])
-  let abortController: AbortController | null = null
+  const statusPhase = ref('')
+  const statusMessage = ref('')
 
   const isLoggedIn = computed(() => userStore.isLoggedIn)
 
@@ -38,6 +48,71 @@ export const useAiAssistantStore = defineStore('ai-assistant', () => {
       const res = await (await import('@/api/modules/ai')).getAssistantConversations()
       if (res.data.code === 200) conversations.value = res.data.data || []
     } catch { /* silent */ }
+  }
+
+  async function loadConversationMessages(convId: number) {
+    try {
+      const { default: api } = await import('@/api/index')
+      const res = await api.get(`/ai/assistant/conversations/${convId}/messages`)
+      if (res.data.code === 200) {
+        const rawMsgs = res.data.data || []
+
+        // Merge consecutive assistant messages: text + card pairs into single mixed messages
+        const merged: UIMessage[] = []
+        let i = 0
+        while (i < rawMsgs.length) {
+          const m = rawMsgs[i]
+          if (m.role === 'user') {
+            merged.push({
+              id: m.id, role: 'user', content: m.content,
+              msgType: 'text', isLoading: false, createdAt: m.createdAt,
+            })
+            i++
+          } else if (m.role === 'assistant') {
+            const textMsg = m.msgType === 'text' ? m : null
+            const cards: CardData[] = []
+
+            // Collect consecutive assistant messages (text + cards)
+            while (i < rawMsgs.length && rawMsgs[i].role === 'assistant') {
+              const cur = rawMsgs[i]
+              if (cur.msgType === 'mixed' && cur.extraData?.cards) {
+                // Mixed message: extract cards from extraData.cards
+                for (const c of cur.extraData.cards) {
+                  cards.push({ cardType: c.type, data: c.data })
+                }
+                if (cur.content.trim()) {
+                  if (!textMsg || !textMsg.content.trim()) textMsg = cur
+                }
+              } else if (cur.msgType === 'text' && cur.content.trim()) {
+                if (!textMsg || !textMsg.content.trim()) textMsg = cur
+              } else if (cur.msgType !== 'text' && cur.extraData) {
+                cards.push({ cardType: cur.msgType, data: cur.extraData })
+              }
+              i++
+            }
+
+            merged.push({
+              id: textMsg?.id || m.id,
+              role: 'assistant',
+              content: textMsg?.content || '',
+              msgType: cards.length > 0 ? 'mixed' : 'text',
+              cards: cards.length > 0 ? cards : undefined,
+              isLoading: false,
+              createdAt: textMsg?.createdAt || m.createdAt,
+            })
+          } else {
+            i++
+          }
+        }
+
+        messages.value = merged
+      }
+    } catch { /* silent */ }
+  }
+
+  async function selectConversation(id: number) {
+    currentConversationId.value = id
+    await loadConversationMessages(id)
   }
 
   async function newConversation() {
@@ -61,88 +136,57 @@ export const useAiAssistantStore = defineStore('ai-assistant', () => {
     }
     messages.value.push(userMsg)
 
-    // Add loading placeholder
     const aiMsg: UIMessage = {
       id: Date.now() + 1, role: 'assistant', content: '',
-      msgType: 'text', isLoading: true, createdAt: new Date().toISOString(),
+      msgType: 'text', cards: [], isLoading: true, createdAt: new Date().toISOString(),
     }
     messages.value.push(aiMsg)
     const aiIndex = messages.value.length - 1
 
     isLoading.value = true
-    const baseURL = import.meta.env.VITE_API_BASE_URL || ''
 
-    abortController = new AbortController()
-
-    try {
-      const token = localStorage.getItem('access_token')
-      const response = await fetch(`${baseURL}/ai/assistant/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
-        body: JSON.stringify({ conversationId: currentConversationId.value, message: content }),
-        credentials: 'include',
-        signal: abortController.signal,
-      })
-
-      const reader = response.body?.getReader()
-      if (!reader) { throw new Error('无法连接') }
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          const dataStr = line.slice(6).trim()
-          if (dataStr === '[DONE]') continue
-          try {
-            const event = JSON.parse(dataStr)
-            if (event.type === 'meta' && event.conversationId) {
-              currentConversationId.value = event.conversationId
-              loadConversations()
-            } else if (event.type === 'token') {
-              messages.value[aiIndex].content += event.content
-            } else if (event.type === 'card') {
-              messages.value[aiIndex].msgType = event.msg_type || 'product_card'
-              messages.value[aiIndex].cardData = event.data
-              messages.value[aiIndex].content = event.content || ''
-              messages.value[aiIndex].isLoading = false
-            } else if (event.type === 'done') {
-              messages.value[aiIndex].isLoading = false
-              messages.value[aiIndex].id = event.messageId
-            } else if (event.type === 'error') {
-              messages.value[aiIndex].content = event.message || 'AI服务异常'
-              messages.value[aiIndex].isLoading = false
-            }
-          } catch { /* skip malformed events */ }
+    await startStream('/ai/assistant/chat', { conversationId: currentConversationId.value, message: content }, {
+      onMeta: (conversationId) => {
+        currentConversationId.value = conversationId
+        loadConversations()
+      },
+      onToken: (tokenContent) => {
+        messages.value[aiIndex].content += tokenContent
+        statusMessage.value = ''
+      },
+      onCard: (msgType, data) => {
+        messages.value[aiIndex].cards!.push({ cardType: msgType || 'product_card', data, textBeforeLength: messages.value[aiIndex].content.length })
+        if (messages.value[aiIndex].msgType === 'text') {
+          messages.value[aiIndex].msgType = 'mixed'
         }
-      }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        messages.value[aiIndex].content = '请求失败，请稍后重试'
+        statusMessage.value = ''
+      },
+      onDone: () => {
         messages.value[aiIndex].isLoading = false
-      }
-    } finally {
-      isLoading.value = false
-      abortController = null
-    }
+        statusMessage.value = ''
+      },
+      onStatus: (phase, msg) => {
+        statusPhase.value = phase
+        statusMessage.value = msg
+      },
+      onError: (errorMsg) => {
+        messages.value[aiIndex].content = errorMsg || 'AI服务异常'
+        messages.value[aiIndex].isLoading = false
+        statusMessage.value = ''
+      },
+    })
+
+    isLoading.value = false
   }
 
   function stopGeneration() {
-    if (abortController) {
-      abortController.abort()
-      abortController = null
-      isLoading.value = false
-    }
+    abortStream()
+    isLoading.value = false
   }
 
   return {
     panelVisible, isLoading, conversations, currentConversationId, messages, isLoggedIn,
-    visibleFAB, open, close, loadConversations, newConversation, deleteConversation, sendMessage, stopGeneration,
+    statusPhase, statusMessage,
+    visibleFAB, open, close, loadConversations, newConversation, deleteConversation, selectConversation, sendMessage, stopGeneration,
   }
 })

@@ -45,10 +45,9 @@ function parseAdminQuery(req: Request) {
 function parseHandleData(req: Request) {
   const { status, handlerNote } = req.body;
   if (!status) throw new Error('status is required');
-  if (!handlerNote) throw new Error('handlerNote is required');
   return {
     status: status as 'dismissed' | 'warning' | 'banned' | 'resolved',
-    handlerNote: String(handlerNote),
+    handlerNote: handlerNote ? String(handlerNote) : '',
   };
 }
 
