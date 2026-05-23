@@ -138,4 +138,23 @@ export const OrderController = {
     const order = await OrderService.confirmReturnReceived(userId, orderId);
     return success(res, order, '已确认收到退货，退款已完成');
   }),
+
+  // ─── Admin ───
+
+  adminList: asyncHandler(async (req: Request, res: Response) => {
+    const { status, keyword, page, pageSize } = req.query;
+    const result = await OrderService.getAdminList({
+      status: typeof status === 'string' ? status as OrderStatus : undefined,
+      keyword: typeof keyword === 'string' ? keyword : undefined,
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+    });
+    return success(res, result);
+  }),
+
+  adminDetail: asyncHandler(async (req: Request, res: Response) => {
+    const orderId = parseOrderId(req);
+    const order = await OrderService.getAdminDetail(orderId);
+    return success(res, order);
+  }),
 };

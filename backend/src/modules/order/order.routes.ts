@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { OrderController } from './order.controller';
 import { ReviewController } from '../review/review.controller';
 import { authMiddleware } from '../../middlewares/auth';
+import { adminMiddleware } from '../../middlewares/admin';
 
 const router = Router();
 
@@ -13,6 +14,10 @@ router.get('/', OrderController.getMyOrders);
 
 // 创建订单
 router.post('/', OrderController.create);
+
+// Admin routes (must be before /:id)
+router.get('/admin/list', adminMiddleware, OrderController.adminList);
+router.get('/admin/:id', adminMiddleware, OrderController.adminDetail);
 
 // 订单评价状态
 router.get('/:id/review-status', ReviewController.getOrderReviewStatus);

@@ -34,21 +34,21 @@ export function updateProfile(data: {
   phone?: string
   bio?: string
 }) {
-  return api.put<{ data: UserProfile }>('/users/profile', data)
+  return api.put<{ code: number; message: string; data: UserProfile }>('/users/profile', data)
 }
 
 export function changePassword(oldPassword: string, newPassword: string) {
-  return api.put('/users/password', { oldPassword, newPassword })
+  return api.put<{ code: number; message: string }>('/users/password', { oldPassword, newPassword })
 }
 
 export function changeEmail(newEmail: string, code: string) {
-  return api.put('/users/email', { newEmail, code })
+  return api.put<{ code: number; message: string }>('/users/email', { newEmail, code })
 }
 
 export function updateAvatar(tempPath: string) {
-  return api.put<{ data: UserProfile }>('/users/avatar', { tempPath })
+  return api.put<{ code: number; message: string; data: UserProfile }>('/users/avatar', { tempPath })
 }
 
 export function getPublicProfile(userId: number) {
-  return api.get<{ data: PublicProfile }>(`/users/${userId}`)
+  return api.get<{ code: number; message: string; data: PublicProfile }>(`/users/${userId}`)
 }

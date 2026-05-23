@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { ReviewController } from './review.controller';
 import { authMiddleware } from '../../middlewares/auth';
-import { optionalAuth } from '../../middlewares/optionalAuth';
 import { adminMiddleware } from '../../middlewares/admin';
 
 const router = Router();
@@ -33,8 +32,5 @@ router.put('/admin/:id/approve', adminMiddleware, ReviewController.adminApprove)
 
 // 管理员审核拒绝
 router.put('/admin/:id/reject', adminMiddleware, ReviewController.adminReject);
-
-// 商品评价列表（公开，可选登录）
-router.get('/products/:productId', optionalAuth, ReviewController.getProductReviews);
 
 export default router;

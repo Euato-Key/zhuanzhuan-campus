@@ -5,6 +5,7 @@ import { PasswordUtil } from '../../common/password';
 import { VerificationUtil, EmailCodeType } from '../../common/verification';
 import { TokenUtil } from '../../common/token';
 import { ValidationUtil } from '../../common/validation';
+import { PaginationUtil } from '../../common/pagination';
 import { USER_PROFILE_SELECT, USER_PUBLIC_PROFILE_SELECT } from '../../common/selects';
 import { NotificationService } from '../notification/notification.service';
 
@@ -125,5 +126,82 @@ export const UserService = {
     });
     if (!user) throw notFound('用户不存在');
     return user;
+  },
+
+  // ─── Admin ───
+
+  async getAdminList(query: { page?: number; pageSize?: number; keyword?: string; status?: string }) {
+    const { skip, take, page, pageSize } = PaginationUtil.getPagination({
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+
+    const where: any = {};
+    if (query.keyword) {
+      where.OR = [
+        { username: { contains: query.keyword } },
+        { email: { contains: query.keyword } },
+      ];
+    }
+    if (query.status === 'active') {
+      where.isBlocked = false;
+    } else if (query.status === 'banned') {
+      where.isBlocked = true;
+    }
+
+    const [total, list] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          avatar: true,
+          role: true,
+          creditScore: true,
+          isBlocked: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    return PaginationUtil.buildResponse(list, total, page, pageSize);
+  },
+
+  async banUser(userId: number) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw notFound('用户不存在');
+    if (user.isBlocked) throw badRequest('用户已被封禁');
+    return prisma.user.update({
+      where: { id: userId },
+      data: { isBlocked: true, blockedUntil: null },
+      select: { id: true, username: true, isBlocked: true },
+    });
+  },
+
+  async unbanUser(userId: number) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw notFound('用户不存在');
+    if (!user.isBlocked) throw badRequest('用户未被封禁');
+    return prisma.user.update({
+      where: { id: userId },
+      data: { isBlocked: false, blockedUntil: null },
+      select: { id: true, username: true, isBlocked: true },
+    });
+  },
+
+  async setRole(userId: number, role: 'user' | 'admin') {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw notFound('用户不存在');
+    if (user.role === role) throw badRequest('用户已是该角色');
+    return prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: { id: true, username: true, role: true },
+    });
   },
 };

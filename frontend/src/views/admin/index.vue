@@ -1,29 +1,81 @@
 <script setup lang="ts">
-import { markRaw } from 'vue'
+import { ref, onMounted, markRaw } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { TrendCharts, User, Goods, Document, ChatDotRound } from '@element-plus/icons-vue'
+import api from '@/api'
 
-// Mock data for dashboard - use markRaw to avoid reactive overhead on components
-const stats = [
-  { label: '用户总数', value: '1,234', icon: markRaw(User), color: '#4CAF50', change: '+12%' },
-  { label: '商品总数', value: '5,678', icon: markRaw(Goods), color: '#2196F3', change: '+8%' },
-  { label: '订单总数', value: '890', icon: markRaw(Document), color: '#FF9800', change: '+5%' },
-  { label: '待处理举报', value: '23', icon: markRaw(ChatDotRound), color: '#F44336', change: '-3%' },
-]
+interface DashboardStats {
+  totalUsers: number
+  newUsersToday: number
+  totalProducts: number
+  pendingReviewProducts: number
+  totalOrders: number
+  pendingPaymentOrders: number
+  totalRevenue: number
+  recentActivities: { id: number; time: string; content: string; type: string }[]
+  pendingProducts: { id: number; name: string; seller: string; time: string }[]
+}
 
-const recentActivities = [
-  { time: '10:30', content: '用户 张三 完成注册', type: 'user' },
-  { time: '10:15', content: '商品 "二手自行车" 审核通过', type: 'product' },
-  { time: '09:45', content: '订单 #12345 交易完成', type: 'order' },
-  { time: '09:30', content: '用户 李四 提交举报', type: 'report' },
-  { time: '09:00', content: '商品 "iPhone 13" 上架成功', type: 'product' },
-]
+const loading = ref(false)
+const stats = ref([
+  { label: '用户总数', value: '0', icon: markRaw(User), color: '#4CAF50', change: '' },
+  { label: '商品总数', value: '0', icon: markRaw(Goods), color: '#2196F3', change: '' },
+  { label: '订单总数', value: '0', icon: markRaw(Document), color: '#FF9800', change: '' },
+  { label: '待处理举报', value: '0', icon: markRaw(ChatDotRound), color: '#F44336', change: '' },
+])
 
-const pendingReviews = [
-  { id: 1, name: '二手自行车', seller: '张三', time: '10分钟前' },
-  { id: 2, name: 'iPhone 13 Pro', seller: '李四', time: '30分钟前' },
-  { id: 3, name: '教材高等数学', seller: '王五', time: '1小时前' },
-]
+const recentActivities = ref<{ time: string; content: string; type: string }[]>([])
+
+const pendingReviews = ref<{ id: number; name: string; seller: string; time: string }[]>([])
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    const res = await api.get('/admin/dashboard')
+    const data: DashboardStats = res.data.data
+
+    stats.value = [
+      { label: '用户总数', value: String(data.totalUsers), icon: markRaw(User), color: '#4CAF50', change: data.newUsersToday > 0 ? `+${data.newUsersToday}` : '' },
+      { label: '商品总数', value: String(data.totalProducts), icon: markRaw(Goods), color: '#2196F3', change: data.pendingReviewProducts > 0 ? `${data.pendingReviewProducts} 待审` : '' },
+      { label: '订单总数', value: String(data.totalOrders), icon: markRaw(Document), color: '#FF9800', change: data.pendingPaymentOrders > 0 ? `${data.pendingPaymentOrders} 待付` : '' },
+      { label: '待处理举报', value: String(data.recentActivities.length), icon: markRaw(ChatDotRound), color: '#F44336', change: '' },
+    ]
+
+    recentActivities.value = data.recentActivities.map((a) => ({
+      time: formatTime(a.time),
+      content: a.content,
+      type: a.type,
+    }))
+
+    pendingReviews.value = data.pendingProducts.map((p) => ({
+      id: p.id,
+      name: p.name,
+      seller: p.seller,
+      time: formatRelativeTime(p.time),
+    }))
+  } catch (err) {
+    console.error('Failed to load dashboard stats:', err)
+  } finally {
+    loading.value = false
+  }
+})
+
+function formatTime(iso: string): string {
+  const d = new Date(iso)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function formatRelativeTime(iso: string): string {
+  const now = Date.now()
+  const then = new Date(iso).getTime()
+  const diff = Math.floor((now - then) / 1000 / 60)
+  if (diff < 1) return '刚刚'
+  if (diff < 60) return `${diff}分钟前`
+  const hours = Math.floor(diff / 60)
+  if (hours < 24) return `${hours}小时前`
+  const days = Math.floor(hours / 24)
+  return `${days}天前`
+}
 </script>
 
 <template>

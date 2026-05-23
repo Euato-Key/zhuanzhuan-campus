@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Search, View } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+import api from '@/api'
 
-type OrderStatus = 'pending_payment' | 'pending_delivery' | 'pending_pickup' | 'pending_receive' | 'completed' | 'cancelled' | 'returning' | 'refunded'
+type OrderStatus = 'pending_payment' | 'pending_ship' | 'pending_pickup' | 'pending_receive' | 'pending_confirm' | 'completed' | 'cancelled' | 'returning' | 'refunded'
 
 interface Order {
   id: string
+  orderNo: string
   buyer: string
   seller: string
   product: string
@@ -15,30 +19,77 @@ interface Order {
   createdAt: string
 }
 
+const router = useRouter()
 const loading = ref(false)
 const statusFilter = ref('')
-
-// Mock data
-const orders = ref<Order[]>([
-  { id: 'ORD001', buyer: '张三', seller: '李四', product: '二手自行车', amount: 150, status: 'pending_payment', createdAt: '2024-03-15 10:30' },
-  { id: 'ORD002', buyer: '王五', seller: '赵六', product: 'iPhone 13', amount: 4500, status: 'pending_delivery', createdAt: '2024-03-14 14:20' },
-  { id: 'ORD003', buyer: '钱七', seller: '张三', product: '教材高等数学', amount: 30, status: 'completed', createdAt: '2024-03-13 09:15' },
-  { id: 'ORD004', buyer: '李四', seller: '王五', product: 'Nike运动鞋', amount: 200, status: 'cancelled', createdAt: '2024-03-12 16:45' },
-])
+const searchKeyword = ref('')
+const orders = ref<Order[]>([])
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 const statusMap: Record<OrderStatus, { label: string; type: string }> = {
   pending_payment: { label: '待支付', type: 'warning' },
-  pending_delivery: { label: '待发货', type: 'primary' },
+  pending_ship: { label: '待发货', type: 'primary' },
   pending_pickup: { label: '待自提', type: 'primary' },
   pending_receive: { label: '待收货', type: 'info' },
+  pending_confirm: { label: '待确认', type: 'info' },
   completed: { label: '已完成', type: 'success' },
   cancelled: { label: '已取消', type: 'danger' },
   returning: { label: '退货中', type: 'warning' },
   refunded: { label: '已退款', type: 'info' },
 }
 
-function handleView(order: Order) {
-  console.log('View order:', order)
+onMounted(() => {
+  fetchOrders()
+})
+
+watch([currentPage, statusFilter], () => {
+  fetchOrders()
+})
+
+async function fetchOrders() {
+  loading.value = true
+  try {
+    const params: Record<string, any> = {
+      page: currentPage.value,
+      pageSize: pageSize.value,
+    }
+    if (statusFilter.value) params.status = statusFilter.value
+    if (searchKeyword.value) params.keyword = searchKeyword.value
+
+    const res = await api.get('/orders/admin/list', { params })
+    const data = res.data.data
+    orders.value = data.list
+    total.value = data.total
+  } catch (err: any) {
+    ElMessage.error(err.response?.data?.message || '获取订单列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleSearch() {
+  currentPage.value = 1
+  fetchOrders()
+}
+
+async function handleView(order: Order) {
+  try {
+    const res = await api.get(`/orders/admin/${order.id}`)
+    const detail = res.data.data
+    ElMessageBox.alert(
+      `订单号：${detail.orderNo}\n商品：${detail.productName}\n买家：${detail.buyer?.username}\n卖家：${detail.seller?.username}\n金额：¥${Number(detail.totalPrice)}\n状态：${statusMap[detail.status as OrderStatus]?.label || detail.status}\n创建时间：${new Date(detail.createdAt).toLocaleString()}`,
+      '订单详情',
+      { confirmButtonText: '关闭' }
+    )
+  } catch (err: any) {
+    ElMessage.error(err.response?.data?.message || '获取订单详情失败')
+  }
+}
+
+function handlePageChange(page: number) {
+  currentPage.value = page
 }
 </script>
 
@@ -48,14 +99,17 @@ function handleView(order: Order) {
     <div class="page-header">
       <div class="header-actions">
         <el-input
+          v-model="searchKeyword"
           placeholder="搜索订单号"
           :prefix-icon="Search"
           clearable
           style="width: 300px"
+          @keyup.enter="handleSearch"
         />
         <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 140px">
           <el-option label="待支付" value="pending_payment" />
-          <el-option label="待发货" value="pending_delivery" />
+          <el-option label="待发货" value="pending_ship" />
+          <el-option label="待自提" value="pending_pickup" />
           <el-option label="待收货" value="pending_receive" />
           <el-option label="已完成" value="completed" />
           <el-option label="已取消" value="cancelled" />
@@ -67,7 +121,7 @@ function handleView(order: Order) {
     <!-- Table -->
     <div class="card">
       <el-table :data="orders" v-loading="loading" stripe>
-        <el-table-column prop="id" label="订单号" width="120" />
+        <el-table-column prop="orderNo" label="订单号" width="200" />
         <el-table-column prop="product" label="商品" min-width="150" />
         <el-table-column prop="buyer" label="买家" width="100" />
         <el-table-column prop="seller" label="卖家" width="100" />
@@ -95,12 +149,14 @@ function handleView(order: Order) {
 
       <el-empty v-if="!loading && orders.length === 0" description="暂无订单数据" />
 
-      <div class="pagination-wrap" v-if="orders.length > 0">
+      <div class="pagination-wrap" v-if="total > 0">
         <el-pagination
           background
           layout="total, prev, pager, next"
-          :total="100"
-          :page-size="10"
+          :total="total"
+          :page-size="pageSize"
+          :current-page="currentPage"
+          @current-change="handlePageChange"
         />
       </div>
     </div>

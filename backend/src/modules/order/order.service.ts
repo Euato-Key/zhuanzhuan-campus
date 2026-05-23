@@ -945,4 +945,64 @@ export const OrderService = {
 
     return expiredLocks.length;
   },
+
+  // ─── Admin ───
+
+  async getAdminList(query: { page?: number; pageSize?: number; status?: OrderStatus; keyword?: string }) {
+    const { skip, take, page, pageSize } = PaginationUtil.getPagination({
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+
+    const where: Prisma.OrderWhereInput = {};
+    if (query.status) {
+      where.status = query.status;
+    }
+    if (query.keyword) {
+      where.orderNo = { contains: query.keyword };
+    }
+
+    const [total, list] = await Promise.all([
+      prisma.order.count({ where }),
+      prisma.order.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          buyer: { select: { id: true, username: true } },
+          seller: { select: { id: true, username: true } },
+        },
+      }),
+    ]);
+
+    const mapped = list.map((o) => ({
+      id: o.id,
+      orderNo: o.orderNo,
+      buyer: o.buyer.username,
+      seller: o.seller.username,
+      product: o.productName,
+      amount: Number(o.totalPrice),
+      status: o.status,
+      createdAt: o.createdAt,
+    }));
+
+    return PaginationUtil.buildResponse(mapped, total, page, pageSize);
+  },
+
+  async getAdminDetail(orderId: bigint) {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        product: {
+          select: { id: true, name: true, images: true, currentPrice: true },
+        },
+        buyer: { select: { id: true, username: true, avatar: true } },
+        seller: { select: { id: true, username: true, avatar: true } },
+        address: true,
+      },
+    });
+    if (!order) throw notFound('订单不存在');
+    return order;
+  },
 };

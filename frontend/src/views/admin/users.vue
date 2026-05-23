@@ -1,47 +1,114 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Search, UserFilled, Lock, Unlock } from '@element-plus/icons-vue'
+import api from '@/api'
 
 type UserRole = 'user' | 'admin'
-type UserStatus = 'active' | 'banned'
 
 interface User {
   id: number
   username: string
   email: string
   role: UserRole
-  status: UserStatus
+  isBlocked: boolean
   creditScore: number
   createdAt: string
+  avatar: string | null
 }
 
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
+const users = ref<User[]>([])
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(10)
 
-// Mock data
-const users = ref<User[]>([
-  { id: 1, username: '张三', email: 'zhangsan@example.com', role: 'user', status: 'active', creditScore: 100, createdAt: '2024-01-15' },
-  { id: 2, username: '李四', email: 'lisi@example.com', role: 'user', status: 'active', creditScore: 95, createdAt: '2024-02-20' },
-  { id: 3, username: '王五', email: 'wangwu@example.com', role: 'admin', status: 'active', creditScore: 100, createdAt: '2024-01-10' },
-  { id: 4, username: '赵六', email: 'zhaoliu@example.com', role: 'user', status: 'banned', creditScore: 60, createdAt: '2024-03-01' },
-])
+onMounted(() => {
+  fetchUsers()
+})
+
+watch([currentPage, statusFilter], () => {
+  fetchUsers()
+})
+
+async function fetchUsers() {
+  loading.value = true
+  try {
+    const params: Record<string, any> = {
+      page: currentPage.value,
+      pageSize: pageSize.value,
+    }
+    if (searchQuery.value) params.keyword = searchQuery.value
+    if (statusFilter.value) params.status = statusFilter.value
+
+    const res = await api.get('/users/admin/list', { params })
+    const data = res.data.data
+    users.value = data.list.map((u: any) => ({
+      ...u,
+      status: u.isBlocked ? 'banned' : 'active',
+    }))
+    total.value = data.total
+  } catch (err: any) {
+    ElMessage.error(err.response?.data?.message || '获取用户列表失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 function handleSearch() {
-  // TODO: Implement search
+  currentPage.value = 1
+  fetchUsers()
 }
 
-function handleBan(user: User) {
-  console.log('Ban user:', user)
+async function handleBan(user: User) {
+  try {
+    await ElMessageBox.confirm(`确认封禁用户 "${user.username}"？封禁后将无法登录和使用平台功能。`, '封禁确认', {
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+  try {
+    await api.put(`/users/admin/${user.id}/ban`)
+    ElMessage.success('封禁成功')
+    fetchUsers()
+  } catch (err: any) {
+    ElMessage.error(err.response?.data?.message || '封禁失败')
+  }
 }
 
-function handleUnban(user: User) {
-  console.log('Unban user:', user)
+async function handleUnban(user: User) {
+  try {
+    await api.put(`/users/admin/${user.id}/unban`)
+    ElMessage.success('解封成功')
+    fetchUsers()
+  } catch (err: any) {
+    ElMessage.error(err.response?.data?.message || '解封失败')
+  }
 }
 
-function handleSetAdmin(user: User) {
-  console.log('Set admin:', user)
+async function handleSetAdmin(user: User) {
+  try {
+    await ElMessageBox.confirm(`确认将用户 "${user.username}" 设为管理员？`, '角色变更确认', {
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+  try {
+    await api.put(`/users/admin/${user.id}/role`, { role: 'admin' })
+    ElMessage.success('已设为管理员')
+    fetchUsers()
+  } catch (err: any) {
+    ElMessage.error(err.response?.data?.message || '设置失败')
+  }
+}
+
+function handlePageChange(page: number) {
+  currentPage.value = page
 }
 </script>
 
@@ -129,12 +196,14 @@ function handleSetAdmin(user: User) {
 
       <el-empty v-if="!loading && users.length === 0" description="暂无用户数据" />
 
-      <div class="pagination-wrap" v-if="users.length > 0">
+      <div class="pagination-wrap" v-if="total > 0">
         <el-pagination
           background
           layout="total, prev, pager, next"
-          :total="100"
-          :page-size="10"
+          :total="total"
+          :page-size="pageSize"
+          :current-page="currentPage"
+          @current-change="handlePageChange"
         />
       </div>
     </div>
