@@ -1,5 +1,6 @@
 import api from '../index'
 import { getCategoryTree } from './category'
+import type { PaginatedResponse } from '../types'
 
 // 导出分类API供组件使用
 export { getCategoryTree }
@@ -72,15 +73,6 @@ export interface WantBuyComment {
   }
   isLiked: boolean
   replies: WantBuyComment[]
-}
-
-// 分页响应
-export interface PaginatedResponse<T> {
-  list: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
 }
 
 // 求购贴查询参数

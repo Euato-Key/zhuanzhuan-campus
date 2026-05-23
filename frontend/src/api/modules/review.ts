@@ -1,4 +1,5 @@
 import api from '../index'
+import type { PaginatedResponse } from '../types'
 
 // ============================================
 // Types
@@ -72,15 +73,6 @@ export interface OrderReviewStatus {
   canAppend: boolean
   buyerReview: ReviewItem | null
   sellerReview: ReviewItem | null
-}
-
-// 分页响应
-export interface PaginatedResponse<T> {
-  list: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
 }
 
 // 创建评价请求

@@ -1,4 +1,5 @@
 import api from '../index'
+import type { PaginatedResponse } from '../types'
 
 // ============================================================
 // Types
@@ -99,11 +100,11 @@ export interface AdminHandleData {
 // ============================================================
 
 export function createReport(data: CreateReportData) {
-  return api.post('/reports', data)
+  return api.post<{ code: number; message: string; data: ReportItem }>('/reports', data)
 }
 
 export function getMyReports(params?: { page?: number; pageSize?: number }) {
-  return api.get('/reports/my', { params })
+  return api.get<{ code: number; message: string; data: PaginatedResponse<ReportItem> }>('/reports/my', { params })
 }
 
 export function getAdminReportList(params?: {
@@ -113,13 +114,13 @@ export function getAdminReportList(params?: {
   status?: ReportStatus
   keyword?: string
 }) {
-  return api.get('/admin/reports', { params })
+  return api.get<{ code: number; message: string; data: PaginatedResponse<ReportItem> }>('/admin/reports', { params })
 }
 
 export function getAdminReportDetail(id: number) {
-  return api.get(`/admin/reports/${id}`)
+  return api.get<{ code: number; message: string; data: ReportItem }>(`/admin/reports/${id}`)
 }
 
 export function handleReport(id: number, data: AdminHandleData) {
-  return api.put(`/admin/reports/${id}/handle`, data)
+  return api.put<{ code: number; message: string; data: ReportItem }>(`/admin/reports/${id}/handle`, data)
 }

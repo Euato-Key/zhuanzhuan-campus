@@ -72,15 +72,15 @@ export const AIController = {
 
   // AI审核：管理员手动触发
   auditProduct: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
-    const productId = BigInt(req.params.productId as string);
+    const productId = ValidationUtil.parseBigIntParam(req.params.productId as string, '商品ID');
     const result = await AIService.audit.auditProduct(productId);
-    const message = result.skipped ? '商品非待审核状态，已跳过' : (result.approved ? 'AI审核通过' : 'AI审核不通过');
+    const message = result.approved ? 'AI审核通过' : 'AI审核不通过';
     return success(res, result, message);
   }),
 
   // 查看商品审核状态
   getAuditStatus: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
-    const productId = BigInt(req.params.productId as string);
+    const productId = ValidationUtil.parseBigIntParam(req.params.productId as string, '商品ID');
 
     const product = await prisma.product.findUnique({
       where: { id: productId },

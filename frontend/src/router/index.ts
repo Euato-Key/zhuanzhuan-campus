@@ -169,6 +169,12 @@ const router = createRouter({
       name: 'AdminSettings',
       component: () => import('@/views/admin/settings.vue'),
       meta: { title: '系统设置', auth: true, admin: true, superAdmin: true }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('@/views/NotFound.vue'),
+      meta: { title: '页面未找到' },
     }
   ]
 })

@@ -1,5 +1,5 @@
 import { prisma } from '../../config/prisma';
-import { ReportTargetType, ReportReason, ReportStatus } from '@prisma/client';
+import { Prisma, ReportTargetType, ReportReason, ReportStatus } from '@prisma/client';
 import { badRequest, notFound, conflict } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
 import { NotificationService } from '../notification/notification.service';
@@ -227,7 +227,7 @@ export const ReportService = {
       pageSize: query.pageSize,
     });
 
-    const where: any = {};
+    const where: Prisma.ReportWhereInput = {};
 
     if (query.targetType) where.targetType = query.targetType;
     if (query.reason) where.reason = query.reason;
@@ -237,7 +237,7 @@ export const ReportService = {
       where.OR = [
         { detail: { contains: query.keyword } },
         { reporter: { username: { contains: query.keyword } } },
-      ];
+      ] as any;
     }
 
     const [total, list] = await Promise.all([
@@ -270,6 +270,17 @@ export const ReportService = {
     return report;
   },
 
+  async getMyReportDetail(reportId: number, userId: number) {
+    const report = await prisma.report.findFirst({
+      where: { id: reportId, reporterId: userId },
+      include: {
+        handler: { select: REPORTER_SELECT },
+      },
+    });
+    if (!report) { throw notFound('举报不存在'); }
+    return report;
+  },
+
   async handle(id: number, handlerId: number, data: AdminHandleData) {
     if (!VALID_HANDLE_STATUSES.includes(data.status)) {
       throw badRequest('无效的处理状态');
@@ -288,23 +299,16 @@ export const ReportService = {
 
     if (!report) throw notFound('举报不存在');
 
-    if (report.status !== 'pending') {
+    const result = await prisma.report.updateMany({
+      where: { id, status: 'pending' as any },
+      data: { status: data.status as any, handlerId, handlerNote: data.handlerNote.trim(), handledAt: new Date() },
+    });
+
+    if (result.count === 0) {
       throw badRequest('该举报已被处理');
     }
 
-    const updated = await prisma.report.update({
-      where: { id },
-      data: {
-        status: data.status as ReportStatus,
-        handlerId,
-        handlerNote: data.handlerNote.trim(),
-        handledAt: new Date(),
-      },
-      include: {
-        reporter: { select: REPORTER_SELECT },
-        handler: { select: REPORTER_SELECT },
-      },
-    });
+    const updated = await prisma.report.findUnique({ where: { id } });
 
     // Notify reporter about the handling result
     const statusText = STATUS_LABELS[data.status as ReportStatus];

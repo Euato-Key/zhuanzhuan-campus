@@ -1,4 +1,5 @@
 import api from '../index'
+import type { PaginatedResponse } from '../types'
 
 // ─── Types ───
 
@@ -91,14 +92,6 @@ export interface BlockStatus {
   isBlocked: boolean
   blockedByMe: boolean
   blockedByOther: boolean
-}
-
-export interface PaginatedResponse<T> {
-  list: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
 }
 
 // ─── Conversations ───

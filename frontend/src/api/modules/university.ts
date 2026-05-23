@@ -24,15 +24,15 @@ export function searchUniversities(params: {
   page?: number
   pageSize?: number
 }) {
-  return api.get<{ data: UniversitySearchResult }>('/universities/search', { params })
+  return api.get<{ code: number; message: string; data: UniversitySearchResult }>('/universities/search', { params })
 }
 
 export function getUniversityProvinces() {
-  return api.get<{ data: string[] }>('/universities/provinces')
+  return api.get<{ code: number; message: string; data: string[] }>('/universities/provinces')
 }
 
 export function getUniversitiesByProvince(province: string) {
-  return api.get<{ data: UniversityItem[] }>('/universities/list', {
+  return api.get<{ code: number; message: string; data: UniversityItem[] }>('/universities/list', {
     params: { province },
   })
 }

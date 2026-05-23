@@ -1,4 +1,5 @@
 import api from '../index'
+import type { PaginatedResponse } from '../types'
 
 // ─── Types ───
 
@@ -26,14 +27,6 @@ export interface NotificationListParams {
   type?: NotificationType
   page?: number
   pageSize?: number
-}
-
-export interface PaginatedResponse<T> {
-  list: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
 }
 
 // ─── Constants ───

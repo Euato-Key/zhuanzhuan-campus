@@ -18,6 +18,7 @@ import {
   REPORT_STATUS_TAG_TYPE,
 } from '@/api/modules/report'
 import { formatRelativeTime } from '@/utils/format'
+import { getOssUrl } from '@/utils/oss'
 
 const loading = ref(false)
 const reports = ref<ReportItem[]>([])
@@ -43,7 +44,7 @@ const detailReport = ref<ReportItem | null>(null)
 async function fetchReports() {
   loading.value = true
   try {
-    const params: Record<string, any> = {
+    const params: Record<string, unknown> = {
       page: currentPage.value,
       pageSize: pageSize.value,
     }
@@ -288,6 +289,19 @@ onBeforeUnmount(() => {
           <div class="detail-item">
             <span class="detail-label">补充说明:</span>
             <span>{{ detailReport.detail || '-' }}</span>
+          </div>
+          <div class="info-row" v-if="detailReport.images && detailReport.images.length > 0">
+            <span class="info-label">证据图片：</span>
+            <div class="info-images">
+              <el-image 
+                v-for="(img, idx) in detailReport.images" 
+                :key="idx"
+                :src="getOssUrl(img)"
+                :preview-src-list="detailReport.images.map(i => getOssUrl(i))"
+                fit="cover"
+                style="width: 80px; height: 80px; margin-right: 8px; border-radius: 4px;"
+              />
+            </div>
           </div>
           <div class="detail-item">
             <span class="detail-label">状态:</span>

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { ReportService, ReportTargetType, ReportReason, ReportStatus } from './report.service';
 import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
@@ -89,5 +89,12 @@ export const ReportController = {
     const data = parseHandleData(req);
     const result = await ReportService.handle(id, handlerId, data);
     return success(res, result, '处理成功');
+  }),
+
+  getMyReportDetail: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+    const id = ValidationUtil.parseIdParam(req.params.id, '举报ID');
+    const userId = ValidationUtil.requireUserId(req);
+    const result = await ReportService.getMyReportDetail(id, userId);
+    success(res, result, '获取举报详情成功');
   }),
 };
