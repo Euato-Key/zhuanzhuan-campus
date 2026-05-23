@@ -3,6 +3,7 @@ import { Prisma, ItemCondition, DeliveryType, ProductStatus } from '@prisma/clie
 import { badRequest, notFound, forbidden } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
 import { NotificationService } from '../notification/notification.service';
+import { AIService } from '../ai/ai.service';
 import { PRODUCT_CATEGORY_SELECT, PRODUCT_USER_SELECT, PRODUCT_DETAIL_USER_SELECT, PRODUCT_DETAIL_CATEGORY_SELECT, USER_ADMIN_SELECT } from '../../common/selects';
 
 export type { ItemCondition, DeliveryType, ProductStatus };
@@ -127,6 +128,27 @@ async function findProductOrThrow(productId: bigint, options?: { checkOwnership?
   return product;
 }
 
+/**
+ * 触发AI审核（如果已启用且产品为pending状态）
+ * 不阻塞主流程，AI审核失败时保持pending状态
+ */
+async function triggerAIAuditIfEnabled(productId: bigint, scene: 'first_publish' | 'edit') {
+  try {
+    const shouldAudit = await AIService.audit.shouldAudit(scene);
+    if (shouldAudit) {
+      console.log(`[AI Audit] Triggering ${scene} audit for product ${productId}`);
+      // 重新查询确保产品仍是 pending 状态
+      const product = await prisma.product.findUnique({ where: { id: productId } });
+      if (product && product.status === 'pending') {
+        await AIService.audit.auditProduct(productId);
+      }
+    }
+  } catch (err) {
+    console.error(`[AI Audit] ${scene} audit failed for product ${productId}:`, err);
+    // AI审核失败不影响产品创建/更新，保持pending等待人工审核
+  }
+}
+
 export const ProductService = {
   async create(userId: number, data: CreateProductData) {
     const category = await prisma.category.findUnique({
@@ -195,6 +217,9 @@ export const ProductService = {
         user: { select: PRODUCT_USER_SELECT },
       },
     });
+
+    // 触发AI首次发布审核（异步不阻塞）
+    triggerAIAuditIfEnabled(product.id, 'first_publish');
 
     return product;
   },
@@ -460,6 +485,11 @@ export const ProductService = {
       },
     });
 
+    // 如果触发了重新审核，尝试AI自动审核
+    if (needsAudit) {
+      triggerAIAuditIfEnabled(productId, 'edit');
+    }
+
     return updated;
   },
 
@@ -507,6 +537,9 @@ export const ProductService = {
       where: { id: productId },
       data: updateData,
     });
+
+    // 触发AI首次发布审核（重新上架视为首次发布审核）
+    triggerAIAuditIfEnabled(productId, 'first_publish');
 
     return updated;
   },

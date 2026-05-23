@@ -636,6 +636,13 @@ model WantBuyComment {
   @@map("want_buy_comments")
 }
 
+model SystemConfig {
+  key       String   @id @map("config_key") @db.VarChar(100)
+  value     String   @map("config_value") @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("system_configs")
+}
+
 model WantBuyCommentLike {
   id        Int      @id @default(autoincrement())
   commentId Int      @map("comment_id")

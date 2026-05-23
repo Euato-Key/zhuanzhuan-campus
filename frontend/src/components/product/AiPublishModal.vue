@@ -7,6 +7,7 @@ import AiRecognitionProgress from './AiRecognitionProgress.vue'
 import AiRecognitionResult from './AiRecognitionResult.vue'
 import PublishProductDialog from './PublishProductDialog.vue'
 import type { RecognitionData } from '@/api/modules/ai'
+import type { CreateProductData } from '@/api/modules/product'
 
 const props = defineProps<{
   modelValue: boolean
@@ -55,7 +56,7 @@ const recognizing = computed(() => status.value === 'uploading' || status.value 
 const canRecognize = computed(() => uploadedImages.value.length > 0 && !recognizing.value)
 
 const showEditDialog = ref(false)
-const editAiData = ref<Partial<RecognitionData>>({})
+const editAiData = ref<Partial<CreateProductData>>({})
 
 const stepTitles = ['上传商品图片', 'AI 智能识别中', '识别结果']
 
@@ -112,7 +113,7 @@ function goToStep(stepIndex: number) {
 }
 
 function handleEdit(data: Partial<RecognitionData>) {
-  editAiData.value = data
+  editAiData.value = data as Partial<CreateProductData>
   visible.value = false
   showEditDialog.value = true
 }

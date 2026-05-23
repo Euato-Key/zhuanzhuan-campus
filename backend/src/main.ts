@@ -24,6 +24,8 @@ import reviewRoutes from './modules/review/review.routes';
 import wantBuyRoutes from './modules/want-buy/want-buy.routes';
 import { notificationRoutes } from './modules/notification/notification.routes';
 import aiRoutes from './modules/ai/ai.routes';
+import settingsRoutes from './modules/settings/settings.routes';
+import { SettingsService } from './modules/settings/settings.service';
 
 const app = express();
 
@@ -47,7 +49,8 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/want-buys', wantBuyRoutes);
 app.use('/api/notifications', notificationRoutes);
-  app.use('/api/ai', aiRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/settings', settingsRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ code: 200, data: { status: 'ok' }, message: 'success' });
@@ -68,6 +71,9 @@ registerChatSocketEvents(io);
 httpServer.listen(env.PORT, () => {
   console.log(`Server running on http://localhost:${env.PORT}`);
   startCleanupJobs();
+  SettingsService.ensureDefaults().catch((err) => {
+    console.error('Failed to init settings defaults:', err);
+  });
 });
 
 process.on('SIGINT', async () => {

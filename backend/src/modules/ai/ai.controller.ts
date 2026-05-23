@@ -3,7 +3,8 @@ import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 import { badRequest } from '../../common/errors';
 import { AIService } from './ai.service';
-import { success } from '../../utils/response';
+import { success, fail } from '../../utils/response';
+import { prisma } from '../../config/prisma';
 
 export const AIController = {
   recognizeProduct: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
@@ -67,5 +68,45 @@ export const AIController = {
       res.write('data: [DONE]\n\n');
       res.end();
     }
+  }),
+
+  // AI审核：管理员手动触发
+  auditProduct: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+    const productId = BigInt(req.params.productId as string);
+
+    try {
+      const result = await AIService.audit.auditProduct(productId);
+      return success(res, result, result.approved ? 'AI审核通过' : 'AI审核不通过');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'AI审核失败';
+      return fail(res, message, 500);
+    }
+  }),
+
+  // 查看商品审核状态
+  getAuditStatus: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+    const productId = BigInt(req.params.productId as string);
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        rejectReason: true,
+        auditCount: true,
+        relistCount: true,
+        createdAt: true,
+        updatedAt: true,
+        category: { select: { name: true } },
+        user: { select: { id: true, username: true } },
+      },
+    });
+
+    if (!product) {
+      throw badRequest('商品不存在');
+    }
+
+    return success(res, product, '获取审核状态成功');
   }),
 };

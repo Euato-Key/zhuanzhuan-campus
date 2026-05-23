@@ -116,3 +116,43 @@ export function recognizeProduct(images: string[], name?: string, brand?: string
     ...(brand ? { brand } : {}),
   })
 }
+
+// AI审核相关类型
+export interface AIAuditResult {
+  approved: boolean
+  riskScore: number
+  riskCategories: string[]
+  details: string
+  suggestions: string[]
+}
+
+export interface AIAuditResponse {
+  code: number
+  message: string
+  data: AIAuditResult
+}
+
+export interface AuditStatusResponse {
+  code: number
+  message: string
+  data: {
+    id: number
+    name: string
+    status: string
+    rejectReason: string | null
+    auditCount: number
+    relistCount: number
+    createdAt: string
+    updatedAt: string
+    category: { name: string }
+    user: { id: number; username: string }
+  }
+}
+
+export function auditProduct(productId: number | bigint) {
+  return api.post<AIAuditResponse>(`/ai/audit/${productId}`)
+}
+
+export function getAuditStatus(productId: number | bigint) {
+  return api.get<AuditStatusResponse>(`/ai/audit/${productId}/status`)
+}
