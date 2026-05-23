@@ -24,6 +24,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateOrderDialog from '@/components/order/CreateOrderDialog.vue'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
 import ReviewList from '@/components/review/ReviewList.vue'
+import ReportDialog from '@/components/report/ReportDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,6 +39,7 @@ const product = ref<ProductDetail | null>(null)
 const createOrderDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const favoriteLoading = ref(false)
+const reportDialogVisible = ref(false)
 
 // 是否是卖家
 const isOwner = computed(() => {
@@ -395,6 +397,7 @@ onMounted(() => {
               <el-button type="success" size="large" :disabled="!canBuy" @click="buyNow">
                 立即购买
               </el-button>
+              <el-button type="warning" size="large" plain @click="reportDialogVisible = true">举报</el-button>
             </template>
             <template v-else>
               <el-button v-if="canEdit" size="large" @click="editProduct">编辑</el-button>
@@ -445,6 +448,7 @@ onMounted(() => {
       :product="product"
       @success="fetchProduct"
     />
+    <ReportDialog v-if="product" v-model="reportDialogVisible" target-type="product" :target-id="product.id" />
   </div>
   </AppLayout>
 </template>

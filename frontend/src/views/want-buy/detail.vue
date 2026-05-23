@@ -22,6 +22,7 @@ import { useAuthDialog } from '@/composables/useAuthDialog'
 import { getOssUrl } from '@/utils/oss'
 import { showError, showSuccess } from '@/utils/error'
 import { formatRelativeTime, formatDate } from '@/utils/format'
+import ReportDialog from '@/components/report/ReportDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -39,6 +40,8 @@ const editDialogVisible = ref(false)
 const isOwner = computed(() => {
   return userStore.user && wantBuy.value && userStore.user.id === wantBuy.value.userId
 })
+
+const reportDialogVisible = ref(false)
 
 // 是否可以编辑
 const canEdit = computed(() => {
@@ -375,6 +378,7 @@ onMounted(fetchWantBuy)
               </template>
               <template v-else>
                 <el-button type="primary" @click="contactUser">联系发布者</el-button>
+                <el-button type="warning" plain @click="reportDialogVisible = true">举报</el-button>
               </template>
             </div>
           </div>
@@ -392,6 +396,7 @@ onMounted(fetchWantBuy)
           @success="fetchWantBuy"
         />
       </template>
+      <ReportDialog v-if="wantBuy" v-model="reportDialogVisible" target-type="want_buy" :target-id="wantBuy.id" />
     </div>
   </AppLayout>
 </template>

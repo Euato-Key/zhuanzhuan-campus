@@ -1,54 +1,121 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import { Search, Check, Close } from '@element-plus/icons-vue'
-
-type ReportType = 'product' | 'user' | 'comment' | 'wantbuy'
-type ReportStatus = 'pending' | 'processing' | 'resolved' | 'closed'
-
-interface Report {
-  id: number
-  type: ReportType
-  target: string
-  reporter: string
-  reason: string
-  status: ReportStatus
-  createdAt: string
-}
+import { Search } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { showError } from '@/utils/error'
+import {
+  getAdminReportList,
+  handleReport as handleReportApi,
+  type ReportItem,
+  type ReportStatus,
+  type ReportTargetType,
+  type HandleStatus,
+  REPORT_TARGET_TYPE_LABELS,
+  REPORT_TARGET_TAG_TYPE,
+  REPORT_REASON_LABELS,
+  REPORT_STATUS_LABELS,
+  REPORT_STATUS_TAG_TYPE,
+} from '@/api/modules/report'
+import { formatRelativeTime } from '@/utils/format'
 
 const loading = ref(false)
-const typeFilter = ref('')
-const statusFilter = ref('')
+const reports = ref<ReportItem[]>([])
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const typeFilter = ref<ReportTargetType | ''>('')
+const statusFilter = ref<ReportStatus | ''>('')
+const keyword = ref('')
+const searchTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
-// Mock data
-const reports = ref<Report[]>([
-  { id: 1, type: 'product', target: '二手自行车', reporter: '张三', reason: '虚假商品', status: 'pending', createdAt: '2024-03-15' },
-  { id: 2, type: 'user', target: '李四', reporter: '王五', reason: '欺诈行为', status: 'processing', createdAt: '2024-03-14' },
-  { id: 3, type: 'comment', target: '评论内容...', reporter: '赵六', reason: '辱骂言论', status: 'resolved', createdAt: '2024-03-13' },
-  { id: 4, type: 'wantbuy', target: '求购iPhone', reporter: '钱七', reason: '虚假求购', status: 'closed', createdAt: '2024-03-12' },
-])
+// Handle dialog
+const handleDialogVisible = ref(false)
+const currentReport = ref<ReportItem | null>(null)
+const handleStatus = ref<HandleStatus>('resolved')
+const handlerNote = ref('')
+const handleLoading = ref(false)
 
-const typeMap: Record<ReportType, { label: string; type: string }> = {
-  product: { label: '商品举报', type: 'primary' },
-  user: { label: '用户举报', type: 'warning' },
-  comment: { label: '评论举报', type: 'info' },
-  wantbuy: { label: '求购举报', type: 'success' },
+// Detail dialog
+const detailDialogVisible = ref(false)
+const detailReport = ref<ReportItem | null>(null)
+
+async function fetchReports() {
+  loading.value = true
+  try {
+    const params: Record<string, any> = {
+      page: currentPage.value,
+      pageSize: pageSize.value,
+    }
+    if (typeFilter.value) params.targetType = typeFilter.value
+    if (statusFilter.value) params.status = statusFilter.value
+    if (keyword.value) params.keyword = keyword.value
+    const res = await getAdminReportList(params)
+    if (res.data.code === 200) {
+      reports.value = res.data.data.list
+      total.value = res.data.data.total
+    }
+  } catch (err: unknown) {
+    showError(err, '获取举报列表失败')
+  } finally {
+    loading.value = false
+  }
 }
 
-const statusMap: Record<ReportStatus, { label: string; type: string }> = {
-  pending: { label: '待处理', type: 'warning' },
-  processing: { label: '处理中', type: 'primary' },
-  resolved: { label: '已处理', type: 'success' },
-  closed: { label: '已关闭', type: 'info' },
+function onSearch() {
+  if (searchTimer.value) clearTimeout(searchTimer.value)
+  searchTimer.value = setTimeout(() => {
+    currentPage.value = 1
+    fetchReports()
+  }, 300)
 }
 
-function handleApprove(report: Report) {
-  console.log('Approve report:', report)
+function onPageChange(page: number) {
+  currentPage.value = page
+  fetchReports()
 }
 
-function handleReject(report: Report) {
-  console.log('Reject report:', report)
+function openHandleDialog(report: ReportItem) {
+  currentReport.value = report
+  handleStatus.value = 'resolved'
+  handlerNote.value = ''
+  handleDialogVisible.value = true
 }
+
+function openDetail(report: ReportItem) {
+  detailReport.value = report
+  detailDialogVisible.value = true
+}
+
+async function submitHandle() {
+  if (!currentReport.value) return
+  handleLoading.value = true
+  try {
+    const res = await handleReportApi(currentReport.value.id, {
+      status: handleStatus.value,
+      handlerNote: handlerNote.value || undefined,
+    })
+    if (res.data.code === 200) {
+      ElMessage.success('处理成功')
+      handleDialogVisible.value = false
+      await fetchReports()
+    } else {
+      ElMessage.error(res.data.message || '处理失败')
+    }
+  } catch (err: unknown) {
+    showError(err, '处理失败')
+  } finally {
+    handleLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchReports()
+})
+
+onBeforeUnmount(() => {
+  if (searchTimer.value) clearTimeout(searchTimer.value)
+})
 </script>
 
 <template>
@@ -57,22 +124,28 @@ function handleReject(report: Report) {
     <div class="page-header">
       <div class="header-actions">
         <el-input
+          v-model="keyword"
           placeholder="搜索举报内容"
           :prefix-icon="Search"
           clearable
           style="width: 300px"
+          @input="onSearch"
         />
-        <el-select v-model="typeFilter" placeholder="举报类型" clearable style="width: 120px">
-          <el-option label="商品举报" value="product" />
-          <el-option label="用户举报" value="user" />
-          <el-option label="评论举报" value="comment" />
-          <el-option label="求购举报" value="wantbuy" />
+        <el-select v-model="typeFilter" placeholder="举报类型" clearable style="width: 120px" @change="currentPage = 1; fetchReports()">
+          <el-option
+            v-for="(label, key) in REPORT_TARGET_TYPE_LABELS"
+            :key="key"
+            :label="label"
+            :value="key"
+          />
         </el-select>
-        <el-select v-model="statusFilter" placeholder="处理状态" clearable style="width: 120px">
-          <el-option label="待处理" value="pending" />
-          <el-option label="处理中" value="processing" />
-          <el-option label="已处理" value="resolved" />
-          <el-option label="已关闭" value="closed" />
+        <el-select v-model="statusFilter" placeholder="处理状态" clearable style="width: 120px" @change="currentPage = 1; fetchReports()">
+          <el-option
+            v-for="(label, key) in REPORT_STATUS_LABELS"
+            :key="key"
+            :label="label"
+            :value="key"
+          />
         </el-select>
       </div>
     </div>
@@ -81,43 +154,58 @@ function handleReject(report: Report) {
     <div class="card">
       <el-table :data="reports" v-loading="loading" stripe>
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="type" label="举报类型" width="120">
-          <template #default="{ row }: { row: Report }">
-            <el-tag :type="typeMap[row.type]?.type" size="small">
-              {{ typeMap[row.type]?.label }}
+        <el-table-column label="举报类型" width="100">
+          <template #default="{ row }: { row: ReportItem }">
+            <el-tag :type="REPORT_TARGET_TAG_TYPE[row.targetType]" size="small">
+              {{ REPORT_TARGET_TYPE_LABELS[row.targetType] }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="target" label="举报对象" min-width="150" />
-        <el-table-column prop="reporter" label="举报人" width="100" />
-        <el-table-column prop="reason" label="举报理由" min-width="150" />
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }: { row: Report }">
-            <el-tag :type="statusMap[row.status]?.type" size="small">
-              {{ statusMap[row.status]?.label }}
+        <el-table-column label="目标ID" width="90">
+          <template #default="{ row }: { row: ReportItem }">
+            {{ row.targetId }}
+          </template>
+        </el-table-column>
+        <el-table-column label="举报人" width="100">
+          <template #default="{ row }: { row: ReportItem }">
+            {{ row.reporter?.username || `用户${row.reporterId}` }}
+          </template>
+        </el-table-column>
+        <el-table-column label="举报原因" min-width="120">
+          <template #default="{ row }: { row: ReportItem }">
+            {{ REPORT_REASON_LABELS[row.reason] }}
+          </template>
+        </el-table-column>
+        <el-table-column label="补充说明" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }: { row: ReportItem }">
+            {{ row.detail || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }: { row: ReportItem }">
+            <el-tag :type="REPORT_STATUS_TAG_TYPE[row.status]" size="small">
+              {{ REPORT_STATUS_LABELS[row.status] }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="举报时间" width="120" />
-        <el-table-column label="操作" width="160" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              v-if="row.status === 'pending'"
-              type="success"
-              text
-              size="small"
-              @click="handleApprove(row)"
-            >
-              <el-icon><Check /></el-icon>通过
+        <el-table-column label="举报时间" width="160">
+          <template #default="{ row }: { row: ReportItem }">
+            {{ formatRelativeTime(row.createdAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }: { row: ReportItem }">
+            <el-button size="small" text type="primary" @click="openDetail(row)">
+              详情
             </el-button>
             <el-button
               v-if="row.status === 'pending'"
-              type="danger"
-              text
               size="small"
-              @click="handleReject(row)"
+              text
+              type="warning"
+              @click="openHandleDialog(row)"
             >
-              <el-icon><Close /></el-icon>驳回
+              处理
             </el-button>
           </template>
         </el-table-column>
@@ -125,15 +213,107 @@ function handleReject(report: Report) {
 
       <el-empty v-if="!loading && reports.length === 0" description="暂无举报数据" />
 
-      <div class="pagination-wrap" v-if="reports.length > 0">
+      <div class="pagination-wrap" v-if="total > 0">
         <el-pagination
+          v-model:current-page="currentPage"
           background
           layout="total, prev, pager, next"
-          :total="100"
-          :page-size="10"
+          :total="total"
+          :page-size="pageSize"
+          @current-change="onPageChange"
         />
       </div>
     </div>
+
+    <!-- Handle dialog -->
+    <el-dialog v-model="handleDialogVisible" title="处理举报" width="480px" :close-on-click-modal="false">
+      <template v-if="currentReport">
+        <div class="handle-form">
+          <div class="form-item">
+            <label class="form-label">处理结果</label>
+            <el-select v-model="handleStatus" style="width: 100%">
+              <el-option label="驳回" value="dismissed" />
+              <el-option label="警告" value="warning" />
+              <el-option label="封禁" value="banned" />
+              <el-option label="已处理" value="resolved" />
+            </el-select>
+          </div>
+          <div class="form-item">
+            <label class="form-label">处理备注（选填）</label>
+            <el-input
+              v-model="handlerNote"
+              type="textarea"
+              :rows="3"
+              maxlength="500"
+              show-word-limit
+              placeholder="请输入处理备注..."
+            />
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <el-button @click="handleDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="handleLoading" @click="submitHandle">
+          确认处理
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Detail dialog -->
+    <el-dialog v-model="detailDialogVisible" title="举报详情" width="560px">
+      <template v-if="detailReport">
+        <div class="detail-info">
+          <div class="detail-item">
+            <span class="detail-label">举报ID:</span>
+            <span>{{ detailReport.id }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">举报类型:</span>
+            <el-tag :type="REPORT_TARGET_TAG_TYPE[detailReport.targetType]" size="small">
+              {{ REPORT_TARGET_TYPE_LABELS[detailReport.targetType] }}
+            </el-tag>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">目标ID:</span>
+            <span>{{ detailReport.targetId }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">举报人:</span>
+            <span>{{ detailReport.reporter?.username || `用户${detailReport.reporterId}` }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">举报原因:</span>
+            <span>{{ REPORT_REASON_LABELS[detailReport.reason] }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">补充说明:</span>
+            <span>{{ detailReport.detail || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">状态:</span>
+            <el-tag :type="REPORT_STATUS_TAG_TYPE[detailReport.status]" size="small">
+              {{ REPORT_STATUS_LABELS[detailReport.status] }}
+            </el-tag>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">举报时间:</span>
+            <span>{{ formatRelativeTime(detailReport.createdAt) }}</span>
+          </div>
+          <div v-if="detailReport.handler" class="detail-item">
+            <span class="detail-label">处理人:</span>
+            <span>{{ detailReport.handler.username }}</span>
+          </div>
+          <div v-if="detailReport.handlerNote" class="detail-item">
+            <span class="detail-label">处理备注:</span>
+            <span>{{ detailReport.handlerNote }}</span>
+          </div>
+          <div v-if="detailReport.handledAt" class="detail-item">
+            <span class="detail-label">处理时间:</span>
+            <span>{{ formatRelativeTime(detailReport.handledAt) }}</span>
+          </div>
+        </div>
+      </template>
+    </el-dialog>
   </AdminLayout>
 </template>
 
@@ -160,5 +340,39 @@ function handleReject(report: Report) {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+}
+
+.handle-form,
+.detail-info {
+  .form-item,
+  .detail-item {
+    margin-bottom: $spacing-md;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .form-label,
+  .detail-label {
+    display: block;
+    font-size: $font-size-body;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+    margin-bottom: $spacing-xs;
+  }
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  .detail-label {
+    margin-bottom: 0;
+    min-width: 80px;
+    flex-shrink: 0;
+    color: $color-text-secondary;
+  }
 }
 </style>

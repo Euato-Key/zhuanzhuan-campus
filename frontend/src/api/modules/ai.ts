@@ -120,6 +120,7 @@ export function recognizeProduct(images: string[], name?: string, brand?: string
 // AI审核相关类型
 export interface AIAuditResult {
   approved: boolean
+  skipped?: boolean
   riskScore: number
   riskCategories: string[]
   details: string

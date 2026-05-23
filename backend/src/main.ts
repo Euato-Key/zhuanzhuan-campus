@@ -25,6 +25,7 @@ import wantBuyRoutes from './modules/want-buy/want-buy.routes';
 import { notificationRoutes } from './modules/notification/notification.routes';
 import aiRoutes from './modules/ai/ai.routes';
 import settingsRoutes from './modules/settings/settings.routes';
+import reportRoutes from './modules/report/report.routes';
 import { SettingsService } from './modules/settings/settings.service';
 
 const app = express();
@@ -51,6 +52,7 @@ app.use('/api/want-buys', wantBuyRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ code: 200, data: { status: 'ok' }, message: 'success' });

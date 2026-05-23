@@ -12,6 +12,7 @@ import { useAuthDialog } from '@/composables/useAuthDialog'
 import { getReceivedReviews, type ReviewItem } from '@/api/modules/review'
 import { getUserWantBuyList, type WantBuyListItem } from '@/api/modules/want-buy'
 import api from '@/api/index'
+import ReportDialog from '@/components/report/ReportDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -58,6 +59,8 @@ const activeTab = ref<'products' | 'wantBuys'>('products')
 const isOwnProfile = computed(() => {
   return userStore.user && user.value && userStore.user.id === user.value.id
 })
+
+const reportDialogVisible = ref(false)
 
 // 用户头像
 const userAvatar = computed(() => {
@@ -233,6 +236,7 @@ onMounted(() => {
             <el-button type="primary" @click="contactUser">
               联系TA
             </el-button>
+            <el-button type="warning" plain @click="reportDialogVisible = true">举报</el-button>
           </div>
         </div>
 
@@ -340,6 +344,7 @@ onMounted(() => {
           </el-button>
         </div>
       </template>
+      <ReportDialog v-if="user" v-model="reportDialogVisible" target-type="user" :target-id="user.id" />
     </div>
   </AppLayout>
 </template>

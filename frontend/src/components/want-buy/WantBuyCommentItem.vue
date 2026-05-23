@@ -14,6 +14,7 @@ import { getOssUrl } from '@/utils/oss'
 import { formatRelativeTime } from '@/utils/format'
 import { useUserStore } from '@/stores/user'
 import { showError } from '@/utils/error'
+import ReportDialog from '@/components/report/ReportDialog.vue'
 
 const props = defineProps<{
   comment: WantBuyComment
@@ -33,6 +34,8 @@ const userStore = useUserStore()
 const isOwner = computed(() => {
   return userStore.user?.id === props.comment.userId
 })
+
+const reportDialogVisible = ref(false)
 
 // 用户头像
 const userAvatar = computed(() => {
@@ -212,11 +215,13 @@ function viewReplyToUser() {
         {{ likeCount }}
       </el-button>
       <el-button size="small" link @click="handleReply">回复</el-button>
+      <el-button v-if="!isOwner" size="small" type="warning" link @click="reportDialogVisible = true">举报</el-button>
       <el-button v-if="isOwner" size="small" link @click="startEdit">编辑</el-button>
       <el-button v-if="isOwner" size="small" type="danger" link @click="handleDelete">
         删除
       </el-button>
     </div>
+    <ReportDialog v-model="reportDialogVisible" target-type="comment" :target-id="comment.id" />
   </div>
 </template>
 

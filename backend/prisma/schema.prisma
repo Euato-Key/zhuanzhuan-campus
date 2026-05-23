@@ -96,6 +96,7 @@ enum NotificationType {
   chat
   review
   interaction
+  report
 }
 
 enum RelatedType {
@@ -104,6 +105,7 @@ enum RelatedType {
   review
   user
   want_buy
+  report
 }
 
 enum ReportTargetType {

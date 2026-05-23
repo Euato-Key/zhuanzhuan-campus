@@ -1,19 +1,28 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
 import type { ReviewItem } from '@/api/modules/review'
 import { REVIEW_STATUS_LABELS, REVIEW_STATUS_TAG_TYPE } from '@/api/modules/review'
 import { getOssUrl } from '@/utils/oss'
 import { formatRelativeTime } from '@/utils/format'
+import { useUserStore } from '@/stores/user'
+import ReportDialog from '@/components/report/ReportDialog.vue'
 
 const router = useRouter()
+const userStore = useUserStore()
 
-defineProps<{
+const props = defineProps<{
   review: ReviewItem
   sellerReply?: ReviewItem | null
   showAppendBtn?: boolean
   showDeleteBtn?: boolean
   showStatus?: boolean
 }>()
+
+const isOwner = computed(() => {
+  return userStore.user?.id === props.review.reviewer?.id
+})
+const reportDialogVisible = ref(false)
 
 const emit = defineEmits<{
   append: [reviewId: number]
@@ -147,10 +156,12 @@ function viewUserProfile(userId: number) {
     </div>
 
     <!-- 操作按钮 -->
-    <div v-if="showAppendBtn || (showDeleteBtn && review.status !== 'deleted')" class="review-actions">
+    <div v-if="showAppendBtn || (showDeleteBtn && review.status !== 'deleted') || !isOwner" class="review-actions">
       <el-button v-if="showAppendBtn" size="small" type="primary" plain @click="emit('append', review.id)">追评</el-button>
       <el-button v-if="showDeleteBtn && review.status !== 'deleted'" size="small" type="danger" plain @click="emit('delete', review.id)">删除评价</el-button>
+      <el-button v-if="!isOwner" size="small" type="warning" plain @click="reportDialogVisible = true">举报</el-button>
     </div>
+    <ReportDialog v-model="reportDialogVisible" target-type="review" :target-id="review.id" />
   </div>
 </template>
 

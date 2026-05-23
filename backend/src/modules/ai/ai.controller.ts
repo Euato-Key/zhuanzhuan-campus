@@ -3,7 +3,7 @@ import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 import { badRequest } from '../../common/errors';
 import { AIService } from './ai.service';
-import { success, fail } from '../../utils/response';
+import { success } from '../../utils/response';
 import { prisma } from '../../config/prisma';
 
 export const AIController = {
@@ -73,14 +73,9 @@ export const AIController = {
   // AI审核：管理员手动触发
   auditProduct: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
     const productId = BigInt(req.params.productId as string);
-
-    try {
-      const result = await AIService.audit.auditProduct(productId);
-      return success(res, result, result.approved ? 'AI审核通过' : 'AI审核不通过');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'AI审核失败';
-      return fail(res, message, 500);
-    }
+    const result = await AIService.audit.auditProduct(productId);
+    const message = result.skipped ? '商品非待审核状态，已跳过' : (result.approved ? 'AI审核通过' : 'AI审核不通过');
+    return success(res, result, message);
   }),
 
   // 查看商品审核状态

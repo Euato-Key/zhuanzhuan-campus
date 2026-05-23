@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ElMessage } from 'element-plus'
 import { getSettings, updateSettings, type SystemSettings } from '@/api/modules/settings'
 import { useUserStore } from '@/stores/user'
+import { showError } from '@/utils/error'
 
 const userStore = useUserStore()
 const loading = ref(false)
-const isSuperAdmin = ref(false)
+const isSuperAdmin = computed(() => userStore.user?.role === 'super_admin')
 
 const settings = ref<SystemSettings>({
   ai_audit_enabled: false,
@@ -28,8 +29,6 @@ async function loadSettings() {
     ElMessage.warning('加载设置失败，已使用默认值')
   } finally {
     loading.value = false
-    // 检查是否为超级管理员（只有超级管理员可以编辑）
-    isSuperAdmin.value = userStore.user?.role === 'super_admin'
   }
 }
 
@@ -38,9 +37,8 @@ async function handleSave() {
   try {
     await updateSettings(settings.value)
     ElMessage.success('设置已保存')
-  } catch (err: any) {
-    const msg = err?.response?.data?.message || '保存失败'
-    ElMessage.error(msg)
+  } catch (err: unknown) {
+    showError(err, '保存失败')
   } finally {
     loading.value = false
   }
@@ -151,7 +149,7 @@ onMounted(() => {
 }
 
 .card {
-  background: #fff;
+  background: $color-bg-card;
   border-radius: $radius-lg;
   padding: 24px;
   box-shadow: $shadow-sm;
@@ -178,7 +176,7 @@ onMounted(() => {
   justify-content: center;
   gap: 16px;
   padding: 24px;
-  background: #fff;
+  background: $color-bg-card;
   border-radius: $radius-lg;
   box-shadow: $shadow-sm;
 }
@@ -209,9 +207,9 @@ onMounted(() => {
   .hint-text {
     margin-top: 12px;
     padding: 8px 12px;
-    background: #e6f7ff;
+    background: rgba($color-info, 0.08);
     border-radius: 4px;
-    color: #1890ff;
+    color: $color-info;
     font-size: 12px;
   }
 }
