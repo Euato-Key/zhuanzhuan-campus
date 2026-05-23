@@ -12,4 +12,8 @@ router.post('/recognize-stream', authMiddleware, AIController.recognizeProductSt
 router.post('/audit/:productId', authMiddleware, adminMiddleware, AIController.auditProduct);
 router.get('/audit/:productId/status', authMiddleware, adminMiddleware, AIController.getAuditStatus);
 
+router.post('/assistant/chat', authMiddleware, AIController.assistantChat);
+router.get('/assistant/conversations', authMiddleware, AIController.assistantConversations);
+router.delete('/assistant/conversations/:id', authMiddleware, AIController.assistantDeleteConversation);
+
 export default router;

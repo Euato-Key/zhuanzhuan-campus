@@ -203,6 +203,7 @@ model User {
   wantBuys        WantBuy[]
   wantBuyComments WantBuyComment[]
   wantBuyCommentLikes WantBuyCommentLike[]
+  aiConversations AIConversation[]
 
   @@index([role], map: "idx_role")
   @@index([isBlocked], map: "idx_is_blocked")
@@ -579,6 +580,37 @@ model QuickReply {
 
   @@index([userId], map: "idx_user_id")
   @@map("quick_replies")
+}
+
+model AIConversation {
+  id        Int         @id @default(autoincrement())
+  userId    Int         @map("user_id")
+  title     String?     @db.VarChar(100)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AIMessage[]
+
+  @@index([userId])
+  @@index([updatedAt])
+  @@map("ai_conversations")
+}
+
+model AIMessage {
+  id             Int             @id @default(autoincrement())
+  conversationId Int             @map("conversation_id")
+  role           String          @db.VarChar(20)
+  content        String          @db.Text
+  msgType        String          @default("text") @map("msg_type") @db.VarChar(20)
+  extraData      Json?           @map("extra_data")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  conversation   AIConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@map("ai_messages")
 }
 
 model WantBuy {

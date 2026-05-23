@@ -157,3 +157,32 @@ export function auditProduct(productId: number | bigint) {
 export function getAuditStatus(productId: number | bigint) {
   return api.get<AuditStatusResponse>(`/ai/audit/${productId}/status`)
 }
+
+// ─── AI 助手 ───
+
+export interface AIConversation {
+  id: number
+  userId: number
+  title: string | null
+  createdAt: string
+  updatedAt: string
+  messages?: { id: number; content: string; role: string; msgType: string }[]
+}
+
+export interface AIMessageItem {
+  id: number
+  conversationId: number
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  msgType: string
+  extraData: any
+  createdAt: string
+}
+
+export function getAssistantConversations() {
+  return api.get<{ code: number; message: string; data: AIConversation[] }>('/ai/assistant/conversations')
+}
+
+export function deleteAssistantConversation(id: number) {
+  return api.delete<{ code: number; message: string }>(`/ai/assistant/conversations/${id}`)
+}

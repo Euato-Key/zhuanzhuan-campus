@@ -3,7 +3,7 @@ import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 import { badRequest } from '../../common/errors';
 import { AIService } from './ai.service';
-import { success } from '../../utils/response';
+import { success, fail } from '../../utils/response';
 import { prisma } from '../../config/prisma';
 
 export const AIController = {
@@ -103,5 +103,60 @@ export const AIController = {
     }
 
     return success(res, product, '获取审核状态成功');
+  }),
+
+  assistantChat: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+    const userId = ValidationUtil.requireUserId(req);
+    let { conversationId, message } = req.body;
+
+    if (!message || typeof message !== 'string' || !message.trim()) {
+      return fail(res, '消息不能为空', 400);
+    }
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+
+    try {
+      // 如果没有会话ID，创建新会话
+      if (!conversationId) {
+        const conv = await prisma.aIConversation.create({
+          data: { userId, title: message.slice(0, 20) },
+        });
+        conversationId = conv.id;
+      }
+
+      res.write(`data: ${JSON.stringify({ type: 'meta', conversationId })}\n\n`);
+
+      for await (const event of AIService.assistant.chatStream(userId, conversationId, message)) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'AI服务异常';
+      res.write(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`);
+    } finally {
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+  }),
+
+  assistantConversations: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+    const userId = ValidationUtil.requireUserId(req);
+    const conversations = await prisma.aIConversation.findMany({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+      include: { messages: { orderBy: { createdAt: 'desc' }, take: 1 } },
+    });
+    success(res, conversations, '获取成功');
+  }),
+
+  assistantDeleteConversation: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+    const userId = ValidationUtil.requireUserId(req);
+    const id = ValidationUtil.parseIdParam(req.params.id, '会话ID');
+    await prisma.aIConversation.deleteMany({ where: { id, userId } });
+    success(res, null, '删除成功');
   }),
 };

@@ -266,6 +266,108 @@ function selectUrlsForFetch(results: WebSearchResult[], maxPages: number): strin
   return scored.slice(0, maxPages).map(s => s.url);
 }
 
+const ConversationService = {
+  async create(userId: number, title?: string) {
+    return prisma.aIConversation.create({
+      data: { userId, title: title || '新对话' },
+    });
+  },
+
+  async getUserConversations(userId: number) {
+    return prisma.aIConversation.findMany({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    });
+  },
+
+  async delete(conversationId: number, userId: number) {
+    const conv = await prisma.aIConversation.findFirst({
+      where: { id: conversationId, userId },
+    });
+    if (!conv) throw new Error('会话不存在');
+    return prisma.aIConversation.delete({ where: { id: conversationId } });
+  },
+
+  async saveMessage(conversationId: number, role: string, content: string, msgType?: string, extraData?: any) {
+    return prisma.aIMessage.create({
+      data: {
+        conversationId,
+        role,
+        content,
+        msgType: msgType || 'text',
+        extraData: extraData || undefined,
+      },
+    });
+  },
+
+  async getRecentMessages(conversationId: number, limit: number) {
+    return prisma.aIMessage.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  },
+};
+
+async function executeDataAPI(apiName: string, params: Record<string, any>, userId: number): Promise<any> {
+  switch (apiName) {
+    case 'search_products': {
+      const products = await prisma.product.findMany({
+        where: { status: 'active', name: { contains: params.keyword || '' } },
+        take: 5,
+        orderBy: { favoriteCount: 'desc' },
+        select: { id: true, name: true, currentPrice: true, images: true, itemCondition: true, favoriteCount: true },
+      });
+      return { products };
+    }
+    case 'get_product': {
+      const product = await prisma.product.findUnique({
+        where: { id: BigInt(params.productId) },
+        select: { id: true, name: true, description: true, currentPrice: true, originalPrice: true, images: true, itemCondition: true, deliveryType: true, stock: true, favoriteCount: true, user: { select: { username: true } } },
+      });
+      return { product };
+    }
+    case 'get_my_orders': {
+      const orders = await prisma.order.findMany({
+        where: { buyerId: userId, ...(params.status ? { status: params.status } : {}) },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, orderNo: true, status: true, totalPrice: true, productName: true, createdAt: true },
+      });
+      return { orders };
+    }
+    case 'get_my_stats': {
+      const [orderCount, productCount, reviews] = await Promise.all([
+        prisma.order.count({ where: { buyerId: userId } }),
+        prisma.product.count({ where: { userId, status: 'active' } }),
+        prisma.review.count({ where: { reviewedId: userId } }),
+      ]);
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { creditScore: true } });
+      return { orderCount, productCount, reviewCount: reviews, creditScore: user?.creditScore || 100 };
+    }
+    case 'get_platform_stats': {
+      const [userCount, productCount, orderCount] = await Promise.all([
+        prisma.user.count(),
+        prisma.product.count({ where: { status: 'active' } }),
+        prisma.order.count(),
+      ]);
+      return { userCount, productCount, orderCount };
+    }
+    default:
+      return { error: '未知API' };
+  }
+}
+
+export type AssistantStreamEvent =
+  | { type: 'token'; content: string }
+  | { type: 'card'; msg_type: string; data: any; content?: string }
+  | { type: 'meta'; conversationId: number }
+  | { type: 'done'; conversationId: number; messageId: number }
+  | { type: 'error'; message: string };
+
 export const AIService = {
   recognition: {
     async analyze(userId: number, request: AIRecognitionRequest): Promise<AIRecognitionResult> {
@@ -1003,8 +1105,94 @@ export const AIService = {
   },
 
   assistant: {
-    async *chatStream(_userId: number, _message: string, _context?: AIAssistantContext): AsyncGenerator<string> {
-      throw new Error('AI助手功能尚未实现');
+    async *chatStream(userId: number, conversationId: number, message: string): AsyncGenerator<AssistantStreamEvent> {
+      const sanitized = message.slice(0, 500).trim();
+      if (!sanitized) {
+        yield { type: 'error', message: '消息不能为空' };
+        return;
+      }
+
+      // 获取上下文配置
+      const config = await SettingsService.get();
+      const contextWindow = config.ai_context_window || 5;
+
+      // 保存用户消息
+      await ConversationService.saveMessage(conversationId, 'user', sanitized);
+
+      // 更新会话时间
+      await prisma.aIConversation.update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() },
+      });
+
+      // 获取上下文
+      const recentMessages = await ConversationService.getRecentMessages(conversationId, contextWindow);
+      const contextMessages = recentMessages.reverse(); // 旧→新
+
+      // 构建对话消息
+      const systemPrompt = AIPrompts.buildAssistantSystemPrompt();
+      const messages: AIChatMessage[] = [
+        { role: 'system', content: systemPrompt },
+        ...contextMessages.map(m => ({
+          role: m.role as 'user' | 'assistant' | 'system',
+          content: m.content,
+        })),
+      ];
+
+      // 决策循环（最多3轮）
+      let maxLoops = 3;
+      let needsApiCall = true;
+
+      while (needsApiCall && maxLoops > 0) {
+        maxLoops--;
+        needsApiCall = false;
+
+        const decision = await AIClientService.chatCompletion(messages, {
+          enableThinking: false,
+          temperature: 0.3,
+        });
+
+        let parsed: any;
+        try {
+          const jsonMatch = decision.content.match(/\{[\s\S]*\}/);
+          parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+        } catch { parsed = null; }
+
+        if (!parsed || !parsed.action) {
+          yield { type: 'error', message: 'AI响应异常，请重试' };
+          return;
+        }
+
+        if (parsed.action === 'call_api' && parsed.api_name) {
+          const apiResult = await executeDataAPI(parsed.api_name, parsed.params || {}, userId);
+          messages.push({ role: 'assistant', content: `API返回结果: ${JSON.stringify(apiResult)}` });
+          messages.push({ role: 'user', content: '请根据以上API返回的数据回复用户。' });
+          needsApiCall = true;
+          continue;
+        }
+
+        if (parsed.action === 'respond') {
+          const msgType = parsed.msg_type || 'text';
+
+          if (msgType === 'text') {
+            const textContent = (parsed.content || '').slice(0, 500);
+            // 流式推送（模拟token）
+            for (let i = 0; i < textContent.length; i += 2) {
+              yield { type: 'token', content: textContent.slice(i, i + 2) };
+              await new Promise(r => setTimeout(r, 15));
+            }
+            await ConversationService.saveMessage(conversationId, 'assistant', textContent, 'text');
+          } else {
+            // 卡片类型 — 非流式，推送完整数据
+            yield { type: 'card', msg_type: msgType, data: parsed.cards || [], content: parsed.content || '' };
+            await ConversationService.saveMessage(conversationId, 'assistant', parsed.content || JSON.stringify(parsed.cards), msgType, parsed.cards || undefined);
+          }
+        }
+      }
+
+      const savedMessages = await ConversationService.getRecentMessages(conversationId, 1);
+      const lastMsg = savedMessages[0];
+      yield { type: 'done', conversationId, messageId: lastMsg?.id || 0 };
     },
   },
 };
