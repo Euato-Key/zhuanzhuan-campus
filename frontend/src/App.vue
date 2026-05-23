@@ -38,7 +38,7 @@ watch(() => userStore.isLoggedIn, (val) => {
   <el-button 
     v-if="isLoggedIn" 
     class="ai-fab" 
-    type="primary" 
+    color="#fff"
     circle 
     size="large" 
     @click="toggleAiPanel"
@@ -52,8 +52,18 @@ watch(() => userStore.isLoggedIn, (val) => {
   min-height: 100vh;
 }
 .ai-fab {
-  position: fixed; bottom: 80px; right: 24px; z-index: 9997;
+  position: fixed; bottom: 76px; right: 28px; z-index: 9997;
   width: 52px; height: 52px;
-  box-shadow: 0 4px 16px rgba(24,144,255,0.4);
+  border: none !important;
+  background: linear-gradient(135deg, #7C3AED, #3B82F6) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+  transition: all 0.3s ease;
 }
+.ai-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(124,58,237,0.5);
+}
+.ai-fab:active { transform: scale(0.95); }
+.ai-fab :deep(.el-icon) { font-size: 22px; }
 </style>

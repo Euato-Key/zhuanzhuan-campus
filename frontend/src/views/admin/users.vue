@@ -2,10 +2,24 @@
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import { Search, UserFilled, Lock, Unlock } from '@element-plus/icons-vue'
+import { Search, Lock, Unlock } from '@element-plus/icons-vue'
 import api from '@/api'
+import { formatDate } from '@/utils/format'
+import { getOssUrl } from '@/utils/oss'
 
-type UserRole = 'user' | 'admin'
+type UserRole = 'user' | 'admin' | 'super_admin'
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  user: '用户',
+  admin: '管理员',
+  super_admin: '超级管理员',
+}
+
+const ROLE_TAG_TYPES: Record<UserRole, string> = {
+  user: 'info',
+  admin: 'warning',
+  super_admin: 'danger',
+}
 
 interface User {
   id: number
@@ -91,19 +105,22 @@ async function handleUnban(user: User) {
 }
 
 async function handleSetAdmin(user: User) {
+  const isAdmin = user.role === 'admin'
+  const action = isAdmin ? '取消管理员' : '设为管理员'
   try {
-    await ElMessageBox.confirm(`确认将用户 "${user.username}" 设为管理员？`, '角色变更确认', {
+    await ElMessageBox.confirm(`确认${action}用户 "${user.username}"？`, '角色变更确认', {
       type: 'warning',
     })
   } catch {
     return
   }
   try {
-    await api.put(`/users/admin/${user.id}/role`, { role: 'admin' })
-    ElMessage.success('已设为管理员')
+    const newRole = isAdmin ? 'user' : 'admin'
+    await api.put(`/users/admin/${user.id}/role`, { role: newRole })
+    ElMessage.success(isAdmin ? '已取消管理员身份' : '已设为管理员')
     fetchUsers()
   } catch (err: any) {
-    ElMessage.error(err.response?.data?.message || '设置失败')
+    ElMessage.error(err.response?.data?.message || '操作失败')
   }
 }
 
@@ -139,7 +156,9 @@ function handlePageChange(page: number) {
         <el-table-column prop="username" label="用户名" min-width="120">
           <template #default="{ row }">
             <div class="user-cell">
-              <el-avatar :size="32" :icon="UserFilled" />
+              <el-avatar :size="32" :src="getOssUrl(row.avatar)">
+                {{ row.username?.charAt(0) }}
+              </el-avatar>
               <span>{{ row.username }}</span>
             </div>
           </template>
@@ -147,8 +166,8 @@ function handlePageChange(page: number) {
         <el-table-column prop="email" label="邮箱" min-width="180" />
         <el-table-column prop="role" label="角色" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.role === 'admin' ? 'warning' : 'info'" size="small">
-              {{ row.role === 'admin' ? '管理员' : '用户' }}
+            <el-tag :type="ROLE_TAG_TYPES[row.role] || 'info'" size="small">
+              {{ ROLE_LABELS[row.role] || row.role }}
             </el-tag>
           </template>
         </el-table-column>
@@ -160,11 +179,15 @@ function handlePageChange(page: number) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="注册时间" width="120" />
+        <el-table-column prop="createdAt" label="注册时间" width="160">
+          <template #default="{ row }: { row: User }">
+            {{ formatDate(row.createdAt, 'date') }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button
-              v-if="row.status === 'active'"
+              v-if="!row.isBlocked && row.role !== 'super_admin'"
               type="danger"
               text
               size="small"
@@ -173,7 +196,7 @@ function handlePageChange(page: number) {
               <el-icon><Lock /></el-icon>封禁
             </el-button>
             <el-button
-              v-else
+              v-else-if="row.role !== 'super_admin'"
               type="success"
               text
               size="small"
@@ -182,13 +205,13 @@ function handlePageChange(page: number) {
               <el-icon><Unlock /></el-icon>解封
             </el-button>
             <el-button
-              v-if="row.role === 'user'"
-              type="warning"
+              v-if="row.role !== 'super_admin'"
+              :type="row.role === 'admin' ? 'danger' : 'warning'"
               text
               size="small"
               @click="handleSetAdmin(row)"
             >
-              设为管理员
+              {{ row.role === 'admin' ? '取消管理员' : '设为管理员' }}
             </el-button>
           </template>
         </el-table-column>

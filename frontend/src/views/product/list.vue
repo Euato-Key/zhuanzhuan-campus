@@ -590,8 +590,8 @@ onMounted(() => {
 
 .publish-actions {
   position: fixed;
-  right: 40px;
-  bottom: 80px;
+  right: 28px;
+  bottom: 144px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -601,7 +601,12 @@ onMounted(() => {
 .publish-btn {
   width: 56px;
   height: 56px;
-  box-shadow: $shadow-primary;
+  box-shadow: 0 4px 16px rgba(24,144,255,0.3);
+  transition: all 0.3s ease;
+}
+.publish-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(24,144,255,0.4);
 }
 
 .ai-publish-btn {
@@ -627,9 +632,10 @@ onMounted(() => {
   }
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(76, 175, 80, 0.5);
   }
+  &:active { transform: scale(0.95); }
 }
 
 @keyframes ai-sparkle {
