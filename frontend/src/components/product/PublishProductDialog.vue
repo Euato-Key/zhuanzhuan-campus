@@ -10,6 +10,7 @@ import {
   type CreateProductData,
   type ProductDetail,
   ITEM_CONDITION_LABELS,
+  ITEM_CONDITION_MAP,
   type ProductSpec,
 } from '@/api/modules/product'
 import { uploadImage } from '@/api/modules/upload'
@@ -298,7 +299,7 @@ function initEditData() {
       deliveryType: props.product.deliveryType,
       pickupAddress: props.product.pickupAddress || '',
       pickupTime: props.product.pickupTime || '',
-      itemCondition: props.product.itemCondition,
+      itemCondition: (ITEM_CONDITION_MAP as Record<string, string>)[props.product.itemCondition] || props.product.itemCondition,
       stock: props.product.stock,
       brand: props.product.brand || '',
       specs: props.product.specs || [],
@@ -320,7 +321,7 @@ function initAiData() {
     if (ai.originalPrice != null) formData.value.originalPrice = ai.originalPrice
     if (ai.bargain != null) formData.value.bargain = ai.bargain
     if (ai.deliveryType) formData.value.deliveryType = ai.deliveryType
-    if (ai.itemCondition) formData.value.itemCondition = ai.itemCondition
+    if (ai.itemCondition) formData.value.itemCondition = (ITEM_CONDITION_MAP as Record<string, string>)[ai.itemCondition] || ai.itemCondition
     if (ai.brand) formData.value.brand = ai.brand
 
     // AI上传的图片：第一张作为主图，所有图片作为详情图
