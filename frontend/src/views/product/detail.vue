@@ -19,6 +19,7 @@ import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { getOssUrl } from '@/utils/oss'
+import { getCreditLevel } from '@/utils/credit'
 import { showError, showSuccess } from '@/utils/error'
 import { getShareUrl } from '@/utils/share'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -313,6 +314,7 @@ onUnmounted(() => {
             <span class="meta-item credit">
               <el-icon><i class="el-icon-star"></i></el-icon>
               信用 {{ product.user?.creditScore ?? '-' }}
+              <el-tag v-if="product.user?.creditScore" size="small" :color="getCreditLevel(product.user.creditScore).color" effect="dark" class="credit-tag">{{ getCreditLevel(product.user.creditScore).label }}</el-tag>
             </span>
           </div>
         </div>
@@ -575,6 +577,11 @@ onUnmounted(() => {
     &.credit {
       color: $color-primary;
     }
+  }
+
+  .credit-tag {
+    border: none;
+    font-size: $font-size-tiny;
   }
 }
 

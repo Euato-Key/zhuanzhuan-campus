@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Back } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getOssUrl } from '@/utils/oss'
+import { getCreditLevel } from '@/utils/credit'
 import { formatDate } from '@/utils/format'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ReviewCard from '@/components/review/ReviewCard.vue'
@@ -220,6 +221,7 @@ onMounted(() => {
               <span class="credit">
                 <el-icon><i class="el-icon-star"></i></el-icon>
                 信用分: {{ user.creditScore }}
+                <el-tag size="small" :color="getCreditLevel(user.creditScore).color" effect="dark" class="credit-tag">{{ getCreditLevel(user.creditScore).label }}</el-tag>
               </span>
             </div>
 
@@ -412,6 +414,11 @@ onMounted(() => {
     gap: $spacing-xs;
     color: $color-primary;
     font-size: $font-size-body;
+  }
+
+  .credit-tag {
+    border: none;
+    font-size: $font-size-tiny;
   }
 }
 

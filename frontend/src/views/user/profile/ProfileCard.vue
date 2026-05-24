@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { getCreditLevel } from '@/utils/credit'
 import { getOssUrl } from '@/utils/oss'
 import AvatarUpload from '@/components/AvatarUpload.vue'
 import { ElMessage } from 'element-plus'
@@ -89,6 +90,7 @@ function formatDate(dateStr: string | null | undefined): string {
       <div class="user-stats">
         <div class="stat-item">
           <span class="stat-value">{{ userStore.user?.creditScore || 100 }}</span>
+          <el-tag v-if="userStore.user?.creditScore" size="small" :color="getCreditLevel(userStore.user.creditScore).color" effect="dark" class="credit-tag">{{ getCreditLevel(userStore.user.creditScore).label }}</el-tag>
           <span class="stat-label">信用分</span>
         </div>
         <div class="stat-divider"></div>
@@ -196,6 +198,12 @@ function formatDate(dateStr: string | null | undefined): string {
     font-size: 18px;
     font-weight: $font-weight-semibold;
     color: $color-text-primary;
+  }
+
+  .credit-tag {
+    border: none;
+    font-size: 11px;
+    margin-top: 2px;
   }
 
   .stat-label {
