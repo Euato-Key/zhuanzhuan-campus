@@ -3,13 +3,14 @@ import { prisma } from '../config/prisma';
 import { FileService } from '../services/file.service';
 import { TokenUtil } from './token';
 import { OrderService } from '../modules/order/order.service';
-import { WantBuyStatus } from '@prisma/client';
+import { WantBuyStatus, ProductStatus } from '@prisma/client';
 
 const CLEANUP_CONFIG = {
   refreshToken: { enabled: true, schedule: '0 3 * * *' },
   emailCode: { enabled: true, schedule: '0 4 * * *' },
   ossTempFiles: { enabled: true, schedule: '0 5 * * *', olderThanDays: 30 },
   expiredLocks: { enabled: true, schedule: '*/5 * * * *' },
+  expiredProducts: { enabled: true, schedule: '0 1 * * *' },
   expiredWantBuys: { enabled: true, schedule: '0 2 * * *' },
 };
 
@@ -96,6 +97,20 @@ async function deleteOssObjects(names: string[]): Promise<void> {
   await client.deleteMulti(names, {});
 }
 
+async function cleanupExpiredProducts(): Promise<number> {
+  const result = await prisma.product.updateMany({
+    where: {
+      status: ProductStatus.active,
+      expireTime: { lt: new Date() },
+    },
+    data: {
+      status: ProductStatus.expired,
+    },
+  });
+  console.log(`[Cleanup] Marked ${result.count} products as expired`);
+  return result.count;
+}
+
 async function cleanupExpiredWantBuys(): Promise<number> {
   const result = await prisma.wantBuy.updateMany({
     where: {
@@ -156,6 +171,17 @@ export function startCleanupJobs() {
     console.log('[Cleanup] Expired product lock cleanup job scheduled');
   }
 
+  if (CLEANUP_CONFIG.expiredProducts.enabled) {
+    cron.schedule(CLEANUP_CONFIG.expiredProducts.schedule, async () => {
+      try {
+        await cleanupExpiredProducts();
+      } catch (error) {
+        console.error('[Cleanup] Failed to cleanup expired products:', error);
+      }
+    });
+    console.log('[Cleanup] Expired products cleanup job scheduled');
+  }
+
   if (CLEANUP_CONFIG.expiredWantBuys.enabled) {
     cron.schedule(CLEANUP_CONFIG.expiredWantBuys.schedule, async () => {
       try {
@@ -172,5 +198,6 @@ export const CleanupService = {
   cleanupExpiredRefreshTokens,
   cleanupExpiredEmailCodes,
   cleanupAllOssTempFiles,
+  cleanupExpiredProducts,
   cleanupExpiredWantBuys,
 };

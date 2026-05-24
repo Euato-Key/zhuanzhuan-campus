@@ -7,7 +7,7 @@ export { getCategoryTree }
 export type { Category } from './category'
 
 // 商品状态枚举
-export type ProductStatus = 'pending' | 'active' | 'offline' | 'banned' | 'audit_failed'
+export type ProductStatus = 'pending' | 'active' | 'offline' | 'banned' | 'audit_failed' | 'expired'
 export type ItemCondition = 'new' | '99new' | '95new' | '90new' | '80new'
 export type DeliveryType = 'self' | 'express' | 'both'
 
@@ -220,6 +220,7 @@ export const PRODUCT_STATUS_LABELS: Record<ProductStatus, string> = {
   offline: '已下架',
   banned: '已封禁',
   audit_failed: '审核失败',
+  expired: '已过期',
 }
 
 // 商品状态对应的标签类型（用于 el-tag）
@@ -229,6 +230,7 @@ export const PRODUCT_STATUS_TAG_TYPE: Record<ProductStatus, 'success' | 'warning
   banned: 'danger',
   offline: 'info',
   audit_failed: 'danger',
+  expired: 'info',
 }
 
 // 交易方式显示文本

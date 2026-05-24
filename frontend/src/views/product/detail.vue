@@ -51,7 +51,7 @@ const isOwner = computed(() => {
 // 是否可编辑
 const canEdit = computed(() => {
   if (!isOwner.value || !product.value) return false
-  return ['pending', 'active', 'offline', 'audit_failed'].includes(product.value.status)
+  return ['pending', 'active', 'offline', 'audit_failed', 'expired'].includes(product.value.status)
 })
 
 // 是否可下架

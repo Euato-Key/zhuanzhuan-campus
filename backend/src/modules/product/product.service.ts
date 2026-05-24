@@ -396,7 +396,7 @@ export const ProductService = {
   async update(userId: number, productId: bigint, data: UpdateProductData) {
     const product = await findProductOrThrow(productId, {
       checkOwnership: userId,
-      allowedStatuses: [ProductStatus.pending, ProductStatus.active, ProductStatus.offline, ProductStatus.audit_failed],
+      allowedStatuses: [ProductStatus.pending, ProductStatus.active, ProductStatus.offline, ProductStatus.audit_failed, ProductStatus.expired],
     });
 
     if (product.status === ProductStatus.banned) {
@@ -515,8 +515,8 @@ export const ProductService = {
       checkOwnership: userId,
     });
 
-    if (product.status !== ProductStatus.offline && product.status !== ProductStatus.audit_failed) {
-      throw badRequest('只能重新上架已下架或审核失败的商品');
+    if (product.status !== ProductStatus.offline && product.status !== ProductStatus.audit_failed && product.status !== ProductStatus.expired) {
+      throw badRequest('只能重新上架已下架、审核失败或已过期的商品');
     }
 
     if (product.status === ProductStatus.audit_failed) {

@@ -44,6 +44,7 @@ const statusOptions: { label: string; value: ProductStatus | '' }[] = [
   { label: '已下架', value: 'offline' },
   { label: '已封禁', value: 'banned' },
   { label: '审核失败', value: 'audit_failed' },
+  { label: '已过期', value: 'expired' },
 ]
 
 // 分类扁平化

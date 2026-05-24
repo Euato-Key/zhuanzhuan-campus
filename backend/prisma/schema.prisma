@@ -40,6 +40,7 @@ enum ProductStatus {
   offline
   banned
   audit_failed
+  expired
 }
 
 enum OrderDeliveryType {
