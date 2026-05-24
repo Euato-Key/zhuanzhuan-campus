@@ -100,9 +100,9 @@ async function handleDelete(item: WantBuyListItem) {
 
 // 获取状态标签类型
 function getStatusTagType(s: WantBuyStatus) {
-  const map: Record<WantBuyStatus, 'success' | 'primary' | 'info' | 'warning'> = {
+  const map: Record<WantBuyStatus, 'success' | 'info' | 'warning' | 'danger'> = {
     active: 'success',
-    found: 'primary',
+    found: 'info',
     closed: 'info',
     expired: 'warning',
   }
@@ -164,7 +164,7 @@ onMounted(fetchWantBuys)
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusTagType(row.status)" size="small">
-              {{ WANT_BUY_STATUS_LABELS[row.status] }}
+              {{ WANT_BUY_STATUS_LABELS[(row as WantBuyListItem).status] }}
             </el-tag>
           </template>
         </el-table-column>

@@ -44,29 +44,85 @@ const isInputDisabled = computed(() => {
   return chatStore.isBlockedByMe || chatStore.isBlockedByOther
 })
 
-// Group messages by date with pre-computed flags
-const groupedMessages = computed(() => {
+// Flat list with time markers inserted where gap > 3min (WeChat-style)
+// Also forces a time label every 5min even during dense chat
+const displayItems = computed(() => {
   const messages = chatStore.currentMessages
-  const groups: Array<{ date: string; items: Array<MessageItem & { _showAvatar: boolean; _showTime: boolean }> }> = []
-  let currentDate = ''
+  const GAP_MS = 3 * 60 * 1000
+  const MAX_INTERVAL_MS = 5 * 60 * 1000
+  const items: Array<{
+    kind: 'time' | 'message'
+    time?: string
+    msg?: MessageItem & { _showAvatar: boolean }
+  }> = []
 
-  for (const msg of messages) {
-    const msgDate = formatDate(msg.createdAt, 'date')
-    if (msgDate !== currentDate) {
-      currentDate = msgDate
-      groups.push({ date: msgDate, items: [] })
+  // Defensive sort: ensure chronological order (oldest → newest)
+  // so time gaps are always calculated forward
+  const sorted = [...messages].sort((a, b) => {
+    const ta = new Date(a.createdAt).getTime()
+    const tb = new Date(b.createdAt).getTime()
+    if (isNaN(ta) && isNaN(tb)) return 0
+    if (isNaN(ta)) return 1
+    if (isNaN(tb)) return -1
+    return ta - tb
+  })
+
+  let lastTimeLabelTs = 0
+  let prevMsgTs = 0
+
+  for (const msg of sorted) {
+    const ts = new Date(msg.createdAt).getTime()
+
+    if (isNaN(ts)) {
+      console.warn('[displayItems] invalid createdAt:', msg.id, msg.createdAt)
+      items.push({
+        kind: 'message',
+        msg: { ...msg, _showAvatar: true },
+      })
+      continue
     }
-    const group = groups[groups.length - 1]
-    const prev = group.items.length > 0 ? group.items[group.items.length - 1] : null
-    group.items.push({
-      ...msg,
-      _showAvatar: !prev || prev.senderId !== msg.senderId,
-      _showTime: !prev || formatRelativeTime(msg.createdAt) !== formatRelativeTime(prev.createdAt),
+
+    const gapFromPrev = ts - prevMsgTs
+    const gapFromLabel = ts - lastTimeLabelTs
+    if (prevMsgTs === 0 || gapFromPrev > GAP_MS || gapFromLabel > MAX_INTERVAL_MS) {
+      items.push({ kind: 'time', time: formatChatTime(msg.createdAt) })
+      lastTimeLabelTs = ts
+    }
+
+    const prevItem = items.length > 0 && items[items.length - 1].kind === 'message'
+      ? items[items.length - 1].msg : null
+
+    items.push({
+      kind: 'message',
+      msg: {
+        ...msg,
+        _showAvatar: !prevItem || prevItem.senderId !== msg.senderId,
+      },
     })
+
+    prevMsgTs = ts
   }
 
-  return groups
+  console.log('[displayItems] total:', messages.length, 'items:', items.length, 'timeLabels:', items.filter(i => i.kind === 'time').length)
+  return items
 })
+
+function formatChatTime(dateStr: string): string {
+  const d = new Date(dateStr)
+  const now = new Date()
+  const h = String(d.getHours()).padStart(2, '0')
+  const m = String(d.getMinutes()).padStart(2, '0')
+  const time = `${h}:${m}`
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const dayDiff = (today.getTime() - msgDay.getTime()) / (24 * 60 * 60 * 1000)
+
+  if (dayDiff === 0) return time
+  if (dayDiff === 1) return `昨天 ${time}`
+  if (dayDiff < 7) return `${['周日','周一','周二','周三','周四','周五','周六'][d.getDay()]} ${time}`
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${time}`
+}
 
 // Watch for new messages to auto-scroll
 watch(() => chatStore.currentMessages.length, async () => {
@@ -226,16 +282,14 @@ function scrollToMessage(messageId: string) {
       <div v-if="chatStore.messagesLoading" class="messages-loading" v-loading="true" />
       <template v-else>
         <div v-if="isLoadingMore" class="loading-more" v-loading="true" />
-        <template v-for="group in groupedMessages" :key="group.date">
-          <div class="date-divider">{{ group.date }}</div>
+        <template v-for="(item, idx) in displayItems" :key="idx">
+          <div v-if="item.kind === 'time'" class="time-divider">{{ item.time }}</div>
           <MessageBubble
-            v-for="msg in group.items"
-            :key="msg.id"
-            :message="msg"
-            :is-own="msg.senderId === currentUserId"
-            :show-avatar="msg._showAvatar"
-            :show-time="msg._showTime"
-            :highlight="msg.id === highlightMessageId"
+            v-else
+            :message="item.msg!"
+            :is-own="item.msg!.senderId === currentUserId"
+            :show-avatar="item.msg!._showAvatar"
+            :highlight="item.msg!.id === highlightMessageId"
           />
         </template>
         <div v-if="!chatStore.currentMessages.length" class="no-messages">暂无消息，发送第一条消息吧</div>
@@ -365,7 +419,7 @@ function scrollToMessage(messageId: string) {
   height: 40px;
 }
 
-.date-divider {
+.time-divider {
   text-align: center;
   font-size: $font-size-small;
   color: $color-text-placeholder;

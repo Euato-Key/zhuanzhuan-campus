@@ -19,11 +19,15 @@ const summary = ref<ReviewSummary>({
 const queryParams = reactive({
   page: 1,
   pageSize: 10,
-  rating: '' as number | string,
+  rating: '' as '' | 1 | 2 | 3 | 4 | 5,
   hasImage: false,
   sortBy: 'time' as 'time' | 'rating',
   sortOrder: 'desc' as 'asc' | 'desc',
 })
+
+function getRatingParam(): number | undefined {
+  return queryParams.rating === '' ? undefined : queryParams.rating
+}
 
 const ratingOptions = [
   { label: '全部', value: '' },
@@ -68,7 +72,7 @@ async function fetchReviews() {
   loading.value = true
   try {
     const res = await getProductReviews(props.productId, {
-      rating: queryParams.rating || undefined,
+      rating: getRatingParam(),
       hasImage: queryParams.hasImage || undefined,
       sortBy: queryParams.sortBy,
       sortOrder: queryParams.sortOrder,

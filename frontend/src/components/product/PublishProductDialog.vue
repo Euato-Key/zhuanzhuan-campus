@@ -13,8 +13,11 @@ import {
   type ProductSpec,
 } from '@/api/modules/product'
 import { uploadImage } from '@/api/modules/upload'
+import { getOssUrl } from '@/utils/oss'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
+
+const userStore = useUserStore()
 
 const props = defineProps<{
   modelValue: boolean
@@ -25,6 +28,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'success'): void
+  (e: 'back'): void
 }>()
 
 const visible = computed({
@@ -144,11 +148,11 @@ async function handleUploadImage(file: File, type: 'main' | 'detail') {
   try {
     const res = await uploadImage(file, 'product')
     if (res.data.code === 200) {
-      const url = res.data.data.url
+      const ossPath = res.data.data.ossPath
       if (type === 'main') {
-        formData.value.images.push(url)
+        formData.value.images.push(ossPath)
       } else {
-        formData.value.detailImages?.push(url)
+        formData.value.detailImages?.push(ossPath)
       }
     }
   } catch (err) {
@@ -319,6 +323,14 @@ function initAiData() {
     if (ai.itemCondition) formData.value.itemCondition = ai.itemCondition
     if (ai.brand) formData.value.brand = ai.brand
 
+    // AI上传的图片：第一张作为主图，所有图片作为详情图
+    if (ai.images?.length) {
+      formData.value.images = ai.images
+    }
+    if (ai.detailImages?.length) {
+      formData.value.detailImages = ai.detailImages
+    }
+
     if (ai.tags?.length) {
       tags.value = ai.tags
       formData.value.tags = ai.tags
@@ -341,6 +353,20 @@ function initAiData() {
 
     if (ai.validDays != null) {
       formData.value.validDays = ai.validDays
+    }
+
+    // 自提地点：AI数据优先，否则从用户校园信息自动填充
+    if (ai.pickupAddress) {
+      formData.value.pickupAddress = ai.pickupAddress
+    } else {
+      const user = userStore.user
+      if (user?.school && user?.campus) {
+        const needPickup = ai.deliveryType === 'self' || ai.deliveryType === 'both'
+          || (!ai.deliveryType && formData.value.deliveryType !== 'express')
+        if (needPickup && !formData.value.pickupAddress) {
+          formData.value.pickupAddress = `${user.school}${user.campus}`
+        }
+      }
     }
   }
 }
@@ -453,7 +479,7 @@ watch(visible, (val) => {
         <div class="image-upload-area">
           <div class="image-list">
             <div v-for="(img, index) in formData.images" :key="index" class="image-item">
-              <img :src="img" alt="商品图片" />
+              <img :src="getOssUrl(img)" alt="商品图片" />
               <div class="remove-btn" @click="removeMainImage(index)">×</div>
             </div>
           </div>
@@ -476,7 +502,7 @@ watch(visible, (val) => {
         <div class="image-upload-area">
           <div class="image-list">
             <div v-for="(img, index) in formData.detailImages" :key="index" class="image-item">
-              <img :src="img" alt="详情图片" />
+              <img :src="getOssUrl(img)" alt="详情图片" />
               <div class="remove-btn" @click="removeDetailImage(index)">×</div>
             </div>
           </div>
@@ -619,6 +645,7 @@ watch(visible, (val) => {
     </div>
 
     <template #footer>
+      <el-button v-if="isAiAssist" @click="emit('back')">返回AI识别</el-button>
       <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" :loading="loading" @click="handleSubmit">
         {{ isEdit ? '保存' : '发布' }}

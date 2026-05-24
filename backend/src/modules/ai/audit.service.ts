@@ -22,11 +22,16 @@ export const AuditService = {
     if (product.status !== 'pending') {
       return {
         approved: false,
+        skipped: true,
         riskScore: 0,
         riskCategories: [],
         details: '商品非待审核状态，跳过AI审核',
         suggestions: [],
       };
+    }
+
+    if (product.auditCount >= 3) {
+      throw new Error('审核次数已达上限(3次)，无法再次审核');
     }
 
     const config = await SettingsService.get();
@@ -56,7 +61,7 @@ export const AuditService = {
       originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
       itemCondition: conditionLabels[product.itemCondition] || product.itemCondition,
       brand: product.brand || undefined,
-      tags: (product.tags as string[]) || undefined,
+      tags: Array.isArray(product.tags) ? product.tags.filter((t): t is string => typeof t === 'string') : undefined,
       auditCount: product.auditCount,
       deliveryType: deliveryLabels[product.deliveryType] || product.deliveryType,
       bargain: product.bargain,
@@ -82,7 +87,7 @@ export const AuditService = {
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         auditResult = {
-          approved: parsed.approved === true || parsed.approved === false ? parsed.approved : true,
+          approved: parsed.approved === true || parsed.approved === false ? parsed.approved : false,
           riskScore: typeof parsed.riskScore === 'number' ? parsed.riskScore : 50,
           riskCategories: Array.isArray(parsed.riskCategories) ? parsed.riskCategories : [],
           details: parsed.reason || (parsed.approved ? 'AI审核通过' : 'AI审核不通过，原因未知'),
@@ -90,20 +95,20 @@ export const AuditService = {
         };
       } else {
         auditResult = {
-          approved: true,
+          approved: false,
           riskScore: 50,
           riskCategories: ['解析异常'],
-          details: 'AI返回结果解析失败，默认通过',
+          details: 'AI返回结果解析失败，默认拒绝',
           suggestions: [],
         };
       }
     } catch (parseError) {
       console.error('[AI Audit] Parse error:', parseError);
       auditResult = {
-        approved: true,
+        approved: false,
         riskScore: 30,
         riskCategories: [],
-        details: 'AI审核解析异常，默认通过',
+        details: 'AI审核解析异常，默认拒绝',
         suggestions: [],
       };
     }
@@ -115,6 +120,7 @@ export const AuditService = {
       data: {
         status: newStatus,
         rejectReason: auditResult.approved ? null : auditResult.details,
+        ...(!auditResult.approved ? { auditCount: { increment: 1 } } : {}),
       },
     });
 

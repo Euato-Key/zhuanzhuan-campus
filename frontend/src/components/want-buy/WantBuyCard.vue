@@ -25,7 +25,7 @@ const router = useRouter()
 // 第一张图片
 const coverImage = computed(() => {
   if (props.wantBuy.images?.length) {
-    return props.wantBuy.images[0]
+    return getOssUrl(props.wantBuy.images[0])
   }
   return null
 })

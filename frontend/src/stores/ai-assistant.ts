@@ -69,7 +69,7 @@ export const useAiAssistantStore = defineStore('ai-assistant', () => {
             })
             i++
           } else if (m.role === 'assistant') {
-            const textMsg = m.msgType === 'text' ? m : null
+            let textMsg: typeof m | null = m.msgType === 'text' ? m : null
             const cards: CardData[] = []
 
             // Collect consecutive assistant messages (text + cards)

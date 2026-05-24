@@ -13,6 +13,7 @@ import {
   type ProductStatus,
 } from '@/api/modules/product'
 import { getCategoryTree, type Category } from '@/api/modules/category'
+import { getOssUrl } from '@/utils/oss'
 
 // 状态
 const loading = ref(false)
@@ -208,7 +209,7 @@ onMounted(() => {
         <el-table-column prop="name" label="商品名称" min-width="150">
           <template #default="{ row }">
             <div class="product-cell">
-              <img :src="row.images?.[0] || '/placeholder.png'" class="product-thumb" />
+              <img :src="getOssUrl(row.images?.[0]) || '/placeholder.png'" class="product-thumb" />
               <span class="product-name-text">{{ row.name }}</span>
             </div>
           </template>

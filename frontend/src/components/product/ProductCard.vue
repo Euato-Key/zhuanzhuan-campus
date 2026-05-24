@@ -13,7 +13,7 @@ const router = useRouter()
 
 // 商品图片
 const productImage = computed(() => {
-  return props.product.images?.[0] || '/placeholder.png'
+  return props.product.images?.[0] ? getOssUrl(props.product.images[0]) : '/placeholder.png'
 })
 
 // 用户头像

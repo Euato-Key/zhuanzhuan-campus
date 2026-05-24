@@ -52,11 +52,12 @@ export function useAiRecognition() {
   })
 
   function getPhaseStatus(phase: string): 'pending' | 'active' | 'completed' | 'error' | 'skipped' {
-    if (status.value === 'recognizing' && streamPhaseStatus.value[phase]) {
+    const currentStatus: RecognitionStatusType = status.value
+    if (currentStatus === 'recognizing' && streamPhaseStatus.value[phase]) {
       return streamPhaseStatus.value[phase]
     }
     if (!phases.value) {
-      if (phase === 'phase1' && status.value === 'recognizing') return 'active'
+      if (phase === 'phase1' && currentStatus === 'recognizing') return 'active'
       return 'pending'
     }
     const idx = estimatedPhases.indexOf(phase)
@@ -69,10 +70,10 @@ export function useAiRecognition() {
     if (!mcpUsed) return 'skipped'
     if (phase === 'phase2' || phase === 'phase3' || phase === 'phase4') {
       if (completed.includes(phase)) return 'completed'
-      if (status.value === 'error') return 'error'
+      if (currentStatus === 'error') return 'error'
       const prevIdx = idx - 1
       if (prevIdx >= 0 && !completed.includes(estimatedPhases[prevIdx])) return 'pending'
-      if (status.value === 'recognizing') return 'active'
+      if (currentStatus === 'recognizing') return 'active'
       return 'pending'
     }
     return 'pending'
@@ -175,7 +176,7 @@ export function useAiRecognition() {
     } catch (e: unknown) {
       const err = e as { message?: string }
       error.value = err.message || 'AI 识别服务暂时不可用'
-      if (status.value !== 'error') status.value = 'error'
+      if ((status.value as RecognitionStatusType) !== 'error') status.value = 'error'
       if (!error.value.includes('aborted')) ElMessage.error(error.value!)
       return null
     }

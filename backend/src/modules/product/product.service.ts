@@ -218,8 +218,8 @@ export const ProductService = {
       },
     });
 
-    // 触发AI首次发布审核（异步不阻塞）
-    triggerAIAuditIfEnabled(product.id, 'first_publish');
+    // 触发AI首次发布审核
+    await triggerAIAuditIfEnabled(product.id, 'first_publish');
 
     return product;
   },
@@ -471,7 +471,6 @@ export const ProductService = {
         if (product.auditCount >= 3) {
           throw badRequest('审核次数已达上限，无法再次提交');
         }
-        updateData.auditCount = { increment: 1 };
       }
       updateData.status = ProductStatus.pending;
       updateData.rejectReason = null;
@@ -529,17 +528,13 @@ export const ProductService = {
       relistCount: { increment: 1 },
     };
 
-    if (product.status === ProductStatus.audit_failed) {
-      updateData.auditCount = { increment: 1 };
-    }
-
     const updated = await prisma.product.update({
       where: { id: productId },
       data: updateData,
     });
 
     // 触发AI首次发布审核（重新上架视为首次发布审核）
-    triggerAIAuditIfEnabled(productId, 'first_publish');
+    await triggerAIAuditIfEnabled(productId, 'first_publish');
 
     return updated;
   },

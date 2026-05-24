@@ -24,9 +24,9 @@ const queryParams = reactive({
   page: 1,
   pageSize: 10,
   // sent filters
-  status: '' as string,
+  status: '' as ReviewStatus | '',
   // received filters
-  type: '' as string,
+  type: '' as ReviewType | '',
   rating: '' as number | string,
 })
 

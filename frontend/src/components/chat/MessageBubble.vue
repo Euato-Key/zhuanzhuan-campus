@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { MessageItem, ProductCardContent, OrderCardContent } from '@/api/modules/chat'
-import { formatRelativeTime } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
 import ProductCardMessage from './ProductCardMessage.vue'
 import OrderCardMessage from './OrderCardMessage.vue'
@@ -14,7 +13,6 @@ const props = defineProps<{
   message: MessageItem
   isOwn: boolean
   showAvatar: boolean
-  showTime: boolean
   highlight?: boolean
 }>()
 
@@ -39,7 +37,6 @@ const imageUrl = computed(() => {
     :class="{ own: isOwn, other: !isOwn, highlight: props.highlight }"
     :data-message-id="message.id"
   >
-    <div v-if="showTime" class="msg-time">{{ formatRelativeTime(message.createdAt) }}</div>
     <div class="msg-row">
       <template v-if="!isOwn">
         <el-avatar v-if="showAvatar" :size="36" :src="message.sender?.avatar ? getOssUrl(message.sender.avatar) : undefined" class="msg-avatar clickable" @click="router.push({ name: 'UserProfile', params: { id: message.senderId } })">
@@ -98,13 +95,6 @@ const imageUrl = computed(() => {
     align-items: flex-start;
     margin-right: auto;
   }
-}
-
-.msg-time {
-  font-size: $font-size-tiny;
-  color: $color-text-placeholder;
-  margin-bottom: $spacing-xs;
-  text-align: center;
 }
 
 .msg-row {

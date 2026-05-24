@@ -166,8 +166,8 @@ function handlePageChange(page: number) {
         <el-table-column prop="email" label="邮箱" min-width="180" />
         <el-table-column prop="role" label="角色" width="100">
           <template #default="{ row }">
-            <el-tag :type="ROLE_TAG_TYPES[row.role] || 'info'" size="small">
-              {{ ROLE_LABELS[row.role] || row.role }}
+            <el-tag :type="ROLE_TAG_TYPES[(row as User).role] || 'info'" size="small">
+              {{ ROLE_LABELS[(row as User).role] || row.role }}
             </el-tag>
           </template>
         </el-table-column>

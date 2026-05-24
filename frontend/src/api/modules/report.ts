@@ -46,10 +46,10 @@ export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   resolved: '已解决',
 }
 
-export const REPORT_STATUS_TAG_TYPE: Record<ReportStatus, string> = {
+export const REPORT_STATUS_TAG_TYPE: Record<ReportStatus, 'warning' | 'info' | 'success' | 'danger'> = {
   pending: 'warning',
   dismissed: 'info',
-  warning: 'primary',
+  warning: 'danger',
   banned: 'danger',
   resolved: 'success',
 }

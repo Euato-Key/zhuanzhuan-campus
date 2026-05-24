@@ -278,8 +278,8 @@ onMounted(fetchWantBuy)
             <div class="main-image">
               <el-image
                 v-if="wantBuy.images?.length"
-                :src="wantBuy.images[0]"
-                :preview-src-list="wantBuy.images"
+                :src="getOssUrl(wantBuy.images[0])"
+                :preview-src-list="wantBuy.images.map(getOssUrl)"
                 fit="cover"
               />
               <div v-else class="placeholder-image">

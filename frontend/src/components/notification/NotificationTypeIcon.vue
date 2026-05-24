@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type Component } from 'vue'
 import {
   Bell, Goods, ShoppingBag, ChatDotRound, Comment, Star,
 } from '@element-plus/icons-vue'
@@ -24,7 +24,7 @@ const props = withDefaults(defineProps<{
   size: 36,
 })
 
-const ICON_MAP: Record<string, ReturnType<typeof computed>> = {
+const ICON_MAP: Record<string, Component> = {
   Bell,
   Goods,
   ShoppingBag,

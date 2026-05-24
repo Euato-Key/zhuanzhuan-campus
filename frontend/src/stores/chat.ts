@@ -357,11 +357,30 @@ export const useChatStore = defineStore('chat', () => {
 
   const messageIds = ref<Set<string>>(new Set())
 
-  // Normalize backend data: Date objects may arrive as {} (empty object) from BigInt serialization
+  // Normalize backend data:
+  // - Date objects may arrive as {} (empty object) from BigInt serialization bugs
+  // - Date objects may arrive as actual Date instances (class-transformer or similar)
+  // - Date strings should pass through as-is
   function normalizeMessage(raw: unknown): MessageItem {
     const msg = raw as MessageItem
     if (msg.readAt && typeof msg.readAt !== 'string') msg.readAt = null
-    if (msg.createdAt && typeof msg.createdAt !== 'string') msg.createdAt = new Date().toISOString()
+
+    if (msg.createdAt) {
+      if (msg.createdAt instanceof Date) {
+        // Actual Date object → convert to ISO string (preserves real timestamp!)
+        msg.createdAt = (msg.createdAt as unknown as Date).toISOString()
+      } else if (typeof msg.createdAt === 'number') {
+        // Unix timestamp: if < 1e12 it's seconds, otherwise milliseconds
+        msg.createdAt = new Date(
+          msg.createdAt < 1e12 ? (msg.createdAt as number) * 1000 : (msg.createdAt as number)
+        ).toISOString()
+      } else if (typeof msg.createdAt !== 'string') {
+        // Unrecognized type (e.g. {} from BigInt serialization bug — now fixed on backend)
+        console.warn('[normalizeMessage] unrecognized createdAt type:', typeof msg.createdAt, msg.createdAt, 'msg:', msg.id)
+        msg.createdAt = new Date().toISOString()
+      }
+      // If it's already a valid string, keep as-is
+    }
     return msg
   }
 

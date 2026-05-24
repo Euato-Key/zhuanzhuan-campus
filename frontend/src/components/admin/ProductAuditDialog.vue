@@ -11,6 +11,7 @@ import {
   ITEM_CONDITION_LABELS,
   PRODUCT_STATUS_LABELS,
 } from '@/api/modules/product'
+import { getOssUrl } from '@/utils/oss'
 
 const props = defineProps<{
   modelValue: boolean
@@ -37,7 +38,7 @@ const currentImageIndex = ref(0)
 // 所有图片（主图+详情图）
 const allImages = computed(() => {
   if (!props.product) return []
-  return [...(props.product.images || []), ...(props.product.detailImages || [])]
+  return [...(props.product.images || []), ...(props.product.detailImages || [])].map(getOssUrl)
 })
 
 // 交易方式文本

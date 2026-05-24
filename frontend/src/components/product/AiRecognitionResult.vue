@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
-import { createProduct } from '@/api/modules/product'
+import { createProduct, type CreateProductData, type DeliveryType, type ItemCondition, ITEM_CONDITION_LABELS } from '@/api/modules/product'
 import { getOssUrl } from '@/utils/oss'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import type { RecognitionResult, RecognitionData, SuggestedSpec } from '@/api/modules/ai'
+
+const userStore = useUserStore()
 
 const props = defineProps<{
   result: RecognitionResult | null
@@ -50,7 +52,7 @@ const conditionLabel: Record<string, string> = {
 }
 
 async function handlePublish() {
-  if (!useUserStore().isLoggedIn) {
+  if (!userStore.isLoggedIn) {
     useAuthDialog().open('login')
     return
   }
@@ -63,17 +65,35 @@ async function handlePublish() {
     return
   }
 
+  const deliveryType = (data.deliveryType || 'both') as DeliveryType
+  const itemCondition = (data.itemCondition || '95new') as ItemCondition
+
+  // 自提地点：从用户校园信息自动填充
+  let pickupAddress = ''
+  const needPickup = deliveryType === 'self' || deliveryType === 'both'
+  if (needPickup) {
+    const user = userStore.user
+    if (user?.school && user?.campus) {
+      pickupAddress = `${user.school}${user.campus}`
+    }
+  }
+
+  if (needPickup && !pickupAddress) {
+    ElMessage.warning('自提商品需填写自提地点，请手动完善后再发布')
+    return
+  }
+
   publishing.value = true
   try {
-    const submitData: any = {
+    const submitData: CreateProductData = {
       name: data.name,
       description: data.description || '',
       categoryId: data.categoryId,
       currentPrice: data.currentPrice,
       originalPrice: data.originalPrice,
       bargain: data.bargain ?? false,
-      deliveryType: data.deliveryType || 'both',
-      itemCondition: data.itemCondition || '95new',
+      deliveryType,
+      itemCondition,
       brand: data.brand || '',
       tags: data.tags || [],
       specs: [
@@ -82,7 +102,9 @@ async function handlePublish() {
           .filter(([, v]) => v.trim())
           .map(([name, value]) => ({ name, value })),
       ],
-      images: props.images || [],
+      images: props.images?.length ? [props.images[0]] : [],
+      detailImages: props.images?.length ? [...props.images] : [],
+      pickupAddress,
       stock: 1,
     }
 
@@ -103,19 +125,24 @@ async function handlePublish() {
 
 function handleEdit() {
   if (!props.result) return
+  const d = props.result.data
+  const extraSpecs = Object.entries(suggestedValues)
+    .filter(([, v]) => v.trim())
+    .map(([name, value]) => ({ name, value }))
 
   const data: Partial<RecognitionData> = {
-    name: props.result.data.name,
-    description: props.result.data.description,
-    categoryId: props.result.data.categoryId,
-    currentPrice: props.result.data.currentPrice,
-    originalPrice: props.result.data.originalPrice,
-    bargain: props.result.data.bargain,
-    deliveryType: props.result.data.deliveryType,
-    itemCondition: props.result.data.itemCondition,
-    brand: props.result.data.brand,
-    tags: props.result.data.tags,
-    specs: props.result.data.specs,
+    name: d.name,
+    description: d.description,
+    categoryId: d.categoryId,
+    currentPrice: d.currentPrice,
+    originalPrice: d.originalPrice,
+    bargain: d.bargain,
+    deliveryType: d.deliveryType,
+    itemCondition: d.itemCondition,
+    brand: d.brand,
+    tags: d.tags,
+    specs: [...(d.specs || []), ...extraSpecs],
+    validDays: d.validDays,
   }
 
   emit('edit', data)

@@ -135,7 +135,7 @@ async function handleReject(review: ReviewItem) {
         </el-table-column>
         <el-table-column label="类型" width="110">
           <template #default="{ row }">
-            <el-tag size="small" effect="plain">{{ REVIEW_TYPE_LABELS[row.type] || row.type }}</el-tag>
+            <el-tag size="small" effect="plain">{{ REVIEW_TYPE_LABELS[(row as ReviewItem).type] || row.type }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="评分" width="80">
@@ -162,8 +162,8 @@ async function handleReject(review: ReviewItem) {
         </el-table-column>
         <el-table-column label="状态" width="90">
           <template #default="{ row }">
-            <el-tag :type="REVIEW_STATUS_TAG_TYPE[row.status]" size="small">
-              {{ REVIEW_STATUS_LABELS[row.status] }}
+            <el-tag :type="REVIEW_STATUS_TAG_TYPE[(row as ReviewItem).status]" size="small">
+              {{ REVIEW_STATUS_LABELS[(row as ReviewItem).status] }}
             </el-tag>
           </template>
         </el-table-column>

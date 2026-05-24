@@ -436,7 +436,7 @@ watch(() => route.params.id, () => {
           <h3 class="section-title">商品信息</h3>
           <div class="product-row" @click="goToProduct">
             <img
-              :src="order.productImage || order.product?.images?.[0] || '/placeholder.png'"
+              :src="order.productImage ? getOssUrl(order.productImage) : (order.product?.images?.[0] ? getOssUrl(order.product.images[0]) : '/placeholder.png')"
               alt="商品图片"
               class="product-image"
             />
@@ -726,7 +726,7 @@ watch(() => route.params.id, () => {
       :order-id="order?.id || ''"
       :order-info="order ? {
         productName: order.productName || order.product?.name || '',
-        productImage: order.productImage || order.product?.images?.[0] || null,
+        productImage: order.productImage ? getOssUrl(order.productImage) : (order.product?.images?.[0] ? getOssUrl(order.product.images[0]) : null),
         buyerId: order.buyerId,
         sellerId: order.sellerId,
       } : undefined"

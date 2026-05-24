@@ -92,6 +92,72 @@ product/
 
 ---
 
+## 图片/文件路径规范
+
+**核心原则：数据库存相对 OSS 路径，渲染时用 `getOssUrl()` 拼接完整 URL。由于历史数据中可能存了完整 URL，`getOssUrl()` 必须兼容两种格式。**
+
+### 存储层（后端）
+- 数据库 `images`/`detailImages`/`avatar` 等字段**应存相对 OSS 路径**，如 `products/5/temp/xxx.webp`
+- **注意**：部分历史数据存了完整 URL（如 `https://zhuanzhuan-campus.oss-cn-beijing.aliyuncs.com/products/...`），所以前端渲染必须全部用 `getOssUrl()` 兼容两种格式
+
+### 上传层
+- `uploadImage(file, type)` 返回 `{ url: 完整URL, ossPath: 相对路径 }`
+- `url` = `getOssUrl(ossPath)` = `OSS_BASE_URL + ossPath`
+- **提交给后端时用 `ossPath`（相对路径），不要用 `url`（完整 URL）**
+
+### 渲染层（前端）—— 所有图片/头像渲染必须用 `getOssUrl()`
+- **无例外**：所有 `<img :src>`、`<el-image :src>`、`:preview-src-list`、computed 属性返回图片路径等，**必须**用 `getOssUrl(path)`：
+  ```vue
+  <!-- 正确 -->
+  <img :src="getOssUrl(user.avatar)" />
+  <img :src="getOssUrl(product.images[0])" />
+  <el-image :preview-src-list="product.images.map(getOssUrl)" />
+  const productImage = computed(() => product.images?.[0] ? getOssUrl(product.images[0]) : '/placeholder.png')
+
+  <!-- 错误 —— 数据可能是相对路径，直接 :src 会破图 -->
+  <img :src="product.images[0]" />
+  <img :src="img" v-for="img in product.images" />
+  ```
+- `getOssUrl()` 兼容两种格式：传入完整 URL (`https://...`) 时直接返回，传入相对路径时自动拼接 `OSS_BASE_URL`
+- 导入方式：`import { getOssUrl } from '@/utils/oss'`
+
+### 常见错误模式
+- ❌ 上传后把 `res.data.data.url`（完整URL）存入 formData → 提交到后端 → 数据库存了完整 URL → 其他页面 `getOssUrl()` 导致双重拼接
+- ❌ 从 API 拿到图片路径后直接 `<img :src="path">` → 相对路径被浏览器当成页面相对路径，变成 `http://localhost:5173/products/products/...` 破图
+- ✅ 上传后存 `res.data.data.ossPath`，渲染时一律 `getOssUrl(path)`
+
+---
+
+## 踉坑记录
+
+> 每次完成修正任务后，把容易反复踩的坑补充到这里。
+
+### 1. 图片路径：OSS 相对路径 vs 完整 URL —— 渲染时必须用 getOssUrl()
+- **坑**：数据库可能存相对路径也可能存完整 URL（历史数据不一致），前端 `<img :src="path">` 直接用原始值，相对路径会被浏览器当成页面相对路径拼成 `http://localhost:5173/products/products/...` 导致破图。
+- **对策**：**所有图片/头像渲染一律包 `getOssUrl(path)`**，该方法已兼容两种格式。新增数据统一存 `ossPath`（相对路径）。
+
+### 2. AI 识别数据类型转换：`RecognitionData` → `CreateProductData`
+- **坑**：`RecognitionData` 中 `deliveryType` 和 `itemCondition` 是 `string`，但 `CreateProductData` 要求枚举类型 `DeliveryType` / `ItemCondition`。直接展开 (`...data`) 或赋值会导致类型错误。
+- **对策**：从 `RecognitionData` 提取数据到 `CreateProductData` 时，先解构出 `deliveryType` 和 `itemCondition`，再用 `as DeliveryType` / `as ItemCondition` 显式转换：
+  ```ts
+  const { deliveryType, itemCondition, ...rest } = data
+  const result: Partial<CreateProductData> = {
+    ...rest,
+    deliveryType: deliveryType as DeliveryType | undefined,
+    itemCondition: itemCondition as ItemCondition | undefined,
+  }
+  ```
+
+### 3. 自提商品必须填写自提地点
+- **坑**：后端 `product.service.ts` 对 `deliveryType === 'self' || 'both'` 强制校验 `pickupAddress`，缺失则 400 拒绝。AI 识别默认 `deliveryType` 为自提，但不返回 `pickupAddress`，导致直接发布必失败。
+- **对策**：AI 发布流程中，当 `deliveryType` 含自提时，自动从 `userStore.user.school + campus` 填充 `pickupAddress`；若无校园信息，提示用户手动完善。
+
+### 4. AI 发布图片迁移：主图与详情图
+- **坑**：用户在 AI 发布上传了 N 张图，点「手动完善」后只有第一张变主图、其余变详情图，但详情图应包含所有图片（含第一张）。
+- **对策**：`images = [ossPaths[0]]`（主图取第一张），`detailImages = [...ossPaths]`（详情图包含全部）。
+
+---
+
 ## 开发要点
 
 - **前后端分离**: 前端 5173 端口，后端 3000 端口，前端通过 Vite 代理访问后端 API
@@ -99,6 +165,7 @@ product/
 - **TypeScript**: 注意类型规范，尽量避免 `any`；前端 ESM，后端 CommonJS
 - **Element Plus**: 已配置自动导入，无需手动 import 组件
 - **API 文档**: OpenAPI 规范文档在 `docs/openapi/`，写完后端 API 记得同步更新
+- **踩坑记录**: 每次完成修正任务后，把容易反复踩的坑总结到上方「踩坑记录」章节
 - **样式规范**: 清新校园风设计系统，主色 `#4CAF50`，SCSS 变量在 `frontend/src/assets/styles/_variables.scss`，AI 相关样式集中在 `_ai-recognition.scss`
 - **实验性代码**: `Experimental_code/` 目录可供代码探索，不影响主项目
 

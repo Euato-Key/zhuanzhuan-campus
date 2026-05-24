@@ -9,7 +9,7 @@ export const AuditController = {
   auditProduct: asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
     const productId = ValidationUtil.parseBigIntParam(req.params.productId, '商品ID');
     const result = await AuditService.auditProduct(productId);
-    const message = result.approved ? 'AI审核通过' : 'AI审核不通过';
+    const message = result.skipped ? '商品非待审核状态，已跳过' : (result.approved ? 'AI审核通过' : 'AI审核不通过');
     return success(res, result, message);
   }),
 

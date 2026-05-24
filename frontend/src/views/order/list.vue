@@ -26,7 +26,7 @@ const total = ref(0)
 const queryParams = reactive({
   page: 1,
   pageSize: 10,
-  status: '' as string,
+  status: '' as OrderStatus | '',
   role: 'buyer' as 'buyer' | 'seller',
 })
 
@@ -275,7 +275,7 @@ onMounted(() => {
           <!-- 商品信息 -->
           <div class="order-body" @click="goToDetail(order)">
             <img
-              :src="order.productImage || order.product?.images?.[0] || '/placeholder.png'"
+              :src="order.productImage ? getOssUrl(order.productImage) : (order.product?.images?.[0] ? getOssUrl(order.product.images[0]) : '/placeholder.png')"
               alt="商品图片"
               class="product-image"
             />

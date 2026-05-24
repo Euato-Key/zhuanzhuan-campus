@@ -194,6 +194,7 @@ export const useNotificationStore = defineStore('notification', () => {
     initialized.value = true
     registerSocketEvents()
     fetchUnreadCount()
+    fetchNotifications(true)
   }
 
   function cleanup() {

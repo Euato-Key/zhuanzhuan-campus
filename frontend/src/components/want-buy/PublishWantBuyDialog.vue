@@ -12,6 +12,7 @@ import {
   VALID_DAYS_OPTIONS,
 } from '@/api/modules/want-buy'
 import { uploadImage } from '@/api/modules/upload'
+import { getOssUrl } from '@/utils/oss'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 
@@ -309,7 +310,7 @@ watch(visible, (val) => {
           </div>
           <div class="image-list">
             <div v-for="(img, index) in formData.images" :key="index" class="image-item">
-              <img :src="img" alt="参考图片" />
+              <img :src="getOssUrl(img)" alt="参考图片" />
               <div class="remove-btn" @click="removeImage(index)">×</div>
             </div>
             <el-upload

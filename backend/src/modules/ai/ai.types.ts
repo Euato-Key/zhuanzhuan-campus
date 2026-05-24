@@ -23,6 +23,7 @@ export interface AIRecognitionResult {
 
 export interface AIAuditResult {
   approved: boolean;
+  skipped?: boolean;
   riskScore: number;
   riskCategories: string[];
   details: string;

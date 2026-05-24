@@ -120,7 +120,7 @@ export const WANT_BUY_STATUS_LABELS: Record<WantBuyStatus, string> = {
 // 状态对应的标签类型（用于 el-tag）
 export const WANT_BUY_STATUS_TAG_TYPE: Record<WantBuyStatus, 'success' | 'warning' | 'danger' | 'info'> = {
   active: 'success',
-  found: 'primary',
+  found: 'info',
   closed: 'info',
   expired: 'warning',
 }

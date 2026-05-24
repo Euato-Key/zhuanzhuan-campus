@@ -7,7 +7,7 @@ import AiRecognitionProgress from './AiRecognitionProgress.vue'
 import AiRecognitionResult from './AiRecognitionResult.vue'
 import PublishProductDialog from './PublishProductDialog.vue'
 import type { RecognitionData } from '@/api/modules/ai'
-import type { CreateProductData } from '@/api/modules/product'
+import type { CreateProductData, DeliveryType, ItemCondition } from '@/api/modules/product'
 
 const props = defineProps<{
   modelValue: boolean
@@ -113,7 +113,15 @@ function goToStep(stepIndex: number) {
 }
 
 function handleEdit(data: Partial<RecognitionData>) {
-  editAiData.value = data as Partial<CreateProductData>
+  const { deliveryType, itemCondition, ...rest } = data
+  const aiData: Partial<CreateProductData> = {
+    ...rest,
+    deliveryType: deliveryType as DeliveryType | undefined,
+    itemCondition: itemCondition as ItemCondition | undefined,
+    images: uploadedOssPaths.value.length > 0 ? [uploadedOssPaths.value[0]] : [],
+    detailImages: [...uploadedOssPaths.value],
+  }
+  editAiData.value = aiData
   visible.value = false
   showEditDialog.value = true
 }
@@ -130,6 +138,11 @@ function handleEditDialogClose() {
 function handleEditDialogSuccess() {
   showEditDialog.value = false
   emit('success')
+}
+
+function handleEditDialogBack() {
+  showEditDialog.value = false
+  visible.value = true
 }
 
 function handleClose() {
@@ -283,6 +296,7 @@ watch(visible, (val) => {
     :ai-data="editAiData"
     @success="handleEditDialogSuccess"
     @update:model-value="handleEditDialogClose"
+    @back="handleEditDialogBack"
   />
 </template>
 

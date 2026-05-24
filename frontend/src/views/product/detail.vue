@@ -294,8 +294,8 @@ onMounted(() => {
         <div class="image-section">
           <div class="main-image">
             <el-image
-              :src="product.images?.[0] || '/placeholder.png'"
-              :preview-src-list="product.images || []"
+              :src="getOssUrl(product.images?.[0]) || '/placeholder.png'"
+              :preview-src-list="product.images?.map(getOssUrl) || []"
               fit="cover"
             />
           </div>
@@ -305,7 +305,7 @@ onMounted(() => {
               :key="index"
               class="thumbnail-item"
             >
-              <img :src="img" :alt="`图片${index + 1}`" />
+              <img :src="getOssUrl(img)" :alt="`图片${index + 1}`" />
             </div>
           </div>
         </div>
@@ -423,7 +423,7 @@ onMounted(() => {
           <img
             v-for="(img, index) in product.detailImages"
             :key="index"
-            :src="img"
+            :src="getOssUrl(img)"
             alt="商品详情图"
           />
         </div>

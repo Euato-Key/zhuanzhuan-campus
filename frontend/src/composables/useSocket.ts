@@ -5,7 +5,7 @@ const socket = ref<Socket | null>(null)
 const connected = ref(false)
 const connecting = ref(false)
 
-const eventHandlers = new Map<string, Set<(...args: unknown[]) => void>>()
+const eventHandlers = new Map<string, Set<Function>>()
 
 function getSocketUrl(): string {
   return import.meta.env.VITE_SOCKET_URL || '/'
@@ -40,7 +40,7 @@ export function useSocket() {
       connecting.value = false
       // Re-register all event handlers on reconnect
       eventHandlers.forEach((handlers, event) => {
-        handlers.forEach(handler => s.on(event, handler))
+        handlers.forEach(handler => s.on(event, handler as (...args: unknown[]) => void))
       })
     })
 
@@ -76,18 +76,16 @@ export function useSocket() {
     socket.value.emit(event, data)
   }
 
-  function on(event: string, handler: (...args: unknown[]) => void) {
-    if (!eventHandlers.has(event)) {
-      eventHandlers.set(event, new Set())
-    }
+  function on<T extends unknown[] = unknown[]>(event: string, handler: (...args: T) => void) {
+    if (!eventHandlers.has(event)) eventHandlers.set(event, new Set())
     eventHandlers.get(event)!.add(handler)
-    socket.value?.on(event, handler)
+    socket.value?.on(event, handler as (...args: unknown[]) => void)
   }
 
-  function off(event: string, handler?: (...args: unknown[]) => void) {
+  function off<T extends unknown[] = unknown[]>(event: string, handler?: (...args: T) => void) {
     if (handler) {
       eventHandlers.get(event)?.delete(handler)
-      socket.value?.off(event, handler)
+      socket.value?.off(event, handler as (...args: unknown[]) => void)
     } else {
       eventHandlers.delete(event)
       socket.value?.off(event)

@@ -31,7 +31,7 @@ const publishDialogVisible = ref(false)
 const editId = ref<number | undefined>(undefined)
 
 // 状态选项
-const statusOptions = [
+const statusOptions: { label: string; value: WantBuyStatus | '' }[] = [
   { label: '全部', value: '' },
   { label: WANT_BUY_STATUS_LABELS.active, value: 'active' },
   { label: WANT_BUY_STATUS_LABELS.found, value: 'found' },

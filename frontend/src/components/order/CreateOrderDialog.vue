@@ -7,6 +7,7 @@ import type { OrderDeliveryType, PickupInfo } from '@/api/modules/order'
 import { createOrder } from '@/api/modules/order'
 import { getAddresses, type Address } from '@/api/modules/address'
 import { showError } from '@/utils/error'
+import { getOssUrl } from '@/utils/oss'
 
 const router = useRouter()
 
@@ -170,7 +171,7 @@ function goToAddresses() {
   >
     <!-- 商品信息 -->
     <div class="product-info">
-      <img :src="product.images?.[0] || '/placeholder.png'" alt="商品图片" class="product-image" />
+      <img :src="product.images?.[0] ? getOssUrl(product.images[0]) : '/placeholder.png'" alt="商品图片" class="product-image" />
       <div class="product-detail">
         <h3 class="product-name">{{ product.name }}</h3>
         <div class="product-meta">

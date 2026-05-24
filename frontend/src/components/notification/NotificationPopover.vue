@@ -8,11 +8,13 @@
     @update:visible="popoverVisible = $event"
   >
     <template #reference>
-      <el-badge :value="store.unreadCount.total" :hidden="!store.hasUnread" :max="99">
-        <el-icon :size="20" class="header-icon">
-          <Bell />
-        </el-icon>
-      </el-badge>
+      <span class="notification-trigger">
+        <el-badge :value="store.unreadCount.total" :hidden="!store.hasUnread" :max="99">
+          <el-icon :size="20">
+            <Bell />
+          </el-icon>
+        </el-badge>
+      </span>
     </template>
 
     <div class="popover-header">
@@ -55,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Bell } from '@element-plus/icons-vue'
 import NotificationTypeIcon from './NotificationTypeIcon.vue'
@@ -68,6 +70,12 @@ const router = useRouter()
 const popoverVisible = ref(false)
 
 const recentNotifications = computed(() => store.notifications.slice(0, 5))
+
+watch(popoverVisible, (val) => {
+  if (val) {
+    store.fetchNotifications(true)
+  }
+})
 
 function handleItemClick(item: Notification) {
   if (!item.isRead) {
@@ -161,13 +169,25 @@ async function handleMarkAllRead() {
   }
 }
 
-.header-icon {
+.notification-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   color: var(--el-text-color-regular);
   transition: color 0.2s;
 
   &:hover {
     color: $color-primary;
+  }
+
+  :deep(.el-badge) {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  :deep(.el-icon) {
+    display: flex;
   }
 }
 </style>

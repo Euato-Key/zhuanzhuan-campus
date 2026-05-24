@@ -268,7 +268,7 @@ onMounted(() => {
               @click="viewProduct(product.id)"
             >
               <div class="product-image">
-                <img :src="product.images?.[0] || '/placeholder.png'" alt="商品图片" />
+                <img :src="getOssUrl(product.images?.[0]) || '/placeholder.png'" alt="商品图片" />
               </div>
               <div class="product-info">
                 <h3 class="product-name">{{ product.name }}</h3>
