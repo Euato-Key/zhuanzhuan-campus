@@ -3,6 +3,7 @@ import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 import { AuditService } from './audit.service';
 import { success } from '../../utils/response';
+import { notFound } from '../../common/errors';
 import { prisma } from '../../config/prisma';
 
 export const AuditController = {
@@ -33,7 +34,7 @@ export const AuditController = {
     });
 
     if (!product) {
-      throw new Error('商品不存在');
+      throw notFound('商品不存在');
     }
 
     return success(res, product, '获取审核状态成功');

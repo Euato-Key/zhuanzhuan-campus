@@ -100,7 +100,7 @@ export const AdminService = {
     // 1. User registration trend (7 days)
     const userCounts = await Promise.all(
       dateCursors.map((start, i) => {
-        const end = i < 6 ? dateCursors[i + 1] : new Date(now.getTime() + 86400000);
+        const end = new Date(dateCursors[i].getTime() + 86400000);
         return prisma.user.count({
           where: { createdAt: { gte: start, lt: end } },
         });
@@ -110,7 +110,7 @@ export const AdminService = {
     // 2. Order & revenue trend (7 days)
     const orderStats = await Promise.all(
       dateCursors.map(async (start, i) => {
-        const end = i < 6 ? dateCursors[i + 1] : new Date(now.getTime() + 86400000);
+        const end = new Date(dateCursors[i].getTime() + 86400000);
         const [count, rev] = await Promise.all([
           prisma.order.count({
             where: { createdAt: { gte: start, lt: end } },

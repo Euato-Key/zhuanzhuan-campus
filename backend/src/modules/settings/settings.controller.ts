@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { SettingsService } from './settings.service';
+import { SettingsService, type SystemSettings } from './settings.service';
 import { success } from '../../utils/response';
 import { badRequest } from '../../common/errors';
 import { asyncHandler } from '../../common/asyncHandler';
@@ -60,7 +60,7 @@ export const SettingsController = {
       }
     }
 
-    const settings = await SettingsService.setAll(filtered as any);
+    const settings = await SettingsService.setAll(filtered as Partial<SystemSettings>);
     success(res, settings, '配置更新成功');
   }),
 };

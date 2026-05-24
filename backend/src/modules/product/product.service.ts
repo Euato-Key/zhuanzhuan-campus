@@ -486,7 +486,7 @@ export const ProductService = {
 
     // 如果触发了重新审核，尝试AI自动审核
     if (needsAudit) {
-      triggerAIAuditIfEnabled(productId, 'edit');
+      await triggerAIAuditIfEnabled(productId, 'edit');
     }
 
     return updated;

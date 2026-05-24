@@ -13,16 +13,26 @@ AI模块提供基于大语言模型的智能服务，目前主要支持商品图
 ```
 backend/src/
 ├── modules/ai/
-│   ├── ai.routes.ts      # 路由定义
-│   ├── ai.controller.ts  # 控制器层（参数校验）
-│   ├── ai.service.ts     # 业务逻辑层（多阶段识别、审核、助手）
-│   ├── ai.prompts.ts     # AI提示词构建器（Phase 1 / Phase 4 / 降级模式）
-│   └── ai.types.ts       # 类型定义与常量（含多阶段类型）
+│   ├── ai.routes.ts            # 主路由（挂载子路由）
+│   ├── ai.controller.ts        # 图片识别控制器
+│   ├── ai.service.ts           # 图片识别服务（多阶段流程）
+│   ├── recognition.service.ts  # 识别业务逻辑（含MCP多阶段、降级模式）
+│   ├── ai.prompts.ts           # AI提示词构建器（Phase 1 / Phase 4 / 降级模式 / 助手）
+│   ├── ai.types.ts             # 类型定义与常量（含多阶段类型）
+│   ├── audit.controller.ts     # AI审核控制器
+│   ├── audit.service.ts        # AI审核服务
+│   ├── audit.routes.ts         # AI审核路由
+│   ├── assistant.controller.ts # AI助手控制器（SSE流式）
+│   ├── assistant.service.ts    # AI助手服务（工具调用 + XML解析）
+│   ├── assistant-tools.ts      # AI助手工具定义与执行（搜索/订单/统计/卡片）
+│   ├── assistant.routes.ts     # AI助手路由
+│   ├── conversation.service.ts # 对话持久化服务（消息保存/查询）
+│   └── ai.prompts.ts           # AI提示词构建器
 ├── services/
-│   ├── ai.service.ts     # 共享AI客户端（OpenAI SDK封装）
-│   └── mcp-client.service.ts  # MCP客户端（连接MCP Server，调用搜索/抓取工具）
+│   ├── ai.service.ts           # 共享AI客户端（OpenAI SDK封装）
+│   └── mcp-client.service.ts   # MCP客户端（连接MCP Server，调用搜索/抓取工具）
 └── config/
-    └── env.ts            # 环境变量配置（含MCP相关配置）
+    └── env.ts                  # 环境变量配置（含MCP相关配置）
 ```
 
 ## API 接口
@@ -33,12 +43,21 @@ backend/src/
 |------|------|------|
 | POST | `/api/ai/recognize` | AI商品图片识别（支持MCP多阶段流程） |
 
-### 预留接口（尚未实现）
+### 管理员接口（需登录 + 管理员权限）
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/ai/audit` | AI商品审核 |
-| POST | `/api/ai/assistant` | AI助手对话（流式） |
+| POST | `/api/ai/audit/:productId` | AI商品审核 |
+| GET | `/api/ai/audit/:productId/status` | 获取商品审核状态 |
+
+### 用户接口 - AI助手（需登录）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/ai/assistant/chat` | AI助手对话（SSE流式） |
+| GET | `/api/ai/assistant/conversations` | 获取用户对话列表 |
+| GET | `/api/ai/assistant/conversations/:id/messages` | 获取对话消息列表 |
+| DELETE | `/api/ai/assistant/conversations/:id` | 删除对话 |
 
 ## 核心流程：商品图片识别
 
@@ -475,29 +494,23 @@ mcp-client.service.ts
 
 详见 [MCP Server README](../../backend/mcp-servers/web-search-mcp/README.md)。
 
-## 预留功能
+## AI商品审核 (audit)
 
-### AI商品审核 (audit)
+AI商品审核在商品提交审核时自动触发（需 `ai_audit_enabled` 配置开启），审核结果自动更新商品状态。
 
 ```typescript
 interface AIAuditResult {
   approved: boolean;       // 是否通过审核
-  riskScore: number;       // 风险评分
+  skipped?: boolean;       // 是否跳过（非 pending 状态）
+  riskScore: number;       // 风险评分 (0-1)
   riskCategories: string[];// 风险类别
   details: string;         // 审核详情
   suggestions: string[];   // 修改建议
 }
 ```
 
-当前状态：抛出 `AI审核功能尚未实现` 错误。
+管理员也可手动调用 `POST /api/ai/audit/:productId` 触发审核。
 
-### AI助手 (assistant)
+## AI助手 (assistant)
 
-```typescript
-interface AIAssistantContext {
-  productId?: bigint;       // 关联商品ID
-  conversationId?: string;  // 对话ID
-}
-```
-
-当前状态：抛出 `AI助手功能尚未实现` 错误。设计为流式输出（AsyncGenerator）。
+AI助手提供对话式交互，支持商品搜索、订单查询、数据统计等功能，通过工具调用（tool-calling）或 XML 标签解析实现与平台数据的交互。响应使用 SSE（Server-Sent Events）流式输出。

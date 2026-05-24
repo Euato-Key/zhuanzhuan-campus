@@ -3,8 +3,8 @@ import type { PaginatedResponse } from '../types'
 
 // ─── Types ───
 
-export type NotificationType = 'system' | 'product' | 'order' | 'chat' | 'review' | 'interaction'
-export type RelatedType = 'order' | 'product' | 'review' | 'user' | 'want_buy'
+export type NotificationType = 'system' | 'product' | 'order' | 'chat' | 'review' | 'interaction' | 'report'
+export type RelatedType = 'order' | 'product' | 'review' | 'user' | 'want_buy' | 'report'
 
 export interface Notification {
   id: number
@@ -38,6 +38,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   chat: '聊天',
   review: '评价',
   interaction: '互动',
+  report: '举报',
 }
 
 export const NOTIFICATION_TYPE_COLORS: Record<NotificationType, string> = {
@@ -47,6 +48,7 @@ export const NOTIFICATION_TYPE_COLORS: Record<NotificationType, string> = {
   chat: '#9C27B0',
   review: '#F44336',
   interaction: '#FFC107',
+  report: '#795548',
 }
 
 export const NOTIFICATION_TYPE_ICONS: Record<NotificationType, string> = {
@@ -56,6 +58,7 @@ export const NOTIFICATION_TYPE_ICONS: Record<NotificationType, string> = {
   chat: 'ChatDotRound',
   review: 'Comment',
   interaction: 'Star',
+  report: 'Warning',
 }
 
 // ─── API Functions ───

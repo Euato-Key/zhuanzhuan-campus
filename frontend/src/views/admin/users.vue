@@ -149,6 +149,7 @@ function handlePageChange(page: number) {
           <el-option label="正常" value="active" />
           <el-option label="封禁" value="banned" />
         </el-select>
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
       </div>
     </div>
 

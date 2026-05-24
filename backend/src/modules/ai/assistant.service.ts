@@ -224,9 +224,9 @@ async function *chatWithToolCalling(
 
   // Save as a single message with cards in extraData
   const extraData = collectedCards.length > 0 ? { cards: collectedCards } : undefined;
-  await ConversationService.saveMessage(conversationId, 'assistant', cleaned || ' ', collectedCards.length > 0 ? 'mixed' : 'text', extraData);
+  const savedMsg = await ConversationService.saveMessage(conversationId, 'assistant', cleaned || ' ', collectedCards.length > 0 ? 'mixed' : 'text', extraData);
 
-  yield { type: 'done', conversationId, messageId: 0 };
+  yield { type: 'done', conversationId, messageId: savedMsg.id };
 }
 
 async function *chatWithXMLParsing(
@@ -318,7 +318,7 @@ async function *chatWithXMLParsing(
   const cleaned = cleanAIOutput(assistantContent);
 
   const extraData = collectedCards.length > 0 ? { cards: collectedCards } : undefined;
-  await ConversationService.saveMessage(conversationId, 'assistant', cleaned || ' ', collectedCards.length > 0 ? 'mixed' : 'text', extraData);
+  const savedMsg = await ConversationService.saveMessage(conversationId, 'assistant', cleaned || ' ', collectedCards.length > 0 ? 'mixed' : 'text', extraData);
 
-  yield { type: 'done', conversationId, messageId: 0 };
+  yield { type: 'done', conversationId, messageId: savedMsg.id };
 }

@@ -2,435 +2,247 @@
   "openapi": "3.0.3",
   "info": {
     "title": "AI模块 API",
-    "description": "转转校园二手平台 - AI智能识别与服务模块接口文档。商品识别支持多阶段流程：图片识别 → 联网搜索 → 页面抓取 → 信息融合，通过MCP服务获取互联网信息以提升识别准确度。",
-    "version": "2.0.0"
+    "description": "转转校园二手平台 - AI智能识别、审核与助手模块接口文档",
+    "version": "3.0.0"
   },
   "servers": [
-    {
-      "url": "http://localhost:3000",
-      "description": "开发环境"
-    }
+    { "url": "http://localhost:3000", "description": "开发环境" }
   ],
   "tags": [
-    {
-      "name": "AI识别接口",
-      "description": "AI商品图片识别相关接口"
-    }
+    { "name": "AI识别", "description": "AI商品图片识别" },
+    { "name": "AI审核", "description": "AI商品审核（管理员）" },
+    { "name": "AI助手", "description": "AI智能助手对话" }
   ],
   "paths": {
     "/api/ai/recognize": {
       "post": {
-        "tags": ["AI识别接口"],
+        "tags": ["AI识别"],
         "summary": "AI商品图片识别",
-        "description": "上传商品图片，AI自动识别商品信息并返回结构化数据。支持多阶段识别流程：\n\n1. **Phase 1 - 图片识别**：AI视觉模型分析图片，提取品牌、型号、关键特征，生成搜索关键词，并输出初步商品结构\n2. **Phase 2 - 联网搜索**：使用MCP web_search工具搜索商品参数和价格信息\n3. **Phase 3 - 页面抓取**：使用MCP web_fetch工具抓取搜索结果中的关键页面内容\n4. **Phase 4 - 信息融合**：AI融合图片识别和网页信息，输出最终结构化数据\n\n当MCP服务不可用时，自动降级为纯AI图片识别模式（仅Phase 1）。",
-        "security": [{ "BearerAuth": [] }],
+        "description": "上传商品图片，AI自动识别商品信息并返回结构化数据。支持MCP多阶段流程（图片识别→联网搜索→页面抓取→信息融合），MCP不可用时自动降级。",
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RecognizeRequest" }
+              "schema": {
+                "type": "object",
+                "required": ["images"],
+                "properties": {
+                  "images": { "type": "array", "items": { "type": "string" }, "minItems": 1, "maxItems": 9, "description": "商品图片OSS路径" },
+                  "name": { "type": "string", "description": "商品名称提示" },
+                  "brand": { "type": "string", "description": "品牌提示" }
+                }
+              }
             }
           }
         },
         "responses": {
+          "200": { "description": "识别完成" },
+          "400": { "description": "参数错误" },
+          "401": { "description": "未登录" },
+          "429": { "description": "AI服务繁忙" },
+          "503": { "description": "AI服务不可用" }
+        }
+      }
+    },
+    "/api/ai/audit/{productId}": {
+      "post": {
+        "tags": ["AI审核"],
+        "summary": "AI商品审核",
+        "description": "对指定商品执行AI审核，返回审核结果（通过/不通过/风险评分等）",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "productId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "商品ID" }
+        ],
+        "responses": {
           "200": {
-            "description": "AI识别完成",
+            "description": "审核结果",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "code": { "type": "integer", "example": 200 },
-                    "message": { "type": "string", "example": "AI识别完成" },
-                    "data": { "$ref": "#/components/schemas/RecognitionResult" }
+                    "code": { "type": "integer" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "approved": { "type": "boolean" },
+                        "skipped": { "type": "boolean" },
+                        "riskScore": { "type": "number" },
+                        "riskCategories": { "type": "array", "items": { "type": "string" } },
+                        "details": { "type": "string" },
+                        "suggestions": { "type": "array", "items": { "type": "string" } }
+                      }
+                    },
+                    "message": { "type": "string" }
                   }
                 }
               }
             }
-          },
-          "400": {
-            "description": "参数错误（图片为空、图片数量超限、路径格式不正确等）",
+          }
+        }
+      }
+    },
+    "/api/ai/audit/{productId}/status": {
+      "get": {
+        "tags": ["AI审核"],
+        "summary": "获取商品审核状态",
+        "description": "查询指定商品的当前审核状态、审核次数、拒绝原因等",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "productId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "商品ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "审核状态",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          },
-          "401": {
-            "description": "未登录",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          },
-          "429": {
-            "description": "AI服务繁忙，请稍后重试",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          },
-          "503": {
-            "description": "AI服务暂时不可用或识别超时",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "status": { "type": "string", "enum": ["pending", "active", "offline", "banned", "audit_failed"] },
+                        "rejectReason": { "type": "string", "nullable": true },
+                        "auditCount": { "type": "integer" },
+                        "relistCount": { "type": "integer" }
+                      }
+                    },
+                    "message": { "type": "string" }
+                  }
+                }
               }
             }
           }
+        }
+      }
+    },
+    "/api/ai/assistant/chat": {
+      "post": {
+        "tags": ["AI助手"],
+        "summary": "AI助手对话（SSE流式）",
+        "description": "与AI助手进行对话，响应以SSE流式输出。事件类型：meta(会话ID)、token(文本片段)、card(商品/订单卡片)、status(工具调用状态)、done(完成)、error(错误)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "conversationId": { "type": "integer", "nullable": true, "description": "对话ID，为空则新建对话" },
+                  "message": { "type": "string", "maxLength": 500, "description": "用户消息内容" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE流式响应",
+            "content": { "text/event-stream": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    },
+    "/api/ai/assistant/conversations": {
+      "get": {
+        "tags": ["AI助手"],
+        "summary": "获取用户对话列表",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "对话列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "title": { "type": "string" },
+                          "createdAt": { "type": "string", "format": "date-time" },
+                          "updatedAt": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/assistant/conversations/{id}/messages": {
+      "get": {
+        "tags": ["AI助手"],
+        "summary": "获取对话消息列表",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "对话ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "消息列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "conversationId": { "type": "integer" },
+                          "role": { "type": "string", "enum": ["user", "assistant"] },
+                          "content": { "type": "string" },
+                          "msgType": { "type": "string", "enum": ["text", "product_card", "order_card", "chart", "link", "mixed"] },
+                          "extraData": { "type": "object", "nullable": true },
+                          "createdAt": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/assistant/conversations/{id}": {
+      "delete": {
+        "tags": ["AI助手"],
+        "summary": "删除对话",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "对话ID" }
+        ],
+        "responses": {
+          "200": { "description": "删除成功" }
         }
       }
     }
   },
   "components": {
     "securitySchemes": {
-      "BearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
-      }
-    },
-    "schemas": {
-      "RecognizeRequest": {
-        "type": "object",
-        "required": ["images"],
-        "properties": {
-          "images": {
-            "type": "array",
-            "description": "商品图片OSS路径列表，路径需以 products/ 开头",
-            "items": {
-              "type": "string"
-            },
-            "minItems": 1,
-            "maxItems": 9,
-            "example": ["products/abc123.jpg", "products/def456.jpg"]
-          },
-          "name": {
-            "type": "string",
-            "description": "商品名称提示（可选，帮助AI更准确识别）",
-            "example": "iPhone 13"
-          },
-          "brand": {
-            "type": "string",
-            "description": "品牌提示（可选，帮助AI更准确识别）",
-            "example": "Apple"
-          }
-        }
-      },
-      "RecognitionResult": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "object",
-            "description": "AI识别出的商品信息（部分字段可能为空，取决于识别结果）",
-            "properties": {
-              "categoryId": {
-                "type": "integer",
-                "description": "分类ID",
-                "example": 5
-              },
-              "name": {
-                "type": "string",
-                "description": "商品名称",
-                "maxLength": 100,
-                "example": "iPhone 13 128G 星光色"
-              },
-              "description": {
-                "type": "string",
-                "description": "商品描述",
-                "example": "白色 iPhone 13 128G，外观良好，无划痕，电池健康度92%，原装充电器齐全"
-              },
-              "itemCondition": {
-                "type": "string",
-                "description": "新旧程度",
-                "enum": ["new", "99new", "95new", "90new", "80new"],
-                "example": "95new"
-              },
-              "currentPrice": {
-                "type": "number",
-                "description": "建议售价（元）",
-                "example": 3200
-              },
-              "originalPrice": {
-                "type": "number",
-                "nullable": true,
-                "description": "估计原价（元）",
-                "example": 5999
-              },
-              "tags": {
-                "type": "array",
-                "description": "商品标签（最多5个，每个不超过10字）",
-                "items": { "type": "string" },
-                "maxItems": 5,
-                "example": ["iPhone", "苹果", "手机", "5G", "A15"]
-              },
-              "specs": {
-                "type": "array",
-                "description": "商品规格参数（最多5组）",
-                "items": { "$ref": "#/components/schemas/ProductSpec" },
-                "maxItems": 5,
-                "example": [
-                  { "name": "品牌", "value": "Apple" },
-                  { "name": "型号", "value": "iPhone 13" },
-                  { "name": "容量", "value": "128GB" },
-                  { "name": "芯片", "value": "A15 Bionic" },
-                  { "name": "屏幕", "value": "6.1英寸 OLED" }
-                ]
-              },
-              "deliveryType": {
-                "type": "string",
-                "description": "配送方式",
-                "enum": ["self", "express", "both"],
-                "example": "both"
-              },
-              "validDays": {
-                "type": "integer",
-                "nullable": true,
-                "description": "发布有效期（天）",
-                "enum": [7, 15, 30, null],
-                "example": 15
-              },
-              "bargain": {
-                "type": "boolean",
-                "description": "是否允许议价",
-                "example": true
-              },
-              "brand": {
-                "type": "string",
-                "description": "品牌名称",
-                "example": "Apple"
-              }
-            }
-          },
-          "confidence": {
-            "type": "object",
-            "description": "各字段的置信度评分（0-1，1表示非常确定）。有联网搜索佐证的字段置信度通常更高(0.8-1.0)，纯靠图片推测的字段置信度较低(0.5-0.7)。",
-            "properties": {
-              "categoryId": { "type": "number", "example": 0.95 },
-              "name": { "type": "number", "example": 0.95 },
-              "description": { "type": "number", "example": 0.85 },
-              "itemCondition": { "type": "number", "example": 0.78 },
-              "currentPrice": { "type": "number", "example": 0.82 },
-              "originalPrice": { "type": "number", "example": 0.9 },
-              "tags": { "type": "number", "example": 0.88 },
-              "specs": { "type": "number", "example": 0.92 },
-              "deliveryType": { "type": "number", "example": 0.6 },
-              "validDays": { "type": "number", "example": 0.5 },
-              "bargain": { "type": "number", "example": 0.55 },
-              "brand": { "type": "number", "example": 0.95 }
-            }
-          },
-          "warnings": {
-            "type": "array",
-            "description": "识别过程中的警告信息（如分类ID不存在、字段映射、MCP搜索补充等）",
-            "items": { "type": "string" },
-            "example": ["已通过联网搜索补充商品信息", "AI返回的分类ID 999 不存在，请手动选择分类"]
-          },
-          "rawResponse": {
-            "type": "string",
-            "description": "AI原始返回内容（用于调试）"
-          },
-          "phases": {
-            "$ref": "#/components/schemas/RecognitionPhases"
-          },
-          "phaseDetails": {
-            "$ref": "#/components/schemas/PhaseDetails"
-          }
-        }
-      },
-      "PhaseDetails": {
-        "type": "object",
-        "description": "各阶段的详细执行信息，供前端展示识别进度和中间结果",
-        "properties": {
-          "phase1": { "$ref": "#/components/schemas/Phase1Detail" },
-          "phase2": { "$ref": "#/components/schemas/Phase2Detail" },
-          "phase3": { "$ref": "#/components/schemas/Phase3Detail" },
-          "phase4": { "$ref": "#/components/schemas/Phase4Detail" }
-        }
-      },
-      "Phase1Detail": {
-        "type": "object",
-        "description": "Phase 1 图片识别的详细信息",
-        "properties": {
-          "identification": {
-            "type": "object",
-            "description": "AI从图片中识别出的商品身份信息",
-            "properties": {
-              "brand": { "type": "string", "nullable": true, "description": "品牌", "example": "Apple" },
-              "model": { "type": "string", "nullable": true, "description": "型号", "example": "iPhone 15 Pro" },
-              "category": { "type": "string", "description": "分类名称", "example": "手机" },
-              "keyFeatures": {
-                "type": "array",
-                "description": "从图片提取的关键视觉特征",
-                "items": { "type": "string" },
-                "example": ["钛金属原色", "三摄像头", "灵动岛"]
-              },
-              "searchKeywords": {
-                "type": "array",
-                "description": "AI生成的搜索关键词",
-                "items": { "type": "string" },
-                "example": ["iPhone 15 Pro 参数 规格", "iPhone 15 Pro 二手价格 2025"]
-              }
-            }
-          },
-          "searchKeywords": {
-            "type": "array",
-            "description": "用于Phase 2联网搜索的关键词列表",
-            "items": { "type": "string" },
-            "example": ["iPhone 15 Pro 参数 规格", "iPhone 15 Pro 二手价格 2025"]
-          },
-          "thinkingContent": {
-            "type": "string",
-            "description": "AI的思考/推理过程（thinking模式下的输出）"
-          },
-          "durationMs": {
-            "type": "integer",
-            "description": "Phase 1 耗时（毫秒）",
-            "example": 3200
-          }
-        }
-      },
-      "Phase2Detail": {
-        "type": "object",
-        "description": "Phase 2 联网搜索的详细信息",
-        "properties": {
-          "searchResults": {
-            "type": "array",
-            "description": "搜索返回的结果列表",
-            "items": {
-              "type": "object",
-              "properties": {
-                "title": { "type": "string", "description": "结果标题" },
-                "url": { "type": "string", "description": "结果URL" },
-                "snippet": { "type": "string", "description": "摘要片段" }
-              }
-            }
-          },
-          "keywords": {
-            "type": "array",
-            "description": "实际使用的搜索关键词",
-            "items": { "type": "string" }
-          },
-          "durationMs": {
-            "type": "integer",
-            "description": "Phase 2 耗时（毫秒）",
-            "example": 1500
-          }
-        }
-      },
-      "Phase3Detail": {
-        "type": "object",
-        "description": "Phase 3 页面抓取的详细信息",
-        "properties": {
-          "fetchedPages": {
-            "type": "array",
-            "description": "已抓取的页面摘要信息（不含完整内容）",
-            "items": { "$ref": "#/components/schemas/FetchedPageDetail" }
-          },
-          "selectedUrls": {
-            "type": "array",
-            "description": "被选中抓取的URL列表（按评分排序）",
-            "items": { "type": "string" }
-          },
-          "durationMs": {
-            "type": "integer",
-            "description": "Phase 3 耗时（毫秒）",
-            "example": 4500
-          }
-        }
-      },
-      "Phase4Detail": {
-        "type": "object",
-        "description": "Phase 4 信息融合的详细信息",
-        "properties": {
-          "thinkingContent": {
-            "type": "string",
-            "description": "AI融合推理过程的思考内容"
-          },
-          "durationMs": {
-            "type": "integer",
-            "description": "Phase 4 耗时（毫秒）",
-            "example": 2800
-          }
-        }
-      },
-      "FetchedPageDetail": {
-        "type": "object",
-        "description": "已抓取页面的摘要信息",
-        "properties": {
-          "url": { "type": "string", "description": "页面URL" },
-          "title": { "type": "string", "description": "页面标题" },
-          "contentLength": { "type": "integer", "description": "页面内容字符数" },
-          "fetchError": { "type": "string", "description": "抓取错误信息（如有）" }
-        }
-      },
-      "RecognitionPhases": {
-        "type": "object",
-        "description": "多阶段识别流程的执行状态信息",
-        "properties": {
-          "phase1Completed": {
-            "type": "boolean",
-            "description": "Phase 1（图片识别）是否完成",
-            "example": true
-          },
-          "phase2Completed": {
-            "type": "boolean",
-            "description": "Phase 2（联网搜索）是否完成",
-            "example": true
-          },
-          "phase3Completed": {
-            "type": "boolean",
-            "description": "Phase 3（页面抓取）是否完成",
-            "example": true
-          },
-          "phase4Completed": {
-            "type": "boolean",
-            "description": "Phase 4（信息融合）是否完成",
-            "example": true
-          },
-          "searchResultsCount": {
-            "type": "integer",
-            "description": "联网搜索返回的结果数量",
-            "example": 8
-          },
-          "fetchedPagesCount": {
-            "type": "integer",
-            "description": "成功抓取的页面数量",
-            "example": 3
-          },
-          "mcpUsed": {
-            "type": "boolean",
-            "description": "是否使用了MCP联网搜索服务",
-            "example": true
-          }
-        }
-      },
-      "ProductSpec": {
-        "type": "object",
-        "required": ["name", "value"],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "规格名称",
-            "example": "品牌"
-          },
-          "value": {
-            "type": "string",
-            "description": "规格值",
-            "example": "Apple"
-          }
-        }
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "code": { "type": "integer", "example": 400 },
-          "message": { "type": "string", "example": "参数错误" },
-          "data": { "type": "object", "nullable": true }
-        }
-      }
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
     }
   }
 }

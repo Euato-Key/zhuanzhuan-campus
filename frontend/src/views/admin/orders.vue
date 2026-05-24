@@ -114,10 +114,13 @@ function handlePageChange(page: number) {
           <el-option label="待发货" value="pending_ship" />
           <el-option label="待自提" value="pending_pickup" />
           <el-option label="待收货" value="pending_receive" />
+          <el-option label="待确认" value="pending_confirm" />
           <el-option label="已完成" value="completed" />
           <el-option label="已取消" value="cancelled" />
           <el-option label="退货中" value="returning" />
+          <el-option label="已退款" value="refunded" />
         </el-select>
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
       </div>
     </div>
 

@@ -130,6 +130,7 @@ onBeforeUnmount(() => {
           :prefix-icon="Search"
           clearable
           style="width: 300px"
+          @keyup.enter="onSearch"
           @input="onSearch"
         />
         <el-select v-model="typeFilter" placeholder="举报类型" clearable style="width: 120px" @change="currentPage = 1; fetchReports()">
@@ -148,6 +149,7 @@ onBeforeUnmount(() => {
             :value="key"
           />
         </el-select>
+        <el-button type="primary" @click="onSearch">搜索</el-button>
       </div>
     </div>
 

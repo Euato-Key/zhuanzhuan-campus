@@ -3,6 +3,7 @@ import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 import { AssistantService } from './assistant.service';
 import { success, fail } from '../../utils/response';
+import { notFound } from '../../common/errors';
 import { prisma } from '../../config/prisma';
 
 export const AssistantController = {
@@ -16,7 +17,7 @@ export const AssistantController = {
 
     if (conversationId !== undefined && conversationId !== null) {
       conversationId = Number(conversationId);
-      if (isNaN(conversationId) || conversationId <= 0) conversationId = undefined;
+      if (!Number.isInteger(conversationId) || conversationId <= 0) conversationId = undefined;
     }
 
     res.writeHead(200, {
@@ -27,7 +28,16 @@ export const AssistantController = {
     });
 
     try {
-      if (!conversationId) {
+      if (conversationId) {
+        // Verify conversation ownership before using it
+        const conv = await prisma.aIConversation.findFirst({ where: { id: conversationId, userId } });
+        if (!conv) {
+          res.write(`data: ${JSON.stringify({ type: 'error', message: '会话不存在或无权访问' })}\n\n`);
+          res.write('data: [DONE]\n\n');
+          res.end();
+          return;
+        }
+      } else {
         const conv = await prisma.aIConversation.create({
           data: { userId, title: message.slice(0, 20) },
         });
@@ -62,7 +72,7 @@ export const AssistantController = {
     const userId = ValidationUtil.requireUserId(req);
     const id = ValidationUtil.parseIdParam(req.params.id, '会话ID');
     const conv = await prisma.aIConversation.findFirst({ where: { id, userId } });
-    if (!conv) throw new Error('会话不存在');
+    if (!conv) throw notFound('会话不存在');
     const messages = await prisma.aIMessage.findMany({
       where: { conversationId: id },
       orderBy: { createdAt: 'asc' },

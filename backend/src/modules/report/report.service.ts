@@ -237,7 +237,7 @@ export const ReportService = {
       where.OR = [
         { detail: { contains: query.keyword } },
         { reporter: { username: { contains: query.keyword } } },
-      ] as any;
+      ] as Prisma.ReportWhereInput[];
     }
 
     const [total, list] = await Promise.all([
@@ -286,7 +286,8 @@ export const ReportService = {
       throw badRequest('无效的处理状态');
     }
 
-    if (!data.handlerNote?.trim()) {
+    // handlerNote is required for warning/banned/resolved, optional for dismissed
+    if (data.status !== 'dismissed' && !data.handlerNote?.trim()) {
       throw badRequest('请填写处理说明');
     }
 
@@ -300,8 +301,8 @@ export const ReportService = {
     if (!report) throw notFound('举报不存在');
 
     const result = await prisma.report.updateMany({
-      where: { id, status: 'pending' as any },
-      data: { status: data.status as any, handlerId, handlerNote: data.handlerNote.trim(), handledAt: new Date() },
+      where: { id, status: 'pending' as ReportStatus },
+      data: { status: data.status as ReportStatus, handlerId, handlerNote: data.handlerNote.trim(), handledAt: new Date() },
     });
 
     if (result.count === 0) {

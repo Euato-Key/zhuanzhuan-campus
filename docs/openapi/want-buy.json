@@ -30,7 +30,7 @@
           "description": { "type": "string", "nullable": true },
           "tags": { "type": "array", "items": { "type": "string" }, "nullable": true },
           "maxPrice": { "type": "number", "nullable": true },
-          "status": { "type": "string", "enum": ["open", "found", "closed"] },
+          "status": { "type": "string", "enum": ["active", "found", "closed", "expired"] },
           "validDays": { "type": "integer" },
           "expireTime": { "type": "string", "format": "date-time", "nullable": true },
           "createdAt": { "type": "string", "format": "date-time" },

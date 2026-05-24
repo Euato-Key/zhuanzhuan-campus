@@ -59,19 +59,6 @@ export interface FillReturnExpressData {
 // Constants
 // ============================================
 
-// 订单状态流转映射
-const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  pending_payment: ['cancelled'],
-  pending_ship: ['cancelled'],
-  pending_pickup: ['cancelled'],
-  pending_receive: [],
-  pending_confirm: ['completed', 'cancelled'],
-  completed: ['returning'],
-  cancelled: [],
-  returning: ['refunded'],
-  refunded: [],
-};
-
 // 订单状态显示文本
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending_payment: '待支付',
@@ -103,13 +90,6 @@ function generateOrderNo(): string {
   const second = String(now.getSeconds()).padStart(2, '0');
   const random = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
   return `${year}${month}${day}${hour}${minute}${second}${random}`;
-}
-
-/**
- * 检查订单状态是否可以转换到目标状态
- */
-function canTransitionTo(currentStatus: OrderStatus, targetStatus: OrderStatus): boolean {
-  return ORDER_STATUS_TRANSITIONS[currentStatus]?.includes(targetStatus) ?? false;
 }
 
 /**

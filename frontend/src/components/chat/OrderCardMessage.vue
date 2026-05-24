@@ -8,18 +8,10 @@ defineProps<{
 
 const statusLabels: Record<string, string> = {
   ...ORDER_STATUS_LABELS,
-  paid: '已付款',
-  shipped: '已发货',
-  delivered: '已收货',
-  refunding: '退款中',
 }
 
 const statusTagType: Record<string, string> = {
   ...ORDER_STATUS_TAG_TYPE,
-  paid: 'primary',
-  shipped: 'primary',
-  delivered: 'info',
-  refunding: 'warning',
 }
 </script>
 

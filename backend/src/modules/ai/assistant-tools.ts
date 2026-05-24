@@ -177,7 +177,7 @@ async function executeShowProductCard(args: { product_ids: string }) {
   const ids = args.product_ids.split(',').map(s => BigInt(s.trim())).filter(b => b > 0n);
   if (ids.length === 0) return [];
   const products = await prisma.product.findMany({
-    where: { id: { in: ids } },
+    where: { id: { in: ids }, status: 'active' },
     select: { id: true, name: true, currentPrice: true, images: true, itemCondition: true, favoriteCount: true, deliveryType: true, category: { select: { name: true } } },
   });
   return products.map(p => ({
@@ -219,13 +219,13 @@ export async function executeAssistantTool(
       case 'search_products': {
         result = await executeSearchProducts(args, userId);
         displayType = 'product_card';
-        displayData = (result as any).products;
+        displayData = (result as { products: unknown[] }).products;
         break;
       }
       case 'get_my_orders': {
         result = await executeGetMyOrders(args, userId);
         displayType = 'order_card';
-        displayData = (result as any).orders;
+        displayData = (result as { orders: unknown[] }).orders;
         break;
       }
       case 'get_my_stats': {
