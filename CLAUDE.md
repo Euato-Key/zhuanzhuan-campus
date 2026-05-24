@@ -168,6 +168,14 @@ product/
 - **踩坑记录**: 每次完成修正任务后，把容易反复踩的坑总结到上方「踩坑记录」章节
 - **样式规范**: 清新校园风设计系统，主色 `#4CAF50`，SCSS 变量在 `frontend/src/assets/styles/_variables.scss`，AI 相关样式集中在 `_ai-recognition.scss`
 - **实验性代码**: `Experimental_code/` 目录可供代码探索，不影响主项目
+- **Git 提交规范**: 提交代码时按变更类型分类提交，不要一次性用一条 commit 混合不同类型的改动。常见分类：
+  - `feat:` — 新功能
+  - `fix:` — bug 修复 / 缺陷修正
+  - `docs:` — 文档更新（API 文档、README、注释等）
+  - `style:` — 样式调整（不影响逻辑的 UI 变化）
+  - `refactor:` — 重构（不改功能、不改 bug）
+  - 同一类型但涉及不同模块的改动可以合并为一条 commit；不同类型必须分开提交
+  - **提交信息用中文书写**，类型前缀（feat/fix/docs/style/refactor）保留英文
 
 ---
 
@@ -197,7 +205,7 @@ frontend/src/assets/styles/
 ### 使用方式
 ```scss
 <style scoped lang="scss">
-@import '@/assets/styles/variables';
+@use '@/assets/styles/variables' as *;
 
 .my-component {
   color: $color-primary;
