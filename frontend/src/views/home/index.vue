@@ -6,7 +6,7 @@ import ProductCard from '@/components/product/ProductCard.vue'
 import WantBuyCard from '@/components/want-buy/WantBuyCard.vue'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'
-import { getProductList, getCategoryTree, type ProductListItem, type Category } from '@/api/modules/product'
+import { getProductList, type ProductListItem } from '@/api/modules/product'
 import { getWantBuyList, type WantBuyListItem } from '@/api/modules/want-buy'
 import { showError } from '@/utils/error'
 
@@ -14,7 +14,6 @@ const router = useRouter()
 const userStore = useUserStore()
 const authDialog = useAuthDialog()
 
-const categories = ref<Category[]>([])
 const hotProducts = ref<ProductListItem[]>([])
 const hotWantBuys = ref<WantBuyListItem[]>([])
 const loading = ref(false)
@@ -23,15 +22,11 @@ async function fetchData() {
   loading.value = true
   try {
     // 并行获取分类、热门商品和热门求购
-    const [catRes, prodRes, wantBuyRes] = await Promise.all([
-      getCategoryTree(),
+    const [prodRes, wantBuyRes] = await Promise.all([
       getProductList({ sortBy: 'favorite', sortOrder: 'desc', pageSize: 8 }),
       getWantBuyList({ sortBy: 'view', sortOrder: 'desc', pageSize: 4, status: 'active' }),
     ])
 
-    if (catRes.data.code === 200) {
-      categories.value = catRes.data.data.slice(0, 6)
-    }
     if (prodRes.data.code === 200) {
       hotProducts.value = prodRes.data.data.list
     }
@@ -74,25 +69,6 @@ onMounted(fetchData)
           <span class="stat-value">8K+</span>
           <span class="stat-label">成功交易</span>
         </div>
-      </div>
-    </section>
-
-    <section class="categories" v-loading="loading">
-      <h3 class="section-title">商品分类</h3>
-      <div class="category-grid">
-        <RouterLink
-          v-for="cat in categories"
-          :key="cat.id"
-          :to="`/products?categoryId=${cat.id}`"
-          class="category-item"
-        >
-          <span class="category-icon">{{ cat.icon || '📦' }}</span>
-          <span class="category-name">{{ cat.name }}</span>
-        </RouterLink>
-        <RouterLink v-if="categories.length === 0" to="/products" class="category-item">
-          <span class="category-icon">📦</span>
-          <span class="category-name">全部商品</span>
-        </RouterLink>
       </div>
     </section>
 
@@ -181,9 +157,7 @@ onMounted(fetchData)
   }
 }
 
-// ─── Categories ───
-.categories { margin-bottom: 40px; }
-
+// ─── Hot products ───
 .section-title {
   font-size: 20px;
   font-weight: 600;
@@ -191,35 +165,6 @@ onMounted(fetchData)
   margin-bottom: 20px;
 }
 
-.category-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.category-item {
-  background: #fff;
-  padding: 24px 16px;
-  text-align: center;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  }
-
-  .category-icon { font-size: 32px; display: block; margin-bottom: 8px; }
-  .category-name { font-size: 14px; color: $color-text-primary; }
-}
-
-// ─── Hot products ───
 .hot-products {
   .section-header {
     display: flex;

@@ -6,6 +6,9 @@ import { Search, Lock, Unlock } from '@element-plus/icons-vue'
 import api from '@/api'
 import { formatDate } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
 
 type UserRole = 'user' | 'admin' | 'super_admin'
 
@@ -187,7 +190,7 @@ function handlePageChange(page: number) {
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button
-              v-if="!row.isBlocked && row.role !== 'super_admin'"
+              v-if="userStore.isSuperAdmin && !row.isBlocked && row.role !== 'super_admin'"
               type="danger"
               text
               size="small"
@@ -196,7 +199,7 @@ function handlePageChange(page: number) {
               <el-icon><Lock /></el-icon>封禁
             </el-button>
             <el-button
-              v-else-if="row.role !== 'super_admin'"
+              v-else-if="userStore.isSuperAdmin && row.role !== 'super_admin'"
               type="success"
               text
               size="small"
@@ -205,7 +208,7 @@ function handlePageChange(page: number) {
               <el-icon><Unlock /></el-icon>解封
             </el-button>
             <el-button
-              v-if="row.role !== 'super_admin'"
+              v-if="userStore.isSuperAdmin && row.role !== 'super_admin' && row.id !== userStore.user?.id"
               :type="row.role === 'admin' ? 'danger' : 'warning'"
               text
               size="small"

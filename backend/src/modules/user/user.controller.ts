@@ -68,6 +68,9 @@ export const UserController = {
 
   adminSetRole: asyncHandler(async (req: Request, res: Response) => {
     const userId = ValidationUtil.parseIdParam(req.params.id, '用户ID');
+    if (userId === req.user!.userId) {
+      throw badRequest('不能修改自己的角色');
+    }
     const { role } = req.body;
     if (!role || !['user', 'admin'].includes(role)) {
       throw badRequest('无效的角色');

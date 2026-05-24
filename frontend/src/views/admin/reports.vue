@@ -17,7 +17,7 @@ import {
   REPORT_STATUS_LABELS,
   REPORT_STATUS_TAG_TYPE,
 } from '@/api/modules/report'
-import { formatRelativeTime } from '@/utils/format'
+import { formatRelativeTime, formatDate } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
 
 const loading = ref(false)
@@ -311,7 +311,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="detail-item">
             <span class="detail-label">举报时间:</span>
-            <span>{{ formatRelativeTime(detailReport.createdAt) }}</span>
+            <span>{{ formatRelativeTime(detailReport.createdAt) }} ({{ formatDate(detailReport.createdAt) }})</span>
           </div>
           <div v-if="detailReport.handler" class="detail-item">
             <span class="detail-label">处理人:</span>
@@ -323,7 +323,7 @@ onBeforeUnmount(() => {
           </div>
           <div v-if="detailReport.handledAt" class="detail-item">
             <span class="detail-label">处理时间:</span>
-            <span>{{ formatRelativeTime(detailReport.handledAt) }}</span>
+            <span>{{ formatRelativeTime(detailReport.handledAt) }} ({{ formatDate(detailReport.handledAt) }})</span>
           </div>
         </div>
       </template>

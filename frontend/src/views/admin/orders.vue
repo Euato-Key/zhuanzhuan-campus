@@ -5,6 +5,8 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Search, View } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import api from '@/api'
+import { formatDate } from '@/utils/format'
+import { getOssUrl } from '@/utils/oss'
 
 type OrderStatus = 'pending_payment' | 'pending_ship' | 'pending_pickup' | 'pending_receive' | 'pending_confirm' | 'completed' | 'cancelled' | 'returning' | 'refunded'
 
@@ -14,6 +16,7 @@ interface Order {
   buyer: string
   seller: string
   product: string
+  productImage: string | null
   amount: number
   status: OrderStatus
   createdAt: string
@@ -79,7 +82,7 @@ async function handleView(order: Order) {
     const res = await api.get(`/orders/admin/${order.id}`)
     const detail = res.data.data
     ElMessageBox.alert(
-      `订单号：${detail.orderNo}\n商品：${detail.productName}\n买家：${detail.buyer?.username}\n卖家：${detail.seller?.username}\n金额：¥${Number(detail.totalPrice)}\n状态：${statusMap[detail.status as OrderStatus]?.label || detail.status}\n创建时间：${new Date(detail.createdAt).toLocaleString()}`,
+      `订单号：${detail.orderNo}\n商品：${detail.productName}\n买家：${detail.buyer?.username}\n卖家：${detail.seller?.username}\n金额：¥${Number(detail.totalPrice)}\n状态：${statusMap[detail.status as OrderStatus]?.label || detail.status}\n创建时间：${formatDate(detail.createdAt)}`,
       '订单详情',
       { confirmButtonText: '关闭' }
     )
@@ -122,7 +125,14 @@ function handlePageChange(page: number) {
     <div class="card">
       <el-table :data="orders" v-loading="loading" stripe>
         <el-table-column prop="orderNo" label="订单号" width="200" />
-        <el-table-column prop="product" label="商品" min-width="150" />
+        <el-table-column label="商品" min-width="150">
+          <template #default="{ row }">
+            <div class="product-cell">
+              <img v-if="row.productImage" :src="getOssUrl(row.productImage)" class="product-thumb" />
+              <span class="product-name-text">{{ row.product }}</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="buyer" label="买家" width="100" />
         <el-table-column prop="seller" label="卖家" width="100" />
         <el-table-column prop="amount" label="金额" width="100">
@@ -137,7 +147,11 @@ function handlePageChange(page: number) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="160" />
+        <el-table-column label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ formatDate(row.createdAt) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" text size="small" @click="handleView(row)">
@@ -186,5 +200,25 @@ function handlePageChange(page: number) {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+}
+
+.product-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.product-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.product-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

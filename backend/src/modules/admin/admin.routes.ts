@@ -9,5 +9,6 @@ router.use(authMiddleware);
 router.use(adminMiddleware);
 
 router.get('/dashboard', AdminController.getDashboard);
+router.get('/dashboard/charts', AdminController.getChartStats);
 
 export default router;

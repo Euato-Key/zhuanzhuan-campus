@@ -8,4 +8,9 @@ export const AdminController = {
     const stats = await AdminService.getDashboardStats();
     return success(res, stats);
   }),
+
+  getChartStats: asyncHandler(async (_req: Request, res: Response) => {
+    const data = await AdminService.getChartStats();
+    return success(res, data);
+  }),
 };

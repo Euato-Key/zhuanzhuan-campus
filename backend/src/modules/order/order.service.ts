@@ -982,6 +982,7 @@ export const OrderService = {
       buyer: o.buyer.username,
       seller: o.seller.username,
       product: o.productName,
+      productImage: o.productImage,
       amount: Number(o.totalPrice),
       status: o.status,
       createdAt: o.createdAt,

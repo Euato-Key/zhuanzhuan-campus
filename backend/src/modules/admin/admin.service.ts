@@ -82,4 +82,99 @@ export const AdminService = {
       })),
     };
   },
+
+  async getChartStats() {
+    const now = new Date();
+
+    // Build date cursors for last 7 days
+    const dateCursors: Date[] = [];
+    const dateLabels: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      dateCursors.push(d);
+      dateLabels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+    }
+
+    // 1. User registration trend (7 days)
+    const userCounts = await Promise.all(
+      dateCursors.map((start, i) => {
+        const end = i < 6 ? dateCursors[i + 1] : new Date(now.getTime() + 86400000);
+        return prisma.user.count({
+          where: { createdAt: { gte: start, lt: end } },
+        });
+      }),
+    );
+
+    // 2. Order & revenue trend (7 days)
+    const orderStats = await Promise.all(
+      dateCursors.map(async (start, i) => {
+        const end = i < 6 ? dateCursors[i + 1] : new Date(now.getTime() + 86400000);
+        const [count, rev] = await Promise.all([
+          prisma.order.count({
+            where: { createdAt: { gte: start, lt: end } },
+          }),
+          prisma.order.aggregate({
+            _sum: { totalPrice: true },
+            where: { payTime: { gte: start, lt: end }, status: 'completed' },
+          }),
+        ]);
+        return { count, revenue: Number(rev._sum.totalPrice ?? 0) };
+      }),
+    );
+
+    // 3. Product status distribution
+    const productStatuses = await prisma.product.groupBy({
+      by: ['status'],
+      _count: { status: true },
+    });
+
+    // 4. Product category distribution (top 8)
+    const categoryStats = await prisma.product.groupBy({
+      by: ['categoryId'],
+      _count: { categoryId: true },
+      orderBy: { _count: { categoryId: 'desc' } },
+      take: 8,
+    });
+
+    const categoryIds = categoryStats.map((c) => c.categoryId).filter((id) => id != null) as number[];
+    const categories = await prisma.category.findMany({
+      where: { id: { in: categoryIds } },
+      select: { id: true, name: true },
+    });
+    const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+
+    return {
+      userTrend: {
+        dates: dateLabels,
+        values: userCounts,
+      },
+      orderTrend: {
+        dates: dateLabels,
+        counts: orderStats.map((s) => s.count),
+        revenues: orderStats.map((s) => s.revenue),
+      },
+      productStatus: productStatuses.map((s) => ({
+        name: statusLabel(s.status),
+        value: s._count.status,
+      })),
+      categoryDistribution: categoryStats.map((c) => ({
+        name: categoryMap[c.categoryId as number] || '未分类',
+        value: c._count.categoryId,
+      })),
+    };
+  },
 };
+
+const statusLabelMap: Record<string, string> = {
+  active: '在售',
+  pending: '待审核',
+  offline: '已下架',
+  banned: '已封禁',
+  audit_failed: '审核未通过',
+};
+
+function statusLabel(status: string | null): string {
+  return statusLabelMap[status || ''] || status || '未知';
+}

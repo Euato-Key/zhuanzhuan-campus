@@ -4,6 +4,7 @@ import { Search, Check, Close, View, Unlock, Lock, Bottom } from '@element-plus/
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ProductAuditDialog from '@/components/admin/ProductAuditDialog.vue'
+import { formatDate } from '@/utils/format'
 import {
   getAdminProductList,
   unbanProduct,
@@ -241,9 +242,9 @@ onMounted(() => {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="提交时间" width="150">
+        <el-table-column label="提交时间" width="180">
           <template #default="{ row }">
-            {{ new Date(row.createdAt).toLocaleString() }}
+            {{ formatDate(row.createdAt) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="280" fixed="right">

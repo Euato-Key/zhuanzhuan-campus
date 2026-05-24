@@ -44,6 +44,7 @@ export function formatDate(date: string | Date | number, format: 'full' | 'date'
   const day = String(d.getDate()).padStart(2, '0')
   const hours = String(d.getHours()).padStart(2, '0')
   const minutes = String(d.getMinutes()).padStart(2, '0')
+  const seconds = String(d.getSeconds()).padStart(2, '0')
 
   switch (format) {
     case 'date':
@@ -52,7 +53,7 @@ export function formatDate(date: string | Date | number, format: 'full' | 'date'
       return `${hours}:${minutes}`
     case 'full':
     default:
-      return `${year}-${month}-${day} ${hours}:${minutes}`
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
   }
 }
 
