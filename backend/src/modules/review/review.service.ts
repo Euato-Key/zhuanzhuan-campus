@@ -3,6 +3,7 @@ import { Prisma, ReviewType, ReviewStatus, AppendStatus, OrderStatus } from '@pr
 import { badRequest, notFound, forbidden, conflict } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
 import { NotificationService } from '../notification/notification.service';
+import { adjustCredit } from '../../common/credit';
 import { SettingsService } from '../settings/settings.service';
 import { REVIEW_USER_SELECT, REVIEW_ORDER_SELECT } from '../../common/selects';
 
@@ -553,6 +554,16 @@ export const ReviewService = {
       relatedId: review.id,
       relatedType: 'review',
     });
+
+    // 买家评价卖家时，根据评分调整卖家信用分
+    if (review.type === 'buyer_to_seller') {
+      if (review.rating >= 4) {
+        const hasImages = review.images && (review.images as string[]).length > 0;
+        await adjustCredit(review.reviewedId, hasImages ? 'good_review_with_img' : 'good_review', review.id);
+      } else if (review.rating <= 2) {
+        await adjustCredit(review.reviewedId, 'bad_review', review.id);
+      }
+    }
 
     return updated;
   },

@@ -3,6 +3,7 @@ import { Prisma, ReportTargetType, ReportReason, ReportStatus } from '@prisma/cl
 import { badRequest, notFound, conflict } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
 import { NotificationService } from '../notification/notification.service';
+import { adjustCredit } from '../../common/credit';
 import { REVIEW_USER_SELECT } from '../../common/selects';
 
 // ============================================
@@ -339,6 +340,9 @@ export const ReportService = {
           relatedId: report.id,
           relatedType: 'user',
         });
+
+        // 信用分扣减
+        await adjustCredit(reportedUserId, data.status === 'warning' ? 'report_warning' : 'report_banned', report.id);
       }
     }
 

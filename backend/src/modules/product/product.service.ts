@@ -3,6 +3,7 @@ import { Prisma, ItemCondition, DeliveryType, ProductStatus } from '@prisma/clie
 import { badRequest, notFound, forbidden } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
 import { NotificationService } from '../notification/notification.service';
+import { adjustCredit } from '../../common/credit';
 import { AuditService } from '../ai/audit.service';
 import { PRODUCT_CATEGORY_SELECT, PRODUCT_USER_SELECT, PRODUCT_DETAIL_USER_SELECT, PRODUCT_DETAIL_CATEGORY_SELECT, USER_ADMIN_SELECT } from '../../common/selects';
 
@@ -685,6 +686,9 @@ export const ProductService = {
       relatedId: product.id,
       relatedType: 'product',
     });
+
+    // 卖家信用分-15
+    await adjustCredit(product.userId, 'product_banned', Number(product.id));
 
     return updated;
   },

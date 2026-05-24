@@ -4,6 +4,7 @@ import { Prisma, OrderStatus, OrderDeliveryType, PaymentMethod, ReturnStatus, Pr
 import { badRequest, notFound, forbidden, conflict } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
 import { NotificationService } from '../notification/notification.service';
+import { adjustCredit } from '../../common/credit';
 
 // ============================================
 // Types
@@ -513,6 +514,11 @@ export const OrderService = {
       relatedType: 'order',
     });
 
+    // 买家付款后取消订单，买家信用分-1
+    if (shouldRestoreStock && userId === order.buyerId) {
+      await adjustCredit(order.buyerId, 'cancel_after_pay', Number(order.id));
+    }
+
     return updated;
   },
   async ship(userId: number, orderId: bigint, data: ShipOrderData) {
@@ -644,6 +650,9 @@ export const OrderService = {
       relatedId: order.id,
       relatedType: 'order',
     });
+
+    // 卖家信用分+3
+    await adjustCredit(order.sellerId, 'order_completed', Number(order.id));
 
     return updated;
   },
@@ -882,6 +891,9 @@ export const OrderService = {
       relatedId: order.id,
       relatedType: 'order',
     });
+
+    // 卖家信用分-5
+    await adjustCredit(order.sellerId, 'order_refunded', Number(order.id));
 
     return updated;
   },
