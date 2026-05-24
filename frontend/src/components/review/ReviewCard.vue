@@ -166,6 +166,7 @@ function viewUserProfile(userId: number) {
 </template>
 
 <style scoped lang="scss">
+@use 'sass:color';
 @use '@/assets/styles/variables' as *;
 @use '@/assets/styles/mixins' as *;
 
@@ -361,7 +362,7 @@ function viewUserProfile(userId: number) {
   transition: background $transition-fast;
 
   &:hover {
-    background: darken($color-bg-page, 3%);
+    background: color.adjust($color-bg-page, $lightness: -3%);
   }
 }
 

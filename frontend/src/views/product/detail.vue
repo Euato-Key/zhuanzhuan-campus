@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Back } from '@element-plus/icons-vue'
+import { Back, Edit, SoldOut, RefreshRight, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getProductById,
@@ -20,11 +20,13 @@ import { useChatStore } from '@/stores/chat'
 import { useAuthDialog } from '@/composables/useAuthDialog'
 import { getOssUrl } from '@/utils/oss'
 import { showError, showSuccess } from '@/utils/error'
+import { getShareUrl } from '@/utils/share'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateOrderDialog from '@/components/order/CreateOrderDialog.vue'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
 import ReviewList from '@/components/review/ReviewList.vue'
 import ReportDialog from '@/components/report/ReportDialog.vue'
+import SharePanel from '@/components/product/SharePanel.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -94,6 +96,7 @@ async function fetchProduct() {
     const res = await getProductById(id)
     if (res.data.code === 200) {
       product.value = res.data.data
+      updateOgMeta(res.data.data)
     } else {
       ElMessage.error('商品不存在')
       router.push({ name: 'Products' })
@@ -231,8 +234,39 @@ function viewSellerProfile() {
   router.push({ name: 'UserProfile', params: { id: product.value.user.id } })
 }
 
+// Open Graph meta tags for share previews
+const OG_PROPERTIES = ['og:title', 'og:description', 'og:image', 'og:url']
+
+function setOgMeta(property: string, content: string) {
+  let el = document.querySelector(`meta[property="${property}"]`)
+  if (!el) {
+    el = document.createElement('meta')
+    el.setAttribute('property', property)
+    document.head.appendChild(el)
+  }
+  el.setAttribute('content', content)
+}
+
+function updateOgMeta(p: ProductDetail) {
+  setOgMeta('og:title', `${p.name} - 转转校园`)
+  setOgMeta('og:description', `¥${p.currentPrice} | ${getItemConditionLabel(p.itemCondition)} | ${p.user?.username || '匿名用户'}`)
+  setOgMeta('og:image', getOssUrl(p.images?.[0]) || '')
+  setOgMeta('og:url', getShareUrl(p.id))
+}
+
+function cleanupOgMeta() {
+  for (const prop of OG_PROPERTIES) {
+    const el = document.querySelector(`meta[property="${prop}"]`)
+    if (el) el.remove()
+  }
+}
+
 onMounted(() => {
   fetchProduct()
+})
+
+onUnmounted(() => {
+  cleanupOgMeta()
 })
 </script>
 
@@ -397,16 +431,22 @@ onMounted(() => {
               <el-button type="success" size="large" :disabled="!canBuy" @click="buyNow">
                 立即购买
               </el-button>
+              <SharePanel :product="product" />
               <el-button type="warning" size="large" plain @click="reportDialogVisible = true">举报</el-button>
             </template>
             <template v-else>
-              <el-button v-if="canEdit" size="large" @click="editProduct">编辑</el-button>
-              <el-button v-if="canOffline" size="large" @click="offlineProduct">下架</el-button>
-              <el-button v-if="canRelist" type="primary" size="large" @click="relistProduct">
-                重新上架
+              <SharePanel :product="product" />
+              <el-button v-if="canEdit" plain size="large" @click="editProduct">
+                <el-icon><Edit /></el-icon>编辑
               </el-button>
-              <el-button v-if="canDelete" type="danger" size="large" @click="deleteProduct">
-                删除
+              <el-button v-if="canOffline" type="warning" plain size="large" @click="offlineProduct">
+                <el-icon><SoldOut /></el-icon>下架
+              </el-button>
+              <el-button v-if="canRelist" type="primary" plain size="large" @click="relistProduct">
+                <el-icon><RefreshRight /></el-icon>重新上架
+              </el-button>
+              <el-button v-if="canDelete" type="danger" plain size="large" @click="deleteProduct">
+                <el-icon><Delete /></el-icon>删除
               </el-button>
             </template>
           </div>
