@@ -24,7 +24,7 @@ export const OrderController = {
     const { productId, quantity, deliveryType, addressId, pickupInfo } = req.body;
 
     if (!productId) throw badRequest('请选择商品');
-    if (!quantity || quantity < 1) throw badRequest('购买数量至少为1');
+    if (!quantity || typeof quantity !== 'number' || quantity < 1) throw badRequest('购买数量至少为1');
     if (!deliveryType) throw badRequest('请选择交易方式');
     if (!['self', 'express'].includes(deliveryType)) throw badRequest('交易方式不正确');
 

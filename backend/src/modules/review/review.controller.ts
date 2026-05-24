@@ -3,6 +3,7 @@ import { ReviewService, ReviewType, ReviewStatus } from './review.service';
 import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 import { success } from '../../utils/response';
+import { badRequest } from '../../common/errors';
 
 // ============================================
 // Helper Functions
@@ -10,8 +11,8 @@ import { success } from '../../utils/response';
 
 function parseCreateData(req: Request) {
   const { orderId, rating, content, images, isAnonymous } = req.body;
-  if (!orderId) throw new Error('orderId is required');
-  if (rating === undefined || rating === null) throw new Error('rating is required');
+  if (!orderId) throw badRequest('orderId is required');
+  if (rating === undefined || rating === null) throw badRequest('rating is required');
   return {
     orderId: String(orderId),
     rating: Number(rating),
@@ -23,7 +24,7 @@ function parseCreateData(req: Request) {
 
 function parseAppendData(req: Request) {
   const { appendContent, appendImages } = req.body;
-  if (!appendContent) throw new Error('appendContent is required');
+  if (!appendContent) throw badRequest('appendContent is required');
   return {
     appendContent: String(appendContent),
     appendImages: appendImages || undefined,

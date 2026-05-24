@@ -138,7 +138,7 @@ export const AdminService = {
       take: 8,
     });
 
-    const categoryIds = categoryStats.map((c) => c.categoryId).filter((id) => id != null) as number[];
+    const categoryIds = categoryStats.map((c) => c.categoryId).filter((id): id is number => id != null);
     const categories = await prisma.category.findMany({
       where: { id: { in: categoryIds } },
       select: { id: true, name: true },

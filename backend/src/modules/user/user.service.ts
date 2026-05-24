@@ -1,4 +1,5 @@
 import { prisma } from '../../config/prisma';
+import { Prisma } from '@prisma/client';
 import { FileService } from '../../services/file.service';
 import { badRequest, unauthorized, notFound, conflict } from '../../common/errors';
 import { PasswordUtil } from '../../common/password';
@@ -136,7 +137,7 @@ export const UserService = {
       pageSize: query.pageSize,
     });
 
-    const where: any = {};
+    const where: Prisma.UserWhereInput = {};
     if (query.keyword) {
       where.OR = [
         { username: { contains: query.keyword } },

@@ -3,6 +3,7 @@ import { Prisma, ReviewType, ReviewStatus, AppendStatus, OrderStatus } from '@pr
 import { badRequest, notFound, forbidden, conflict } from '../../common/errors';
 import { PaginationUtil } from '../../common/pagination';
 import { NotificationService } from '../notification/notification.service';
+import { SettingsService } from '../settings/settings.service';
 import { REVIEW_USER_SELECT, REVIEW_ORDER_SELECT } from '../../common/selects';
 
 // ============================================
@@ -185,7 +186,7 @@ export const ReviewService = {
         content: data.content || null,
         images: data.images ? data.images as any : Prisma.JsonNull,
         isAnonymous: data.isAnonymous || false,
-        status: ReviewStatus.approved,
+        status: ReviewStatus.pending,
         auditCount: 0,
       },
       include: {
@@ -193,6 +194,9 @@ export const ReviewService = {
         order: { select: REVIEW_ORDER_SELECT },
       },
     });
+
+    // 触发评价审核（AI审核或自动通过）
+    ReviewService.triggerAuditIfEnabled(review.id).catch(() => {});
 
     // 通知被评价人收到了评价
     await NotificationService.create({
@@ -612,5 +616,21 @@ export const ReviewService = {
     });
 
     return { message: auditCount >= MAX_AUDIT_COUNT ? '评价已拒绝，审核次数已达上限' : '评价已拒绝' };
+  },
+
+  async triggerAuditIfEnabled(reviewId: number) {
+    const config = await SettingsService.get();
+    if (config.ai_audit_enabled) {
+      // AI审核：未来可在此接入大模型审核评价内容
+      // 目前暂时自动通过
+    }
+    // 无AI审核时自动通过待审核评价
+    const review = await prisma.review.findUnique({ where: { id: reviewId } });
+    if (review && review.status === ReviewStatus.pending) {
+      await prisma.review.update({
+        where: { id: reviewId },
+        data: { status: ReviewStatus.approved },
+      });
+    }
   },
 };

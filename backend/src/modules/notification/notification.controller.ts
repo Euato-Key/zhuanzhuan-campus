@@ -57,7 +57,7 @@ export const NotificationController = {
   }),
 
   markAllAsRead: asyncHandler(async (req: Request, res: Response) => {
-    const { type } = req.body;
+    const type = req.query.type ?? req.body.type;
     const result = await NotificationService.markAllAsRead(getUserId(req), parseNotificationType(type));
     return success(res, result);
   }),

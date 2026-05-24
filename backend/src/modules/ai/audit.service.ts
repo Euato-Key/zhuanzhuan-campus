@@ -4,6 +4,7 @@ import { AIPrompts } from './ai.prompts';
 import { SettingsService } from '../settings/settings.service';
 import { NotificationService } from '../notification/notification.service';
 import { prisma } from '../../config/prisma';
+import { notFound, badRequest } from '../../common/errors';
 import type { AIAuditResult } from './ai.types';
 
 export const AuditService = {
@@ -16,7 +17,7 @@ export const AuditService = {
     });
 
     if (!product) {
-      throw new Error(`商品不存在: ${productId}`);
+      throw notFound(`商品不存在: ${productId}`);
     }
 
     if (product.status !== 'pending') {

@@ -30,7 +30,7 @@ export const NotificationService = {
         type: params.type,
         title: params.title,
         content: params.content ?? null,
-        relatedId: params.relatedId != null ? BigInt(params.relatedId) : null,
+        relatedId: params.relatedId != null ? (typeof params.relatedId === 'bigint' ? params.relatedId : BigInt(params.relatedId)) : null,
         relatedType: params.relatedType ?? null,
       },
     });

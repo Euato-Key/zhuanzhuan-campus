@@ -436,6 +436,10 @@ export const ProductService = {
       }
     }
 
+    if (data.validDays !== undefined && data.validDays !== null && ![7, 15, 30].includes(data.validDays)) {
+      throw badRequest('有效期只能是7天、15天或30天');
+    }
+
     const needReAudit = needsReAudit(data);
 
     const updateData: Prisma.ProductUpdateInput = {};

@@ -3,6 +3,7 @@ import { ReportService, ReportTargetType, ReportReason, ReportStatus } from './r
 import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 import { success } from '../../utils/response';
+import { badRequest } from '../../common/errors';
 
 // ============================================
 // Helper Functions
@@ -10,9 +11,9 @@ import { success } from '../../utils/response';
 
 function parseCreateData(req: Request) {
   const { targetType, targetId, reason, detail, images } = req.body;
-  if (!targetType) throw new Error('targetType is required');
-  if (!targetId) throw new Error('targetId is required');
-  if (!reason) throw new Error('reason is required');
+  if (!targetType) throw badRequest('targetType is required');
+  if (!targetId) throw badRequest('targetId is required');
+  if (!reason) throw badRequest('reason is required');
   return {
     targetType: targetType as ReportTargetType,
     targetId: String(targetId),
