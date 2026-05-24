@@ -15,6 +15,10 @@
     {
       "name": "订单接口",
       "description": "订单相关接口（需登录）"
+    },
+    {
+      "name": "管理员订单接口",
+      "description": "管理员订单管理接口（需管理员权限）"
     }
   ],
   "paths": {
@@ -406,6 +410,43 @@
         }
       }
     },
+    "/api/orders/{id}/review-status": {
+      "get": {
+        "tags": ["订单接口"],
+        "summary": "获取订单评价状态",
+        "description": "查看订单的评价状态，包括买家/卖家是否已评价、是否可评价、是否可追评",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": { "$ref": "#/components/schemas/OrderReviewStatus" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
     "/api/orders/{id}/return": {
       "post": {
         "tags": ["订单接口"],
@@ -576,6 +617,111 @@
             }
           },
           "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/orders/admin/list": {
+      "get": {
+        "tags": ["管理员订单接口"],
+        "summary": "获取订单列表（管理员）",
+        "description": "管理员查看所有订单，支持按状态筛选和关键词搜索（订单编号）",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "页码",
+            "schema": { "type": "integer", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页数量",
+            "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 50 }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "订单状态筛选",
+            "schema": {
+              "type": "string",
+              "enum": ["pending_payment", "pending_ship", "pending_pickup", "pending_receive", "pending_confirm", "completed", "cancelled", "returning", "refunded"]
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "搜索关键词（匹配订单编号）",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "list": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/AdminOrderItem" }
+                        },
+                        "total": { "type": "integer" },
+                        "page": { "type": "integer" },
+                        "pageSize": { "type": "integer" },
+                        "totalPages": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/orders/admin/{id}": {
+      "get": {
+        "tags": ["管理员订单接口"],
+        "summary": "获取订单详情（管理员）",
+        "description": "管理员查看订单详细信息，包含买家、卖家、商品和地址等完整信息",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "订单ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "message": { "type": "string", "example": "success" },
+                    "data": { "$ref": "#/components/schemas/OrderDetail" }
+                  }
+                }
+              }
+            }
+          },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
           "404": { "$ref": "#/components/responses/NotFound" }
@@ -926,6 +1072,33 @@
             }
           }
         ]
+      },
+      "AdminOrderItem": {
+        "type": "object",
+        "description": "管理员订单列表项（简化字段）",
+        "properties": {
+          "id": { "type": "string", "description": "订单ID" },
+          "orderNo": { "type": "string", "description": "订单编号" },
+          "buyer": { "type": "string", "description": "买家用户名" },
+          "seller": { "type": "string", "description": "卖家用户名" },
+          "product": { "type": "string", "description": "商品名称" },
+          "productImage": { "type": "string", "description": "商品主图", "nullable": true },
+          "amount": { "type": "number", "description": "订单金额" },
+          "status": { "$ref": "#/components/schemas/OrderStatus" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OrderReviewStatus": {
+        "type": "object",
+        "description": "订单评价状态",
+        "properties": {
+          "buyerReviewed": { "type": "boolean", "description": "买家是否已评价" },
+          "sellerReviewed": { "type": "boolean", "description": "卖家是否已评价" },
+          "canReview": { "type": "boolean", "description": "当前用户是否可评价" },
+          "canAppend": { "type": "boolean", "description": "当前用户是否可追评" },
+          "buyerReview": { "type": "object", "nullable": true, "description": "买家评价详情（未评价时为null）" },
+          "sellerReview": { "type": "object", "nullable": true, "description": "卖家评价详情（未评价时为null）" }
+        }
       }
     }
   }
