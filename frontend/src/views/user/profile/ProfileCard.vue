@@ -118,7 +118,7 @@ function cancelCrop() {
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <span class="stat-value">{{ formatDate(userStore.user?.createdAt, 'date') }}</span>
+          <span class="stat-value">{{ formatDate(userStore.user?.createdAt ?? '', 'date') }}</span>
           <span class="stat-label">加入时间</span>
         </div>
       </div>

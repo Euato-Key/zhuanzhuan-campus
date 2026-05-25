@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import WantBuyCard from '@/components/want-buy/WantBuyCard.vue'
 import PublishWantBuyDialog from '@/components/want-buy/PublishWantBuyDialog.vue'

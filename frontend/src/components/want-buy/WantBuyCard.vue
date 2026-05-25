@@ -7,7 +7,6 @@ import {
   WANT_BUY_STATUS_TAG_TYPE,
 } from '@/api/modules/want-buy'
 import { getOssUrl } from '@/utils/oss'
-import { formatRelativeTime } from '@/utils/format'
 
 const props = defineProps<{
   wantBuy: WantBuyListItem

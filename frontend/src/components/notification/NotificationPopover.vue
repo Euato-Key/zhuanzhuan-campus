@@ -58,7 +58,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { Bell } from '@element-plus/icons-vue'
 import NotificationTypeIcon from './NotificationTypeIcon.vue'
 import { useNotificationStore } from '@/stores/notification'
@@ -66,7 +65,6 @@ import type { Notification } from '@/api/modules/notification'
 import { formatRelativeTime } from '@/utils/format'
 
 const store = useNotificationStore()
-const router = useRouter()
 const popoverVisible = ref(false)
 
 const recentNotifications = computed(() => store.notifications.slice(0, 5))

@@ -149,12 +149,6 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  function refreshBlockStatus(otherUserId: number) {
-    if (currentConversation.value?.otherUser.id === otherUserId) {
-      checkBlock(otherUserId)
-    }
-  }
-
   function handleBlocked(data: { blockedByUserId: number }) {
     const otherId = currentConversation.value?.otherUser.id
     if (!otherId) return
@@ -366,15 +360,16 @@ export const useChatStore = defineStore('chat', () => {
     if (msg.readAt && typeof msg.readAt !== 'string') msg.readAt = null
 
     if (msg.createdAt) {
-      if (msg.createdAt instanceof Date) {
+      const raw = msg.createdAt as unknown
+      if (raw instanceof Date) {
         // Actual Date object → convert to ISO string (preserves real timestamp!)
-        msg.createdAt = (msg.createdAt as unknown as Date).toISOString()
-      } else if (typeof msg.createdAt === 'number') {
+        msg.createdAt = raw.toISOString()
+      } else if (typeof raw === 'number') {
         // Unix timestamp: if < 1e12 it's seconds, otherwise milliseconds
         msg.createdAt = new Date(
-          msg.createdAt < 1e12 ? (msg.createdAt as number) * 1000 : (msg.createdAt as number)
+          raw < 1e12 ? raw * 1000 : raw
         ).toISOString()
-      } else if (typeof msg.createdAt !== 'string') {
+      } else if (typeof raw !== 'string') {
         // Unrecognized type (e.g. {} from BigInt serialization bug — now fixed on backend)
         console.warn('[normalizeMessage] unrecognized createdAt type:', typeof msg.createdAt, msg.createdAt, 'msg:', msg.id)
         msg.createdAt = new Date().toISOString()

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { Search, Check, Close, View, Unlock, Lock, Bottom } from '@element-plus/icons-vue'
+import { Search, Check, View, Unlock, Lock, Bottom } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ProductAuditDialog from '@/components/admin/ProductAuditDialog.vue'

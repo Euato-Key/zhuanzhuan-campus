@@ -3,10 +3,9 @@ import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { Search, View } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
-import api from '@/api'
 import { formatDate } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
+import api from '@/api'
 
 type OrderStatus = 'pending_payment' | 'pending_ship' | 'pending_pickup' | 'pending_receive' | 'pending_confirm' | 'completed' | 'cancelled' | 'returning' | 'refunded'
 
@@ -22,7 +21,6 @@ interface Order {
   createdAt: string
 }
 
-const router = useRouter()
 const loading = ref(false)
 const statusFilter = ref('')
 const searchKeyword = ref('')

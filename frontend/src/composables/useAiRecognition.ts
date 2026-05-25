@@ -224,9 +224,9 @@ export function useAiRecognition() {
         break
       case 'phase_results':
         if (event.phase === 'phase2' && event.results) {
-          streamPhase2Results.value = event.results
+          streamPhase2Results.value = event.results as WebSearchResult[]
         } else if (event.phase === 'phase3' && event.results) {
-          streamPhase3Results.value = event.results
+          streamPhase3Results.value = event.results as FetchedPageDetail[]
         }
         break
     }

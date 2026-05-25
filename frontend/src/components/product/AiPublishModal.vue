@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { ElMessage, type UploadFile } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useAiRecognition } from '@/composables/useAiRecognition'
 import AiRecognitionProgress from './AiRecognitionProgress.vue'
@@ -36,7 +36,6 @@ const {
   uploadedImages,
   uploadedOssPaths,
   hasResult,
-  mcpEnabled,
   getPhaseStatus,
   uploadImages,
   recognizeStream,

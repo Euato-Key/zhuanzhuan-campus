@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
-import { createProduct, type CreateProductData, type DeliveryType, type ItemCondition, ITEM_CONDITION_LABELS } from '@/api/modules/product'
+import { createProduct, type CreateProductData, type DeliveryType, type ItemCondition } from '@/api/modules/product'
 import { getOssUrl } from '@/utils/oss'
 import { useUserStore } from '@/stores/user'
 import { useAuthDialog } from '@/composables/useAuthDialog'

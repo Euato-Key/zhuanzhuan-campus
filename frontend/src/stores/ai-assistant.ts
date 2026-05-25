@@ -47,7 +47,7 @@ export interface UIMessage {
 
 export const useAiAssistantStore = defineStore('ai-assistant', () => {
   const userStore = useUserStore()
-  const { isStreaming, startStream, abort: abortStream } = useAiStream()
+  const { startStream, abort: abortStream } = useAiStream()
 
   const panelVisible = ref(false)
   const isLoading = ref(false)

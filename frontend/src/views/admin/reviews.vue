@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, reactive } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import {
   getAdminReviews,

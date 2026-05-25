@@ -27,7 +27,7 @@ function go(id: number) { router.push({ name: 'ProductDetail', params: { id } })
           <span v-if="p?.deliveryType">{{ DELIVERY_LABELS[p.deliveryType] || p.deliveryType }}</span>
           <span v-if="p?.categoryName">{{ p.categoryName }}</span>
         </div>
-        <div class="mini-card-price">¥{{ p?.currentPrice ?? p?.price ?? 0 }}</div>
+        <div class="mini-card-price">¥{{ p?.currentPrice ?? 0 }}</div>
       </div>
       <el-tag v-if="p?.favoriteCount > 0" size="small" type="warning">{{ p.favoriteCount }}收藏</el-tag>
     </div>

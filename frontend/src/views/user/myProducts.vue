@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { Plus, Edit, Bottom, Top, Delete, Search, Goods } from '@element-plus/icons-vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'

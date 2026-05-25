@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, ChatDotRound, Van, Location, Clock } from '@element-plus/icons-vue'
+import { ArrowLeft, ChatDotRound, Van, Location } from '@element-plus/icons-vue'
 import type { OrderDetail } from '@/api/modules/order'
 import {
   getOrderDetail,

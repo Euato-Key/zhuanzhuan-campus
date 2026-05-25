@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { Search, Document, Picture, Goods, Tickets } from '@element-plus/icons-vue'
 import type { MessageItem, MessageType, ChatUser } from '@/api/modules/chat'
-import { formatRelativeTime, formatDate } from '@/utils/format'
+import { formatRelativeTime } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
 
 const props = defineProps<{

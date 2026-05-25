@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { UIMessage, CardData, ProductCardItem, OrderCardItem } from '@/stores/ai-assistant'
+import type { UIMessage, ProductCardItem, OrderCardItem } from '@/stores/ai-assistant'
 import AiTextMessage from './AiTextMessage.vue'
 import AiProductCard from './AiProductCard.vue'
 import AiOrderCard from './AiOrderCard.vue'

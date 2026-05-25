@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Star, Delete, Search } from '@element-plus/icons-vue'
+import { ElMessageBox } from 'element-plus'
+import { Star, Delete } from '@element-plus/icons-vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import {
   getMyFavorites,
