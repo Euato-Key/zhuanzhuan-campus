@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { recognizeProduct, type RecognitionResult, type RecognitionPhases, type PhaseDetails } from '@/api/modules/ai'
+import type { WebSearchResult, FetchedPageDetail } from '@/api/modules/ai'
 import { ElMessage } from 'element-plus'
 import { uploadImage } from '@/api/modules/upload'
 
@@ -16,7 +17,7 @@ interface StreamEvent {
   urls?: string[]
   count?: number
   pagesOk?: number
-  results?: any[]
+  results?: WebSearchResult[] | FetchedPageDetail[]
 }
 
 export function useAiRecognition() {
@@ -36,8 +37,8 @@ export function useAiRecognition() {
   const streamFetchUrls = ref<string[]>([])
   const streamSearchCount = ref(0)
   const streamPagesOk = ref(0)
-  const streamPhase2Results = ref<any[]>([])
-  const streamPhase3Results = ref<any[]>([])
+  const streamPhase2Results = ref<WebSearchResult[]>([])
+  const streamPhase3Results = ref<FetchedPageDetail[]>([])
 
   const estimatedPhases = ['phase1', 'phase2', 'phase3', 'phase4']
 

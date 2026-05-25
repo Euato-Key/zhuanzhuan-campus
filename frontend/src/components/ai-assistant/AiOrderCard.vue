@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { formatDate } from '@/utils/format'
 import { useRouter } from 'vue-router'
+import type { OrderCardItem } from '@/stores/ai-assistant'
 
-const props = defineProps<{ orders: any[] }>()
+const props = defineProps<{ orders: OrderCardItem[] }>()
 const router = useRouter()
 
 const ORDER_STATUS_LABELS: Record<string, string> = {

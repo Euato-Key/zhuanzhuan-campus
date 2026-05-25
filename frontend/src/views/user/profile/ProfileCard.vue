@@ -3,6 +3,7 @@ import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { getCreditLevel } from '@/utils/credit'
+import { formatDate } from '@/utils/format'
 import { getOssUrl } from '@/utils/oss'
 import { uploadImage } from '@/api/modules/upload'
 import { ElMessage } from 'element-plus'
@@ -82,16 +83,6 @@ function cancelCrop() {
   cropping.value = false
   cropImg.value = ''
 }
-
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
 </script>
 
 <template>
@@ -121,13 +112,13 @@ function formatDate(dateStr: string | null | undefined): string {
 
       <div class="user-stats">
         <div class="stat-item">
-          <span class="stat-value">{{ userStore.user?.creditScore || 100 }}</span>
-          <el-tag v-if="userStore.user?.creditScore" size="small" :color="getCreditLevel(userStore.user.creditScore).color" effect="dark" class="credit-tag">{{ getCreditLevel(userStore.user.creditScore).label }}</el-tag>
+          <span class="stat-value">{{ userStore.user?.creditScore ?? 100 }}</span>
+          <el-tag v-if="userStore.user?.creditScore != null" size="small" :color="getCreditLevel(userStore.user.creditScore).color" effect="dark" class="credit-tag">{{ getCreditLevel(userStore.user.creditScore).label }}</el-tag>
           <span class="stat-label">信用分</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <span class="stat-value">{{ formatDate(userStore.user?.createdAt) }}</span>
+          <span class="stat-value">{{ formatDate(userStore.user?.createdAt, 'date') }}</span>
           <span class="stat-label">加入时间</span>
         </div>
       </div>

@@ -11,8 +11,8 @@ const props = defineProps<{
   streamFetchUrls?: string[]
   streamSearchCount?: number
   streamPagesOk?: number
-  streamPhase2Results?: any[]
-  streamPhase3Results?: any[]
+  streamPhase2Results?: WebSearchResult[]
+  streamPhase3Results?: FetchedPageDetail[]
 }>()
 
 const steps = [

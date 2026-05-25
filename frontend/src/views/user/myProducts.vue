@@ -19,6 +19,7 @@ import {
   type ProductStatus,
 } from '@/api/modules/product'
 import { getOssUrl } from '@/utils/oss'
+import { formatDate } from '@/utils/format'
 import { showError, showSuccess } from '@/utils/error'
 
 const router = useRouter()
@@ -281,7 +282,7 @@ onMounted(() => {
               <div v-if="product.rejectReason" class="reject-reason">
                 原因：{{ product.rejectReason }}
               </div>
-              <div class="card-time">{{ new Date(product.createdAt).toLocaleDateString() }}</div>
+              <div class="card-time">{{ formatDate(product.createdAt, 'date') }}</div>
             </div>
 
             <!-- 操作按钮 -->

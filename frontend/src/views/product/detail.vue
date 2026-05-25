@@ -63,13 +63,13 @@ const canOffline = computed(() => {
 // 是否可重新上架
 const canRelist = computed(() => {
   if (!isOwner.value || !product.value) return false
-  return ['offline', 'audit_failed'].includes(product.value.status)
+  return ['offline', 'audit_failed', 'expired'].includes(product.value.status)
 })
 
 // 是否可删除
 const canDelete = computed(() => {
   if (!isOwner.value || !product.value) return false
-  return ['offline', 'audit_failed', 'banned'].includes(product.value.status)
+  return ['offline', 'audit_failed', 'banned', 'expired'].includes(product.value.status)
 })
 
 // 是否可购买
@@ -314,7 +314,7 @@ onUnmounted(() => {
             <span class="meta-item credit">
               <el-icon><i class="el-icon-star"></i></el-icon>
               信用 {{ product.user?.creditScore ?? '-' }}
-              <el-tag v-if="product.user?.creditScore" size="small" :color="getCreditLevel(product.user.creditScore).color" effect="dark" class="credit-tag">{{ getCreditLevel(product.user.creditScore).label }}</el-tag>
+              <el-tag v-if="product.user?.creditScore != null" size="small" :color="getCreditLevel(product.user.creditScore).color" effect="dark" class="credit-tag">{{ getCreditLevel(product.user.creditScore).label }}</el-tag>
             </span>
           </div>
         </div>

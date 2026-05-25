@@ -5,6 +5,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { TrendCharts, User, Goods, Document, ChatDotRound, ShoppingCart, Money, Clock } from '@element-plus/icons-vue'
 import api from '@/api'
 import { getDashboardCharts, type ChartStatsData } from '@/api/modules/admin'
+import { formatDate, formatRelativeTime } from '@/utils/format'
 import * as echarts from 'echarts'
 
 const router = useRouter()
@@ -72,7 +73,7 @@ onMounted(async () => {
     ]
 
     recentActivities.value = data.recentActivities.map((a) => ({
-      time: formatTime(a.time),
+      time: formatDate(a.time, 'time'),
       content: a.content,
       type: a.type,
     }))
@@ -210,6 +211,7 @@ function renderCharts() {
       '已下架': '#9E9E9E',
       '已封禁': '#F44336',
       '审核未通过': '#E91E63',
+      '已过期': '#C0C4CC',
     }
     productStatusChart.setOption({
       tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
@@ -264,23 +266,6 @@ onBeforeUnmount(() => {
   productStatusChart?.dispose()
   categoryChart?.dispose()
 })
-
-function formatTime(iso: string): string {
-  const d = new Date(iso)
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
-
-function formatRelativeTime(iso: string): string {
-  const now = Date.now()
-  const then = new Date(iso).getTime()
-  const diff = Math.floor((now - then) / 1000 / 60)
-  if (diff < 1) return '刚刚'
-  if (diff < 60) return `${diff}分钟前`
-  const hours = Math.floor(diff / 60)
-  if (hours < 24) return `${hours}小时前`
-  const days = Math.floor(hours / 24)
-  return `${days}天前`
-}
 
 function viewAllReviews() {
   router.push('/admin/products?status=pending')

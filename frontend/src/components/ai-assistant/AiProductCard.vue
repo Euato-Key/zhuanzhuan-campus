@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { getOssUrl } from '@/utils/oss'
 import { useRouter } from 'vue-router'
+import type { ProductCardItem } from '@/stores/ai-assistant'
 
-const props = defineProps<{ products: any[] }>()
+const props = defineProps<{ products: ProductCardItem[] }>()
 const router = useRouter()
 
 const CONDITION_LABELS: Record<string, string> = {

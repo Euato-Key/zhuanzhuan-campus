@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { UIMessage, CardData } from '@/stores/ai-assistant'
+import type { UIMessage, CardData, ProductCardItem, OrderCardItem } from '@/stores/ai-assistant'
 import AiTextMessage from './AiTextMessage.vue'
 import AiProductCard from './AiProductCard.vue'
 import AiOrderCard from './AiOrderCard.vue'
@@ -11,17 +11,13 @@ function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
-function normalizeProducts(data: any): any[] {
-  return Array.isArray(data) ? data : (data?.products || [])
+function normalizeProducts(data: ProductCardItem[] | OrderCardItem[]): ProductCardItem[] {
+  return Array.isArray(data) ? (data as ProductCardItem[]) : []
 }
 
-function normalizeOrders(data: any): any[] {
-  if (Array.isArray(data)) return data
-  if (data?.orders) return data.orders
-  const all: any[] = []
-  if (data?.bought) all.push(...data.bought.map((o: any) => ({ ...o, type: o.type || '买入' })))
-  if (data?.sold) all.push(...data.sold.map((o: any) => ({ ...o, type: o.type || '卖出' })))
-  return all
+function normalizeOrders(data: ProductCardItem[] | OrderCardItem[]): OrderCardItem[] {
+  if (Array.isArray(data)) return data as OrderCardItem[]
+  return []
 }
 
 // Split content into text segments interleaved with cards

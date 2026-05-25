@@ -13,6 +13,7 @@ import {
   type ProductStatus,
 } from '@/api/modules/product'
 import { getOssUrl } from '@/utils/oss'
+import { formatDate } from '@/utils/format'
 import { showError, showSuccess } from '@/utils/error'
 
 const router = useRouter()
@@ -113,7 +114,7 @@ onMounted(() => {
                 <span>{{ product.category?.name }}</span>
                 <span>{{ product.user?.username }}</span>
               </div>
-              <div class="card-time">收藏于 {{ new Date(product.favoritedAt).toLocaleDateString() }}</div>
+              <div class="card-time">收藏于 {{ formatDate(product.favoritedAt, 'date') }}</div>
             </div>
 
             <!-- 操作按钮 -->

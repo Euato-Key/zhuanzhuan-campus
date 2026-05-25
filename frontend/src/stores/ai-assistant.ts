@@ -4,9 +4,33 @@ import { useUserStore } from './user'
 import { useAiStream } from '@/composables/useAiStream'
 import type { AIConversation } from '@/api/modules/ai'
 
+export interface ProductCardItem {
+  id: number
+  name: string
+  currentPrice: number
+  images: string[]
+  itemCondition: string
+  favoriteCount: number
+  deliveryType: string
+  categoryId?: number
+  categoryName?: string
+}
+
+export interface OrderCardItem {
+  id: number
+  orderNo: string
+  status: string
+  totalPrice: number
+  productName: string
+  createdAt: string
+  type?: string
+  buyerId?: number
+  sellerId?: number
+}
+
 export interface CardData {
   cardType: string
-  data: any
+  data: ProductCardItem[] | OrderCardItem[]
   textBeforeLength?: number
 }
 
@@ -15,7 +39,7 @@ export interface UIMessage {
   role: 'user' | 'assistant'
   content: string
   msgType: string
-  cardData?: any
+  cardData?: ProductCardItem[] | OrderCardItem[]
   cards?: CardData[]
   isLoading?: boolean
   createdAt: string
