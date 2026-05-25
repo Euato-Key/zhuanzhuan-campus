@@ -58,6 +58,7 @@ const ROUTE_MAP: Record<RelatedType, string> = {
   want_buy: '/want-buy',
   review: '/reviews',
   user: '/user',
+  report: '/admin/reports',
 }
 
 function handleClick() {

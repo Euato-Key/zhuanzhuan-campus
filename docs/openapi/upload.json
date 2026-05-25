@@ -28,7 +28,7 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["avatar", "product", "community", "chat"],
+                    "enum": ["avatar", "product", "community", "chat", "banner"],
                     "description": "上传类型"
                   }
                 }
@@ -92,7 +92,7 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["avatar", "product", "community", "chat"],
+                    "enum": ["avatar", "product", "community", "chat", "banner"],
                     "description": "上传类型"
                   },
                   "filename": {

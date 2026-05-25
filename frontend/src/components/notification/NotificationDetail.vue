@@ -49,7 +49,6 @@ import { useRouter } from 'vue-router'
 import { Link } from '@element-plus/icons-vue'
 import NotificationTypeIcon from './NotificationTypeIcon.vue'
 import type { Notification, RelatedType } from '@/api/modules/notification'
-import { NOTIFICATION_TYPE_LABELS } from '@/api/modules/notification'
 import { formatDate } from '@/utils/format'
 
 const props = defineProps<{
@@ -74,6 +73,7 @@ const RELATED_LABELS: Record<RelatedType, string> = {
   review: '关联评价',
   user: '关联用户',
   want_buy: '关联求购',
+  report: '关联举报',
 }
 
 const RELATED_ACTIONS: Record<RelatedType, string> = {
@@ -82,6 +82,7 @@ const RELATED_ACTIONS: Record<RelatedType, string> = {
   review: '查看评价',
   user: '查看用户',
   want_buy: '查看求购',
+  report: '查看举报',
 }
 
 const RELATED_ROUTES: Record<RelatedType, string> = {
@@ -90,6 +91,7 @@ const RELATED_ROUTES: Record<RelatedType, string> = {
   want_buy: '/want-buy',
   review: '/reviews',
   user: '/user',
+  report: '/admin/reports',
 }
 
 const relatedLabel = computed(() => {
