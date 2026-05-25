@@ -90,6 +90,7 @@ export interface ProductQuery {
   sortBy?: 'price' | 'time' | 'favorite';
   sortOrder?: 'asc' | 'desc';
   userId?: number;
+  school?: string;
 }
 
 export interface AdminProductQuery extends ProductQuery {
@@ -271,6 +272,10 @@ export const ProductService = {
 
     if (query.deliveryType) {
       where.deliveryType = { in: [query.deliveryType, 'both'] };
+    }
+
+    if (query.school) {
+      where.user = { school: query.school };
     }
 
     let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };

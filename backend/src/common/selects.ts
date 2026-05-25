@@ -50,6 +50,7 @@ export const PRODUCT_USER_SELECT = {
   id: true,
   username: true,
   avatar: true,
+  school: true,
 } as const;
 
 /**

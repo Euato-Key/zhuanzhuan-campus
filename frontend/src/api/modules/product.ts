@@ -38,6 +38,7 @@ export interface ProductListItem {
     id: number
     username: string
     avatar: string | null
+    school: string | null
   }
 }
 
@@ -175,6 +176,7 @@ export interface ProductQueryParams {
   deliveryType?: DeliveryType
   sortBy?: 'price' | 'time' | 'favorite'
   sortOrder?: 'asc' | 'desc'
+  school?: string
 }
 
 // 我的商品查询参数
@@ -384,6 +386,7 @@ export interface FavoriteItem {
     id: number
     username: string
     avatar: string | null
+    school: string | null
   }
 }
 

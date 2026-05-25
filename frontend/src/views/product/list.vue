@@ -13,6 +13,7 @@ import {
   type ItemCondition,
   type DeliveryType,
 } from '@/api/modules/product'
+import { searchUniversities, type UniversityItem } from '@/api/modules/university'
 import PublishProductDialog from '@/components/product/PublishProductDialog.vue'
 import AiPublishModal from '@/components/product/AiPublishModal.vue'
 import ProductCard from '@/components/product/ProductCard.vue'
@@ -26,6 +27,8 @@ const route = useRoute()
 const loading = ref(false)
 const products = ref<ProductListItem[]>([])
 const total = ref(0)
+const schoolOptions = ref<UniversityItem[]>([])
+const schoolSearchLoading = ref(false)
 const categories = ref<Category[]>([])
 
 // 查询参数
@@ -40,6 +43,7 @@ const queryParams = reactive({
   deliveryType: undefined as DeliveryType | undefined,
   sortBy: 'time' as 'price' | 'time' | 'favorite',
   sortOrder: 'desc' as 'asc' | 'desc',
+  school: undefined as string | undefined,
 })
 
 // 价格筛选
@@ -130,9 +134,33 @@ function handleReset() {
   queryParams.minPrice = undefined
   queryParams.maxPrice = undefined
   queryParams.deliveryType = undefined
+  queryParams.school = undefined
   queryParams.sortBy = 'time'
   queryParams.sortOrder = 'desc'
   priceRange.value = [undefined, undefined]
+  schoolOptions.value = []
+  handleSearch()
+}
+
+// 学校搜索
+async function handleSchoolSearch(query: string) {
+  if (!query) {
+    schoolOptions.value = []
+    return
+  }
+  schoolSearchLoading.value = true
+  try {
+    const res = await searchUniversities({ keyword: query, pageSize: 20 })
+    if (res.data.code === 200) {
+      schoolOptions.value = res.data.data.list
+    }
+  } catch { /* ignore */ } finally {
+    schoolSearchLoading.value = false
+  }
+}
+
+function handleSchoolSelectChange(val: string | undefined) {
+  queryParams.school = val || undefined
   handleSearch()
 }
 
@@ -359,6 +387,32 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- 学校筛选 -->
+      <div class="filter-row filter-options">
+        <div class="filter-group">
+          <span class="filter-label">学校：</span>
+          <el-select
+            v-model="queryParams.school"
+            placeholder="不限"
+            clearable
+            filterable
+            remote
+            :remote-method="handleSchoolSearch"
+            :loading="schoolSearchLoading"
+            @change="handleSchoolSelectChange"
+            @clear="handleSchoolSelectChange(undefined)"
+            class="school-select"
+          >
+            <el-option
+              v-for="uni in schoolOptions"
+              :key="uni.id"
+              :label="uni.name"
+              :value="uni.name"
+            />
+          </el-select>
+        </div>
+      </div>
+
       <!-- 排序 -->
       <div class="sort-row">
         <span class="sort-label">排序：</span>
@@ -563,6 +617,10 @@ onMounted(() => {
 
 .price-separator {
   color: $color-text-secondary;
+}
+
+.school-select {
+  width: 200px;
 }
 
 .sort-row {

@@ -18,6 +18,7 @@ function parseProductQuery(req: Request): ProductQuery {
     deliveryType: req.query.deliveryType as ProductQuery['deliveryType'],
     sortBy: req.query.sortBy as ProductQuery['sortBy'],
     sortOrder: req.query.sortOrder as ProductQuery['sortOrder'],
+    school: req.query.school as string | undefined,
   };
 }
 
