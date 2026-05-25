@@ -472,13 +472,12 @@ export const ProductService = {
     // 需要重新审核的情况
     const needsAudit = needReAudit || product.status === ProductStatus.audit_failed;
     if (needsAudit) {
-      if (product.status === ProductStatus.audit_failed) {
-        if (product.auditCount >= 3) {
-          throw badRequest('审核次数已达上限，无法再次提交');
-        }
+      if (product.auditCount >= 3) {
+        throw badRequest('审核次数已达上限，无法再次提交');
       }
       updateData.status = ProductStatus.pending;
       updateData.rejectReason = null;
+      updateData.auditCount = { increment: 1 };
     }
 
     const updated = await prisma.product.update({
@@ -646,6 +645,7 @@ export const ProductService = {
       data: {
         status: ProductStatus.audit_failed,
         rejectReason: reason,
+        auditCount: { increment: 1 },
       },
     });
 

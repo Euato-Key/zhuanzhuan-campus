@@ -49,7 +49,7 @@ app.use('/api/regions', regionRoutes);
 app.use('/api/universities', universityRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/want-buys', wantBuyRoutes);
+app.use('/api/want-buy', wantBuyRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/settings', settingsRoutes);

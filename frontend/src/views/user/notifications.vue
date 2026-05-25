@@ -63,7 +63,7 @@ import type { NotificationType } from '@/api/modules/notification'
 
 const store = useNotificationStore()
 
-const tabTypes: NotificationType[] = ['system', 'product', 'order', 'review', 'interaction']
+const tabTypes: NotificationType[] = ['system', 'product', 'order', 'review', 'interaction', 'report']
 const activeTab = ref<string>('')
 
 function handleTabChange(name: string | number) {

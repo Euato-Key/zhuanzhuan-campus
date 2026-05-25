@@ -86,7 +86,9 @@ const registerRules: FormRules = {
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+    { min: 8, message: '密码至少8位', trigger: 'blur' },
+    { pattern: /[a-zA-Z]/, message: '密码需包含字母', trigger: 'blur' },
+    { pattern: /[0-9]/, message: '密码需包含数字', trigger: 'blur' },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
@@ -135,7 +137,9 @@ const forgotStep2Rules: FormRules = {
   ],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+    { min: 8, message: '密码至少8位', trigger: 'blur' },
+    { pattern: /[a-zA-Z]/, message: '密码需包含字母', trigger: 'blur' },
+    { pattern: /[0-9]/, message: '密码需包含数字', trigger: 'blur' },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
@@ -180,7 +184,7 @@ async function handleSendCode(targetEmail: string, type: 'register' | 'login' | 
   codeSending.value = true
   try {
     await sendCode(targetEmail, type)
-    showSuccess('验证码已发送至您的邮箱')
+    showSuccess('验证码已发送至您的邮箱，5分钟内有效')
     startCountdown()
   } catch (error) {
     showError(getAuthErrorMessage(error))
@@ -249,7 +253,7 @@ async function handleForgotSendCode() {
   codeSending.value = true
   try {
     await sendCode(forgotForm.email, 'reset_password')
-    showSuccess('验证码已发送至您的邮箱')
+    showSuccess('验证码已发送至您的邮箱，5分钟内有效')
     forgotStep.value = 2
     startCountdown()
   } catch (error) {
@@ -386,7 +390,7 @@ watch(mode, () => {
         </el-form-item>
 
         <el-form-item label="密码" prop="password">
-          <el-input v-model="registerForm.password" type="password" placeholder="至少6位，建议包含字母和数字" :prefix-icon="Lock" show-password />
+          <el-input v-model="registerForm.password" type="password" placeholder="至少8位，需包含字母和数字" :prefix-icon="Lock" show-password />
           <div v-if="registerForm.password" class="password-strength">
             <div class="strength-bars">
               <span v-for="i in 3" :key="i" :class="['bar', { filled: i <= passwordStrength }]" :style="{ backgroundColor: i <= passwordStrength ? strengthColor : '' }" />
@@ -473,7 +477,7 @@ watch(mode, () => {
         </el-form-item>
 
         <el-form-item label="新密码" prop="newPassword">
-          <el-input v-model="forgotForm.newPassword" type="password" placeholder="至少6位，建议包含字母和数字" :prefix-icon="Lock" show-password />
+          <el-input v-model="forgotForm.newPassword" type="password" placeholder="至少8位，需包含字母和数字" :prefix-icon="Lock" show-password />
         </el-form-item>
 
         <el-form-item label="确认新密码" prop="confirmPassword">

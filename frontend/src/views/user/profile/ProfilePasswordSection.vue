@@ -35,7 +35,9 @@ const rules: FormRules = {
   ],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+    { min: 8, message: '密码至少8位', trigger: 'blur' },
+    { pattern: /[a-zA-Z]/, message: '密码需包含字母', trigger: 'blur' },
+    { pattern: /[0-9]/, message: '密码需包含数字', trigger: 'blur' },
   ],
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
@@ -111,7 +113,7 @@ async function handleSave() {
         <el-input
           v-model="form.newPassword"
           type="password"
-          placeholder="至少6位，建议包含字母和数字"
+          placeholder="至少8位，需包含字母和数字"
           :prefix-icon="Lock"
           show-password
         />

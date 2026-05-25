@@ -137,20 +137,20 @@ export const VALID_DAYS_OPTIONS = [
 // 获取求购贴列表
 export function getWantBuyList(params?: WantBuyQueryParams) {
   return api.get<{ code: number; data: PaginatedResponse<WantBuyListItem>; message: string }>(
-    '/want-buys',
+    '/want-buy',
     { params }
   )
 }
 
 // 获取求购贴详情
 export function getWantBuyById(id: number) {
-  return api.get<{ code: number; data: WantBuyDetail; message: string }>(`/want-buys/${id}`)
+  return api.get<{ code: number; data: WantBuyDetail; message: string }>(`/want-buy/${id}`)
 }
 
 // 获取用户发布的求购贴列表
 export function getUserWantBuyList(userId: number, params?: { page?: number; pageSize?: number }) {
   return api.get<{ code: number; data: PaginatedResponse<WantBuyListItem>; message: string }>(
-    `/want-buys/user/${userId}`,
+    `/want-buy/user/${userId}`,
     { params }
   )
 }
@@ -159,40 +159,40 @@ export function getUserWantBuyList(userId: number, params?: { page?: number; pag
 
 // 创建求购贴
 export function createWantBuy(data: CreateWantBuyData) {
-  return api.post<{ code: number; data: WantBuyDetail; message: string }>('/want-buys', data)
+  return api.post<{ code: number; data: WantBuyDetail; message: string }>('/want-buy', data)
 }
 
 // 获取我的求购贴列表
 export function getMyWantBuyList(params?: { page?: number; pageSize?: number; status?: WantBuyStatus; keyword?: string }) {
   return api.get<{ code: number; data: PaginatedResponse<WantBuyListItem>; message: string }>(
-    '/want-buys/my/list',
+    '/want-buy/my/list',
     { params }
   )
 }
 
 // 更新求购贴
 export function updateWantBuy(id: number, data: UpdateWantBuyData) {
-  return api.put<{ code: number; data: WantBuyDetail; message: string }>(`/want-buys/${id}`, data)
+  return api.put<{ code: number; data: WantBuyDetail; message: string }>(`/want-buy/${id}`, data)
 }
 
 // 删除求购贴
 export function deleteWantBuy(id: number) {
-  return api.delete<{ code: number; data: null; message: string }>(`/want-buys/${id}`)
+  return api.delete<{ code: number; data: null; message: string }>(`/want-buy/${id}`)
 }
 
 // 标记为已找到
 export function markWantBuyFound(id: number) {
-  return api.put<{ code: number; data: WantBuyDetail; message: string }>(`/want-buys/${id}/found`)
+  return api.put<{ code: number; data: WantBuyDetail; message: string }>(`/want-buy/${id}/found`)
 }
 
 // 关闭求购贴
 export function closeWantBuy(id: number) {
-  return api.put<{ code: number; data: WantBuyDetail; message: string }>(`/want-buys/${id}/close`)
+  return api.put<{ code: number; data: WantBuyDetail; message: string }>(`/want-buy/${id}/close`)
 }
 
 // 重新开启求购贴
 export function reopenWantBuy(id: number) {
-  return api.put<{ code: number; data: WantBuyDetail; message: string }>(`/want-buys/${id}/reopen`)
+  return api.put<{ code: number; data: WantBuyDetail; message: string }>(`/want-buy/${id}/reopen`)
 }
 
 // ========== 评论接口 ==========
@@ -200,7 +200,7 @@ export function reopenWantBuy(id: number) {
 // 获取评论列表
 export function getWantBuyComments(wantBuyId: number, params?: { page?: number; pageSize?: number }) {
   return api.get<{ code: number; data: PaginatedResponse<WantBuyComment>; message: string }>(
-    `/want-buys/${wantBuyId}/comments`,
+    `/want-buy/${wantBuyId}/comments`,
     { params }
   )
 }
@@ -208,7 +208,7 @@ export function getWantBuyComments(wantBuyId: number, params?: { page?: number; 
 // 发表评论
 export function createWantBuyComment(wantBuyId: number, data: CreateCommentData) {
   return api.post<{ code: number; data: WantBuyComment; message: string }>(
-    `/want-buys/${wantBuyId}/comments`,
+    `/want-buy/${wantBuyId}/comments`,
     data
   )
 }
@@ -216,27 +216,27 @@ export function createWantBuyComment(wantBuyId: number, data: CreateCommentData)
 // 修改评论
 export function updateWantBuyComment(commentId: number, content: string) {
   return api.put<{ code: number; data: WantBuyComment; message: string }>(
-    `/want-buys/comments/${commentId}`,
+    `/want-buy/comments/${commentId}`,
     { content }
   )
 }
 
 // 删除评论
 export function deleteWantBuyComment(commentId: number) {
-  return api.delete<{ code: number; data: null; message: string }>(`/want-buys/comments/${commentId}`)
+  return api.delete<{ code: number; data: null; message: string }>(`/want-buy/comments/${commentId}`)
 }
 
 // 点赞评论
 export function likeWantBuyComment(commentId: number) {
   return api.post<{ code: number; data: { likeCount: number }; message: string }>(
-    `/want-buys/comments/${commentId}/like`
+    `/want-buy/comments/${commentId}/like`
   )
 }
 
 // 取消点赞
 export function unlikeWantBuyComment(commentId: number) {
   return api.delete<{ code: number; data: { likeCount: number }; message: string }>(
-    `/want-buys/comments/${commentId}/like`
+    `/want-buy/comments/${commentId}/like`
   )
 }
 
@@ -245,17 +245,17 @@ export function unlikeWantBuyComment(commentId: number) {
 // 获取求购贴列表（管理员）
 export function getAdminWantBuyList(params?: WantBuyQueryParams & { userId?: number }) {
   return api.get<{ code: number; data: PaginatedResponse<WantBuyListItem>; message: string }>(
-    '/want-buys/admin/list',
+    '/want-buy/admin/list',
     { params }
   )
 }
 
 // 删除求购贴（管理员）
 export function adminDeleteWantBuy(id: number) {
-  return api.delete<{ code: number; data: null; message: string }>(`/want-buys/admin/${id}`)
+  return api.delete<{ code: number; data: null; message: string }>(`/want-buy/admin/${id}`)
 }
 
 // 删除评论（管理员）
 export function adminDeleteWantBuyComment(commentId: number) {
-  return api.delete<{ code: number; data: null; message: string }>(`/want-buys/admin/comments/${commentId}`)
+  return api.delete<{ code: number; data: null; message: string }>(`/want-buy/admin/comments/${commentId}`)
 }

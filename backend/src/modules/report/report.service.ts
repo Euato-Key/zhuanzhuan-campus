@@ -195,6 +195,19 @@ export const ReportService = {
       },
     });
 
+    // 通知被举报用户（不透露举报人信息）
+    const reportedUserId = await resolveReportedUserId(data.targetType, targetId);
+    if (reportedUserId && reportedUserId !== reporterId) {
+      await NotificationService.create({
+        userId: reportedUserId,
+        type: 'report',
+        title: '举报通知',
+        content: `您的${TARGET_TYPE_LABELS[data.targetType]}因「${REASON_LABELS[data.reason]}」被举报，请留意规范使用`,
+        relatedId: report.id,
+        relatedType: 'user',
+      });
+    }
+
     return report;
   },
 

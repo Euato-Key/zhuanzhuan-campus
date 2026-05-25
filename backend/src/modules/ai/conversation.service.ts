@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma';
 import { AIMessageType } from '@prisma/client';
+import { notFound, forbidden } from '../../common/errors';
 
 export const ConversationService = {
   async create(userId: number, title?: string) {
@@ -22,7 +23,7 @@ export const ConversationService = {
     const conv = await prisma.aIConversation.findFirst({
       where: { id: conversationId, userId },
     });
-    if (!conv) throw new Error('会话不存在');
+    if (!conv) throw notFound('会话不存在');
     return prisma.aIConversation.delete({ where: { id: conversationId } });
   },
 
