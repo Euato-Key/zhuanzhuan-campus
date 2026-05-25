@@ -1,43 +1,86 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { getCreditLevel } from '@/utils/credit'
 import { getOssUrl } from '@/utils/oss'
-import AvatarUpload from '@/components/AvatarUpload.vue'
+import { uploadImage } from '@/api/modules/upload'
 import { ElMessage } from 'element-plus'
-import { EditPen } from '@element-plus/icons-vue'
+import { Camera } from '@element-plus/icons-vue'
+import { VueCropper } from 'vue-cropper/next'
+import 'vue-cropper/next/dist/index.css'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const editingAvatar = ref(false)
-const avatarTempPath = ref<string | null>(null)
-const avatarSaving = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+const cropping = ref(false)
+const cropImg = ref('')
+const uploading = ref(false)
 
-async function handleAvatarSuccess(tempPath: string) {
-  avatarTempPath.value = tempPath
+function triggerFileInput() {
+  fileInput.value?.click()
 }
 
-async function saveAvatar() {
-  if (!avatarTempPath.value) return
+function handleFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
 
-  avatarSaving.value = true
+  if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+    ElMessage.error('仅支持 JPG、PNG、GIF、WebP 格式')
+    input.value = ''
+    return
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.error('文件大小不能超过 2MB')
+    input.value = ''
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = async (ev) => {
+    cropImg.value = ev.target?.result as string
+    cropping.value = true
+    await nextTick()
+  }
+  reader.readAsDataURL(file)
+  input.value = ''
+}
+
+const cropperRef = ref<InstanceType<typeof VueCropper> | null>(null)
+
+async function confirmCrop() {
+  if (!cropperRef.value) return
+
+  uploading.value = true
   try {
-    await userStore.updateAvatar(avatarTempPath.value)
-    avatarTempPath.value = null
-    editingAvatar.value = false
-    ElMessage.success('头像已保存')
+    const base64 = await new Promise<string>((resolve, reject) => {
+      cropperRef.value!.getCropData((data: string) => {
+        if (data) resolve(data)
+        else reject(new Error('裁剪失败'))
+      })
+    })
+
+    const res = await fetch(base64)
+    const blob = await res.blob()
+    const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
+    const uploadRes = await uploadImage(file, 'avatar')
+    const ossPath = uploadRes.data.data.ossPath
+
+    await userStore.updateAvatar(ossPath)
+    cropping.value = false
+    ElMessage.success('头像已更新')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '保存头像失败')
+    ElMessage.error(error?.message || '头像更新失败')
   } finally {
-    avatarSaving.value = false
+    uploading.value = false
   }
 }
 
-function cancelEditAvatar() {
-  avatarTempPath.value = null
-  editingAvatar.value = false
+function cancelCrop() {
+  cropping.value = false
+  cropImg.value = ''
 }
 
 function formatDate(dateStr: string | null | undefined): string {
@@ -53,36 +96,25 @@ function formatDate(dateStr: string | null | undefined): string {
 
 <template>
   <div class="profile-card">
-    <!-- Avatar section -->
     <div class="avatar-section">
-      <div v-if="!editingAvatar" class="avatar-wrap" @click="editingAvatar = true">
-        <img
-          :src="getOssUrl(userStore.user?.avatar)"
-          class="avatar-img"
-          alt="用户头像"
-        />
-        <div class="avatar-edit-btn">
-          <el-icon><EditPen /></el-icon>
+      <div class="avatar-wrap" @click="triggerFileInput">
+        <el-avatar :size="120" :src="userStore.user?.avatar ? getOssUrl(userStore.user.avatar) : undefined" class="avatar-img">
+          {{ userStore.user?.username?.charAt(0) || '?' }}
+        </el-avatar>
+        <div class="avatar-overlay">
+          <el-icon :size="24"><Camera /></el-icon>
+          <span>更换头像</span>
         </div>
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          class="file-input"
+          @change="handleFileChange"
+        />
       </div>
-      <template v-else>
-        <AvatarUpload
-          :model-value="avatarTempPath || userStore.user?.avatar"
-          @success="handleAvatarSuccess"
-        />
-        <div v-if="avatarTempPath" class="save-avatar">
-          <el-button type="primary" size="small" :loading="avatarSaving" @click="saveAvatar">
-            保存
-          </el-button>
-          <el-button size="small" @click="cancelEditAvatar">取消</el-button>
-        </div>
-        <div v-else class="save-avatar">
-          <el-button size="small" @click="cancelEditAvatar">取消</el-button>
-        </div>
-      </template>
     </div>
 
-    <!-- User info -->
     <div class="user-info">
       <h1 class="user-name">{{ userStore.user?.username }}</h1>
       <p class="user-email">{{ userStore.user?.email }}</p>
@@ -104,6 +136,35 @@ function formatDate(dateStr: string | null | undefined): string {
         <el-button type="primary" plain size="small" @click="router.push('/reviews')">查看我的评价</el-button>
       </div>
     </div>
+
+    <!-- 裁剪弹窗 -->
+    <el-dialog v-model="cropping" title="裁剪头像" width="400px" :close-on-click-modal="false" @close="cancelCrop">
+      <div class="cropper-container">
+        <VueCropper
+          ref="cropperRef"
+          :img="cropImg"
+          :output-size="1"
+          :output-type="'jpeg'"
+          :info="true"
+          :can-scale="true"
+          :auto-crop="true"
+          :auto-crop-width="200"
+          :auto-crop-height="200"
+          :fixed="true"
+          :fixed-number="[1, 1]"
+          :full="false"
+          :can-move="true"
+          :can-move-box="true"
+          :fixed-box="false"
+          :center-box="true"
+          mode="cover"
+        />
+      </div>
+      <template #footer>
+        <el-button @click="cancelCrop">取消</el-button>
+        <el-button type="primary" :loading="uploading" @click="confirmCrop">确认上传</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -130,28 +191,29 @@ function formatDate(dateStr: string | null | undefined): string {
   width: 120px;
   height: 120px;
   cursor: pointer;
-}
-
-.avatar-img {
-  width: 100%;
-  height: 100%;
   border-radius: $radius-full;
-  object-fit: cover;
-  background: $color-bg-page;
+  overflow: hidden;
+
+  .avatar-img {
+    width: 100%;
+    height: 100%;
+    font-size: 40px;
+    background: $color-bg-page;
+  }
 }
 
-.avatar-edit-btn {
+.avatar-overlay {
   position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 32px;
-  height: 32px;
-  background: $color-primary;
-  color: #fff;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
   border-radius: $radius-full;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  color: #fff;
+  font-size: 12px;
   opacity: 0;
   transition: opacity $transition-fast;
 
@@ -160,11 +222,13 @@ function formatDate(dateStr: string | null | undefined): string {
   }
 }
 
-.save-avatar {
-  margin-top: 12px;
-  display: flex;
-  gap: 8px;
-  justify-content: center;
+.file-input {
+  display: none;
+}
+
+.cropper-container {
+  width: 100%;
+  height: 350px;
 }
 
 .user-info {
