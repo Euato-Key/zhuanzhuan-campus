@@ -34,7 +34,7 @@ export interface UploadResult {
   ossPath: string
 }
 
-export type UploadType = 'avatar' | 'product' | 'community' | 'chat'
+export type UploadType = 'avatar' | 'product' | 'community' | 'chat' | 'banner'
 
 export function getSTSToken(type: UploadType) {
   return api.post<{ data: STSCredentials }>('/upload/sts-token', { type })
