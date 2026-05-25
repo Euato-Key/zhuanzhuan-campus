@@ -208,7 +208,7 @@
             "description": "商品状态筛选",
             "schema": {
               "type": "string",
-              "enum": ["pending", "active", "offline", "banned", "audit_failed"]
+              "enum": ["pending", "active", "offline", "banned", "audit_failed", "expired"]
             }
           }
         ],
@@ -585,7 +585,7 @@
       "put": {
         "tags": ["商品用户接口"],
         "summary": "重新上架",
-        "description": "将已下架(offline)或审核失败(audit_failed)的商品重新提交审核。审核失败的商品最多可提交3次审核。",
+        "description": "将已下架(offline)、审核失败(audit_failed)或已过期(expired)的商品重新提交审核。审核失败的商品最多可提交3次审核。",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
@@ -773,7 +773,7 @@
             "description": "商品状态筛选",
             "schema": {
               "type": "string",
-              "enum": ["pending", "active", "offline", "banned", "audit_failed"]
+              "enum": ["pending", "active", "offline", "banned", "audit_failed", "expired"]
             }
           },
           {
@@ -1180,7 +1180,7 @@
             "properties": {
               "status": {
                 "type": "string",
-                "enum": ["pending", "active", "offline", "banned", "audit_failed"],
+                "enum": ["pending", "active", "offline", "banned", "audit_failed", "expired"],
                 "example": "active"
               },
               "stock": { "type": "integer", "example": 5 },
@@ -1200,7 +1200,7 @@
             "properties": {
               "status": {
                 "type": "string",
-                "enum": ["pending", "active", "offline", "banned", "audit_failed"],
+                "enum": ["pending", "active", "offline", "banned", "audit_failed", "expired"],
                 "description": "商品当前状态（可能已下架或被封禁）",
                 "example": "active"
               },
@@ -1286,7 +1286,7 @@
           "expireTime": { "type": "string", "format": "date-time" },
           "status": {
             "type": "string",
-            "enum": ["pending", "active", "offline", "banned", "audit_failed"],
+            "enum": ["pending", "active", "offline", "banned", "audit_failed", "expired"],
             "example": "active"
           },
           "rejectReason": { "type": "string", "example": null },

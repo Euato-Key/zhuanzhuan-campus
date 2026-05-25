@@ -45,6 +45,40 @@
         }
       }
     },
+    "/api/ai/recognize-stream": {
+      "post": {
+        "tags": ["AI识别"],
+        "summary": "AI商品图片识别（SSE流式）",
+        "description": "上传商品图片，AI自动识别商品信息并以SSE流式返回进度和结果。支持MCP多阶段流程，MCP不可用时自动降级。事件类型：progress(识别进度)、result(识别结果)、error(错误)、done(完成)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["images"],
+                "properties": {
+                  "images": { "type": "array", "items": { "type": "string" }, "minItems": 1, "maxItems": 9, "description": "商品图片OSS路径" },
+                  "name": { "type": "string", "description": "商品名称提示" },
+                  "brand": { "type": "string", "description": "品牌提示" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE流式响应",
+            "content": { "text/event-stream": { "schema": { "type": "string" } } }
+          },
+          "400": { "description": "参数错误" },
+          "401": { "description": "未登录" },
+          "429": { "description": "AI服务繁忙" },
+          "503": { "description": "AI服务不可用" }
+        }
+      }
+    },
     "/api/ai/audit/{productId}": {
       "post": {
         "tags": ["AI审核"],

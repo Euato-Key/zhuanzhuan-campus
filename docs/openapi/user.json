@@ -9,7 +9,8 @@
     { "url": "http://localhost:3000", "description": "开发环境" }
   ],
   "tags": [
-    { "name": "用户", "description": "用户信息管理接口" }
+    { "name": "用户", "description": "用户信息管理接口" },
+    { "name": "管理员", "description": "管理员用户管理接口" }
   ],
   "paths": {
     "/api/users/profile": {
@@ -192,6 +193,172 @@
           "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/users/admin/list": {
+      "get": {
+        "tags": ["管理员"],
+        "summary": "获取用户列表（管理员）",
+        "description": "管理员获取用户列表，支持关键词搜索和状态筛选",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "keyword", "in": "query", "schema": { "type": "string" }, "description": "搜索关键词（用户名/邮箱）" },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["active", "blocked"] }, "description": "用户状态筛选" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" }, "description": "页码" },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer" }, "description": "每页数量" }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "list": { "type": "array", "items": { "$ref": "#/components/schemas/UserProfile" } },
+                            "total": { "type": "integer", "description": "总数" },
+                            "page": { "type": "integer", "description": "当前页码" },
+                            "pageSize": { "type": "integer", "description": "每页数量" }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/users/admin/{id}/ban": {
+      "put": {
+        "tags": ["管理员"],
+        "summary": "封禁用户（管理员）",
+        "description": "管理员封禁指定用户，封禁后用户无法登录",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "用户ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "封禁成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/UserProfile" } } }
+                  ]
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/users/admin/{id}/unban": {
+      "put": {
+        "tags": ["管理员"],
+        "summary": "解封用户（管理员）",
+        "description": "管理员解封指定用户，恢复登录权限",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "用户ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "解封成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/UserProfile" } } }
+                  ]
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/users/admin/{id}/role": {
+      "put": {
+        "tags": ["管理员"],
+        "summary": "修改用户角色（超级管理员）",
+        "description": "超级管理员修改用户角色，可将用户设为管理员或恢复为普通用户",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "用户ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["role"],
+                "properties": {
+                  "role": { "type": "string", "enum": ["user", "admin"], "description": "用户角色" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "修改成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessResponse" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/UserProfile" } } }
+                  ]
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
         }
       }
     },

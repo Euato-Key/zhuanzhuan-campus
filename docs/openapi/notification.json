@@ -31,7 +31,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": ["system", "product", "order", "chat", "review", "interaction"]
+              "enum": ["system", "product", "order", "chat", "review", "interaction", "report"]
             },
             "description": "通知类型筛选"
           },
@@ -131,7 +131,7 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["system", "product", "order", "chat", "review", "interaction"],
+                    "enum": ["system", "product", "order", "chat", "review", "interaction", "report"],
                     "description": "仅标记指定类型的未读通知，不传则标记全部"
                   }
                 }
@@ -292,7 +292,7 @@
           "userId": { "type": "integer", "description": "用户ID" },
           "type": {
             "type": "string",
-            "enum": ["system", "product", "order", "chat", "review", "interaction"],
+            "enum": ["system", "product", "order", "chat", "review", "interaction", "report"],
             "description": "通知类型"
           },
           "title": { "type": "string", "description": "通知标题" },

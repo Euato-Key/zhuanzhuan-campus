@@ -1,0 +1,42 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "信用分模块说明",
+    "description": "转转校园二手平台 - 信用分体系文档。信用分无独立 API 端点，通过业务事件自动触发变动，分数范围 0-150。",
+    "version": "1.0.0"
+  },
+  "x-credit-system": {
+    "description": "信用分体系通过业务事件自动触发，无需手动调用。adjustCredit 为内部核心函数，各业务模块在对应事件发生时调用。",
+    "scoreRange": {
+      "min": 0,
+      "max": 150,
+      "default": 100
+    },
+    "rules": [
+      { "reason": "order_completed", "delta": 3, "label": "交易完成", "trigger": "买家确认收货时，卖家信用分 +3" },
+      { "reason": "good_review", "delta": 2, "label": "获得好评", "trigger": "评价审核通过且 rating ≥ 4 时，卖家 +2" },
+      { "reason": "good_review_with_img", "delta": 3, "label": "获得好评(有图)", "trigger": "好评且有图片时，卖家额外 +1（共 +3）" },
+      { "reason": "cancel_after_pay", "delta": -1, "label": "付款后取消订单", "trigger": "买家付款后取消订单时，买家 -1" },
+      { "reason": "bad_review", "delta": -5, "label": "获得差评", "trigger": "评价审核通过且 rating ≤ 2 时，卖家 -5" },
+      { "reason": "order_refunded", "delta": -5, "label": "退货退款", "trigger": "退货退款完成时，卖家 -5" },
+      { "reason": "report_warning", "delta": -10, "label": "被举报警告", "trigger": "管理员处理举报为警告时，被举报人 -10" },
+      { "reason": "product_banned", "delta": -15, "label": "商品被封禁", "trigger": "管理员封禁商品时，卖家 -15" },
+      { "reason": "report_banned", "delta": -20, "label": "被举报封禁", "trigger": "管理员处理举报为封禁时，被举报人 -20" }
+    ],
+    "notificationRule": "扣分时自动发送系统通知，告知用户扣分原因、扣分数额及当前信用分",
+    "levels": [
+      { "min": 120, "max": 150, "label": "优秀", "level": "excellent", "color": "#4CAF50" },
+      { "min": 100, "max": 119, "label": "良好", "level": "good", "color": "#2196F3" },
+      { "min": 80, "max": 99, "label": "一般", "level": "average", "color": "#FF9800" },
+      { "min": 60, "max": 79, "label": "较差", "level": "poor", "color": "#E65100" },
+      { "min": 0, "max": 59, "label": "极差", "level": "very_poor", "color": "#F44336" }
+    ],
+    "concurrency": "adjustCredit 使用原子 SQL 操作 (GREATEST/LEAST)，避免并发读后写丢失更新",
+    "triggerLocations": [
+      { "module": "order", "file": "backend/src/modules/order/order.service.ts", "events": ["confirmReceive → order_completed", "cancel → cancel_after_pay", "confirmReturnReceived → order_refunded"] },
+      { "module": "review", "file": "backend/src/modules/review/review.service.ts", "events": ["approve → good_review / good_review_with_img / bad_review"] },
+      { "module": "report", "file": "backend/src/modules/report/report.service.ts", "events": ["handle → report_warning / report_banned"] },
+      { "module": "product", "file": "backend/src/modules/product/product.service.ts", "events": ["ban → product_banned"] }
+    ]
+  }
+}
