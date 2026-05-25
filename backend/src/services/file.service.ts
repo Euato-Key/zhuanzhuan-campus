@@ -50,6 +50,13 @@ const UPLOAD_TYPES: Record<string, UploadTypeConfig> = {
     allowedMime: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     allowedExt: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
   },
+  banner: {
+    path: 'banners',
+    maxSize: MAX_IMAGE_SIZE_MB * MB,
+    maxCount: 1,
+    allowedMime: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+    allowedExt: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+  },
 };
 
 const MIME_MAP: Record<string, string> = {

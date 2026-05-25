@@ -5,7 +5,7 @@ import { asyncHandler } from '../../common/asyncHandler';
 import { ValidationUtil } from '../../common/validation';
 import { badRequest } from '../../common/errors';
 
-const VALID_UPLOAD_TYPES = ['avatar', 'product', 'community', 'chat'] as const;
+const VALID_UPLOAD_TYPES = ['avatar', 'product', 'community', 'chat', 'banner'] as const;
 type UploadType = typeof VALID_UPLOAD_TYPES[number];
 
 function validateUploadType(type: string): UploadType {

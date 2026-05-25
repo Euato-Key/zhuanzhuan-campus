@@ -701,3 +701,19 @@ model WantBuyCommentLike {
   @@index([userId], map: "idx_wbcl_user_id")
   @@map("want_buy_comment_likes")
 }
+
+model Banner {
+  id        Int       @id @default(autoincrement())
+  title     String    @db.VarChar(100)
+  imageUrl  String    @map("image_url") @db.VarChar(500)
+  linkUrl   String?   @map("link_url") @db.VarChar(500)
+  sort      Int       @default(1)
+  status    String    @default("active") @db.VarChar(20)
+  startTime DateTime? @map("start_time") @db.DateTime
+  endTime   DateTime? @map("end_time") @db.DateTime
+  createdAt DateTime  @default(now()) @map("created_at") @db.DateTime
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.DateTime
+
+  @@index([status, sort], map: "idx_banner_status_sort")
+  @@map("banners")
+}

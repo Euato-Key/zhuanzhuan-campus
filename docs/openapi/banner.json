@@ -1,0 +1,306 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Banner模块 API",
+    "description": "转转校园二手平台 - Banner轮播图接口文档",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "公开接口",
+      "description": "无需登录"
+    },
+    {
+      "name": "管理员接口",
+      "description": "需管理员/超级管理员权限"
+    }
+  ],
+  "paths": {
+    "/api/banners": {
+      "get": {
+        "tags": ["公开接口"],
+        "summary": "获取生效Banner列表",
+        "description": "获取当前生效且状态为active的Banner，按sort升序排列。用于首页轮播图展示。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Banner" }
+                    },
+                    "message": { "type": "string", "example": "success" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/banners": {
+      "get": {
+        "tags": ["管理员接口"],
+        "summary": "获取Banner列表（管理员）",
+        "description": "获取所有Banner，支持分页和状态筛选",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "default": 1 },
+            "description": "页码"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 10 },
+            "description": "每页数量"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["active", "inactive"] },
+            "description": "状态筛选"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "list": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Banner" }
+                        },
+                        "total": { "type": "integer" },
+                        "page": { "type": "integer" },
+                        "pageSize": { "type": "integer" },
+                        "totalPages": { "type": "integer" }
+                      }
+                    },
+                    "message": { "type": "string", "example": "success" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["管理员接口"],
+        "summary": "创建Banner",
+        "description": "创建新的Banner轮播图",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateBannerData" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": { "$ref": "#/components/schemas/Banner" },
+                    "message": { "type": "string", "example": "创建成功" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "标题和图片不能为空" }
+        }
+      }
+    },
+    "/api/admin/banners/{id}": {
+      "put": {
+        "tags": ["管理员接口"],
+        "summary": "更新Banner",
+        "description": "更新指定Banner的信息",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Banner ID"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateBannerData" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": { "$ref": "#/components/schemas/Banner" },
+                    "message": { "type": "string", "example": "更新成功" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Banner不存在" }
+        }
+      },
+      "delete": {
+        "tags": ["管理员接口"],
+        "summary": "删除Banner",
+        "description": "删除指定Banner",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Banner ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "删除成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": { "type": "object", "nullable": true },
+                    "message": { "type": "string", "example": "删除成功" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Banner不存在" }
+        }
+      }
+    },
+    "/api/admin/banners/{id}/status": {
+      "put": {
+        "tags": ["管理员接口"],
+        "summary": "切换Banner状态",
+        "description": "切换Banner的启用/禁用状态（active ↔ inactive）",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Banner ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "状态已切换",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer", "example": 200 },
+                    "data": { "$ref": "#/components/schemas/Banner" },
+                    "message": { "type": "string", "example": "状态已切换" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Banner不存在" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Banner": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "Banner ID" },
+          "title": { "type": "string", "description": "标题" },
+          "imageUrl": { "type": "string", "description": "图片OSS相对路径" },
+          "linkUrl": { "type": "string", "nullable": true, "description": "点击跳转链接" },
+          "sort": { "type": "integer", "description": "排序权重" },
+          "status": { "type": "string", "enum": ["active", "inactive"], "description": "状态" },
+          "startTime": { "type": "string", "format": "date-time", "nullable": true, "description": "生效开始时间" },
+          "endTime": { "type": "string", "format": "date-time", "nullable": true, "description": "生效结束时间" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateBannerData": {
+        "type": "object",
+        "required": ["title", "imageUrl"],
+        "properties": {
+          "title": { "type": "string", "description": "标题" },
+          "imageUrl": { "type": "string", "description": "图片OSS相对路径" },
+          "linkUrl": { "type": "string", "nullable": true, "description": "点击跳转链接" },
+          "sort": { "type": "integer", "default": 1, "description": "排序权重" },
+          "status": { "type": "string", "enum": ["active", "inactive"], "default": "active", "description": "状态" },
+          "startTime": { "type": "string", "format": "date-time", "nullable": true, "description": "生效开始时间" },
+          "endTime": { "type": "string", "format": "date-time", "nullable": true, "description": "生效结束时间" }
+        }
+      },
+      "UpdateBannerData": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "imageUrl": { "type": "string" },
+          "linkUrl": { "type": "string", "nullable": true },
+          "sort": { "type": "integer" },
+          "status": { "type": "string", "enum": ["active", "inactive"] },
+          "startTime": { "type": "string", "format": "date-time", "nullable": true },
+          "endTime": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      }
+    }
+  }
+}
