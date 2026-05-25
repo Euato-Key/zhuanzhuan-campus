@@ -68,13 +68,37 @@ export type StreamEvent =
   | { type: 'phase_start'; phase: string; message: string; keywords?: string[]; urls?: string[] }
   | { type: 'thinking'; phase: string; content: string }
   | { type: 'phase_complete'; phase: string; durationMs: number; count?: number; pagesOk?: number }
-  | { type: 'phase_results'; phase: string; results?: any[] }
+  | { type: 'phase_results'; phase: string; results?: WebSearchResult[] | FetchedPage[] | FetchedPageDetail[] }
   | { type: 'done'; result: AIRecognitionResult }
   | { type: 'error'; message: string; phase?: string };
 
+export interface ProductCardItem {
+  id: number
+  name: string
+  currentPrice: number
+  images: string[]
+  itemCondition: string
+  favoriteCount: number
+  deliveryType: string
+  categoryId?: number
+  categoryName?: string
+}
+
+export interface OrderCardItem {
+  id: number
+  orderNo: string
+  status: string
+  totalPrice: number
+  productName: string
+  createdAt: string
+  type?: string
+  buyerId?: number
+  sellerId?: number
+}
+
 export type AssistantStreamEvent =
   | { type: 'token'; content: string }
-  | { type: 'card'; msg_type: string; data: any; content?: string }
+  | { type: 'card'; msg_type: string; data: ProductCardItem[] | OrderCardItem[]; content?: string }
   | { type: 'status'; phase: string; message: string }
   | { type: 'meta'; conversationId: number }
   | { type: 'done'; conversationId: number; messageId: number }

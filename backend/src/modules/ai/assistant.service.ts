@@ -7,7 +7,7 @@ import { CategoryService } from '../category/category.service';
 import { AIPrompts } from './ai.prompts';
 import { SettingsService } from '../settings/settings.service';
 import { ASSISTANT_TOOLS, executeAssistantTool, getToolStatusMessage } from './assistant-tools';
-import type { AssistantStreamEvent } from './ai.types';
+import type { AssistantStreamEvent, ProductCardItem, OrderCardItem } from './ai.types';
 import { prisma } from '../../config/prisma';
 
 const MAX_TOOL_ROUNDS = 3;
@@ -157,7 +157,7 @@ async function *chatWithToolCalling(
 ): AsyncGenerator<AssistantStreamEvent> {
   const mutableMessages = [...messages];
   let assistantContent = '';
-  const collectedCards: Array<{ type: string; data: any }> = [];
+  const collectedCards: Array<{ type: string; data: ProductCardItem[] | OrderCardItem[] }> = [];
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const result = await AIClientService.chatCompletion(mutableMessages, {
@@ -236,7 +236,7 @@ async function *chatWithXMLParsing(
 ): AsyncGenerator<AssistantStreamEvent> {
   const mutableMessages = [...messages];
   let assistantContent = '';
-  const collectedCards: Array<{ type: string; data: any }> = [];
+  const collectedCards: Array<{ type: string; data: ProductCardItem[] | OrderCardItem[] }> = [];
   const usePartial = supportsPartialMode(env.AI_MODEL_NAME);
   let usedPartial = false;
 

@@ -5,6 +5,21 @@ import { AppError } from '../common/errors';
 
 let openaiClient: OpenAI | null = null;
 
+interface DashScopeMessage extends OpenAI.ChatCompletionMessage {
+  reasoning_content?: string;
+  tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>;
+}
+
+interface DashScopeCompletionTokensDetails {
+  reasoning_tokens?: number;
+  text_tokens?: number;
+}
+
+interface DashScopeStreamDelta extends OpenAI.ChatCompletionChunk.Choice.Delta {
+  reasoning_content?: string;
+  tool_calls?: Array<{ index: number; id?: string; function?: { name?: string; arguments?: string } }>;
+}
+
 function getOpenAIClient(): OpenAI {
   if (!openaiClient) {
     openaiClient = new OpenAI({
@@ -138,8 +153,8 @@ export const AIClientService = {
 
       return {
         content: msg.content ?? '',
-        thinkingContent: (msg as any).reasoning_content ?? undefined,
-        toolCalls: (msg as any).tool_calls ?? undefined,
+        thinkingContent: (msg as DashScopeMessage).reasoning_content ?? undefined,
+        toolCalls: (msg as DashScopeMessage).tool_calls ?? undefined,
         usage: {
           promptTokens: usage?.prompt_tokens ?? 0,
           completionTokens: usage?.completion_tokens ?? 0,

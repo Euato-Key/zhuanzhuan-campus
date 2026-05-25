@@ -62,13 +62,38 @@ export interface ReviewSummary {
   ratingDistribution: Record<number, number>;
 }
 
+type ReviewWithIncludes = {
+  id: number
+  orderId: bigint
+  reviewerId: number
+  reviewedId: number
+  type: ReviewType
+  rating: number
+  content: string | null
+  images: Prisma.JsonValue
+  isAnonymous: boolean
+  status: ReviewStatus
+  auditCount: number
+  rejectReason: string | null
+  createdAt: Date
+  updatedAt: Date
+  isAppend: boolean
+  appendContent: string | null
+  appendImages: Prisma.JsonValue | null
+  appendStatus: AppendStatus | null
+  appendAt: Date | null
+  appendAuditCount: number | null
+  reviewer: { id: number; username: string; avatar: string | null }
+  order: { id: bigint; orderNo: string; productName: string; productImage: string | null }
+}
+
 export interface OrderReviewStatusResult {
   buyerReviewed: boolean;
   sellerReviewed: boolean;
   canReview: boolean;
   canAppend: boolean;
-  buyerReview: any;
-  sellerReview: any;
+  buyerReview: ReviewWithIncludes | null;
+  sellerReview: ReviewWithIncludes | null;
 }
 
 // ============================================

@@ -1,12 +1,13 @@
 import type { ChatCompletionTool } from 'openai/resources/chat/completions';
 import { prisma } from '../../config/prisma';
+import type { ProductCardItem, OrderCardItem } from './ai.types';
 
 export interface ToolExecutionResult {
   toolCallId: string;
   functionName: string;
   result: unknown;
   displayType?: 'product_card' | 'order_card';
-  displayData?: unknown;
+  displayData?: ProductCardItem[] | OrderCardItem[];
 }
 
 export const ASSISTANT_TOOLS: ChatCompletionTool[] = [
@@ -160,7 +161,7 @@ async function executeGetMyStats(_args: any, userId: number) {
     soldCount,
     productCount,
     reviewCount: reviews,
-    creditScore: user?.creditScore || 100,
+    creditScore: user?.creditScore ?? 100,
   };
 }
 
@@ -212,20 +213,32 @@ export async function executeAssistantTool(
 
   let result: unknown;
   let displayType: 'product_card' | 'order_card' | undefined;
-  let displayData: unknown;
+  let displayData: ProductCardItem[] | OrderCardItem[] | undefined;
 
   try {
     switch (call.function.name) {
       case 'search_products': {
         result = await executeSearchProducts(args, userId);
         displayType = 'product_card';
-        displayData = (result as { products: unknown[] }).products;
+        displayData = (result as { products: unknown[] }).products.map((p: any) => ({
+          id: Number(p.id), name: String(p.name), currentPrice: Number(p.currentPrice),
+          images: p.images as string[], itemCondition: String(p.itemCondition),
+          favoriteCount: Number(p.favoriteCount), deliveryType: String(p.deliveryType),
+          categoryId: p.categoryId != null ? Number(p.categoryId) : undefined,
+          categoryName: p.categoryName ? String(p.categoryName) : undefined,
+        })) as ProductCardItem[];
         break;
       }
       case 'get_my_orders': {
         result = await executeGetMyOrders(args, userId);
         displayType = 'order_card';
-        displayData = (result as { orders: unknown[] }).orders;
+        displayData = (result as { orders: unknown[] }).orders.map((o: any) => ({
+          id: Number(o.id), orderNo: String(o.orderNo), status: String(o.status),
+          totalPrice: Number(o.totalPrice), productName: String(o.productName),
+          createdAt: String(o.createdAt), type: o.type ? String(o.type) : undefined,
+          buyerId: o.buyerId != null ? Number(o.buyerId) : undefined,
+          sellerId: o.sellerId != null ? Number(o.sellerId) : undefined,
+        })) as OrderCardItem[];
         break;
       }
       case 'get_my_stats': {
@@ -240,14 +253,25 @@ export async function executeAssistantTool(
         const cardData = await executeShowProductCard(args);
         result = cardData;
         displayType = 'product_card';
-        displayData = cardData;
+        displayData = (cardData as unknown[]).map((p: any) => ({
+          id: Number(p.id), name: String(p.name), currentPrice: Number(p.currentPrice),
+          images: p.images as string[], itemCondition: String(p.itemCondition),
+          favoriteCount: Number(p.favoriteCount), deliveryType: String(p.deliveryType),
+          categoryName: p.categoryName ? String(p.categoryName) : undefined,
+        })) as ProductCardItem[];
         break;
       }
       case 'show_order_card': {
         const cardData = await executeShowOrderCard(args, userId);
         result = cardData;
         displayType = 'order_card';
-        displayData = cardData;
+        displayData = (cardData as unknown[]).map((o: any) => ({
+          id: Number(o.id), orderNo: String(o.orderNo), status: String(o.status),
+          totalPrice: Number(o.totalPrice), productName: String(o.productName),
+          createdAt: String(o.createdAt), type: o.type ? String(o.type) : undefined,
+          buyerId: o.buyerId != null ? Number(o.buyerId) : undefined,
+          sellerId: o.sellerId != null ? Number(o.sellerId) : undefined,
+        })) as OrderCardItem[];
         break;
       }
       default:

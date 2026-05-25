@@ -36,27 +36,19 @@ const CREDIT_LABELS: Record<CreditReason, string> = {
   report_banned: '被举报封禁',
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value))
-}
 
 export async function adjustCredit(userId: number, reason: CreditReason, relatedId?: number): Promise<void> {
   const delta = CREDIT_DELTA[reason]
   if (delta === 0) return
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { creditScore: true },
-  })
-  if (!user) return
-
-  const newScore = clamp(user.creditScore + delta, 0, 150)
-  if (newScore === user.creditScore) return
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { creditScore: newScore },
-  })
+  // 原子操作：GREATEST/LEAST 保证分数在 [0, 150] 范围内，避免并发读后写丢失更新
+  const [updated] = await prisma.$queryRaw<Array<{ creditScore: number }>>`
+    UPDATE users
+    SET credit_score = GREATEST(0, LEAST(150, credit_score + ${delta}))
+    WHERE id = ${userId}
+    RETURNING credit_score
+  `
+  if (!updated) return
 
   // 扣分时通知用户
   if (delta < 0) {
@@ -65,7 +57,7 @@ export async function adjustCredit(userId: number, reason: CreditReason, related
       userId,
       type: 'system',
       title: '信用分变动',
-      content: `您的信用分因「${label}」被扣除 ${Math.abs(delta)} 分，当前信用分：${newScore}`,
+      content: `您的信用分因「${label}」被扣除 ${Math.abs(delta)} 分，当前信用分：${updated.creditScore}`,
       relatedId,
       relatedType: 'user',
     })

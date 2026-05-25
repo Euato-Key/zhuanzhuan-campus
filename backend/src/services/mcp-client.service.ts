@@ -2,6 +2,8 @@ import path from 'path';
 import { env } from '../config/env';
 import type { WebSearchResult, FetchedPage } from '../modules/ai/ai.types';
 
+// MCP SDK Client has complex generics — use any for internal state
+// but type the public API methods correctly
 interface MCPClientState {
   client: any;
   connected: boolean;
@@ -14,6 +16,7 @@ const state: MCPClientState = {
   connecting: false,
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function ensureConnected(): Promise<any> {
   if (state.connected && state.client) return state.client;
 
