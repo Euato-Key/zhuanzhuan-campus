@@ -6,6 +6,15 @@ import { NotificationService } from '../notification/notification.service';
 import { adjustCredit } from '../../common/credit';
 import { AuditService } from '../ai/audit.service';
 import { PRODUCT_CATEGORY_SELECT, PRODUCT_USER_SELECT, PRODUCT_DETAIL_USER_SELECT, PRODUCT_DETAIL_CATEGORY_SELECT, USER_ADMIN_SELECT } from '../../common/selects';
+import { Jieba } from '@node-rs/jieba';
+
+const jieba = new Jieba();
+
+/** 分词并过滤出有效搜索词 */
+function segmentKeywords(text: string): string[] {
+  const words = jieba.cut(text, true);
+  return words.filter(w => w.trim().length >= 2);
+}
 
 export type { ItemCondition, DeliveryType, ProductStatus };
 export { toItemCondition, tryToItemCondition };
@@ -238,13 +247,17 @@ export const ProductService = {
 
     if (query.keyword) {
       const keyword = query.keyword.trim();
-      where.OR = [
-        { name: { contains: keyword } },
-        { description: { contains: keyword } },
-        { brand: { contains: keyword } },
-        { tags: { string_contains: keyword } },
-        { specs: { string_contains: keyword } },
-      ];
+      const terms = segmentKeywords(keyword);
+      // 如果分词后没有有效词，用原词兜底
+      const searchTerms = terms.length > 0 ? terms : [keyword];
+
+      where.OR = searchTerms.flatMap(term => [
+        { name: { contains: term } },
+        { description: { contains: term } },
+        { brand: { contains: term } },
+        { tags: { string_contains: term } },
+        { specs: { string_contains: term } },
+      ]);
     }
 
     if (query.categoryId) {
@@ -600,13 +613,16 @@ export const ProductService = {
 
     if (query.keyword) {
       const keyword = query.keyword.trim();
-      where.OR = [
-        { name: { contains: keyword } },
-        { description: { contains: keyword } },
-        { brand: { contains: keyword } },
-        { tags: { string_contains: keyword } },
-        { specs: { string_contains: keyword } },
-      ];
+      const terms = segmentKeywords(keyword);
+      const searchTerms = terms.length > 0 ? terms : [keyword];
+
+      where.OR = searchTerms.flatMap(term => [
+        { name: { contains: term } },
+        { description: { contains: term } },
+        { brand: { contains: term } },
+        { tags: { string_contains: term } },
+        { specs: { string_contains: term } },
+      ]);
     }
 
     const [total, list] = await Promise.all([
