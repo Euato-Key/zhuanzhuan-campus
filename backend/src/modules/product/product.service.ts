@@ -242,6 +242,8 @@ export const ProductService = {
         { name: { contains: keyword } },
         { description: { contains: keyword } },
         { brand: { contains: keyword } },
+        { tags: { string_contains: keyword } },
+        { specs: { string_contains: keyword } },
       ];
     }
 
@@ -251,8 +253,15 @@ export const ProductService = {
         include: { children: true },
       });
       if (category) {
-        const categoryIds = [category.id, ...category.children.map(c => c.id)];
-        where.categoryId = { in: categoryIds };
+        // 如果是一级分类（没有parentId），需要查询该分类下所有子分类的商品
+        if (!category.parentId && category.children.length > 0) {
+          const categoryIds = category.children.map(c => c.id);
+          where.categoryId = { in: categoryIds };
+        } else {
+          // 二级分类或没有子分类的一级分类，直接查该分类及其子分类（兼容原有逻辑）
+          const categoryIds = [category.id, ...category.children.map(c => c.id)];
+          where.categoryId = { in: categoryIds };
+        }
       }
     }
 
@@ -594,6 +603,9 @@ export const ProductService = {
       where.OR = [
         { name: { contains: keyword } },
         { description: { contains: keyword } },
+        { brand: { contains: keyword } },
+        { tags: { string_contains: keyword } },
+        { specs: { string_contains: keyword } },
       ];
     }
 

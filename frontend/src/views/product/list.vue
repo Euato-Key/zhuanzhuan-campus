@@ -254,7 +254,7 @@ onMounted(() => {
       <div class="filter-row">
         <el-input
           v-model="queryParams.keyword"
-          placeholder="搜索商品名称、描述、品牌"
+          placeholder="搜索商品名称、描述、品牌、标签、规格"
           :prefix-icon="Search"
           clearable
           class="search-input"
