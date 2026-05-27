@@ -10,10 +10,17 @@ import { Jieba } from '@node-rs/jieba';
 
 const jieba = new Jieba();
 
-/** 分词并过滤出有效搜索词 */
+/** 分词并过滤出有效搜索词（保留英文单词和数字，过滤纯单字） */
 function segmentKeywords(text: string): string[] {
   const words = jieba.cut(text, true);
-  return words.filter(w => w.trim().length >= 2);
+  return words.filter(w => {
+    const trimmed = w.trim();
+    if (trimmed.length === 0) return false;
+    // 保留英文单词、数字、混合词（如 iPhone, 16GB, Pro）
+    if (/^[a-zA-Z0-9]+$/.test(trimmed)) return true;
+    // 保留中文词（长度>=2）
+    return trimmed.length >= 2;
+  });
 }
 
 export type { ItemCondition, DeliveryType, ProductStatus };
@@ -255,8 +262,6 @@ export const ProductService = {
         { name: { contains: term } },
         { description: { contains: term } },
         { brand: { contains: term } },
-        { tags: { string_contains: term } },
-        { specs: { string_contains: term } },
       ]);
     }
 
@@ -266,15 +271,10 @@ export const ProductService = {
         include: { children: true },
       });
       if (category) {
-        // 如果是一级分类（没有parentId），需要查询该分类下所有子分类的商品
-        if (!category.parentId && category.children.length > 0) {
-          const categoryIds = category.children.map(c => c.id);
-          where.categoryId = { in: categoryIds };
-        } else {
-          // 二级分类或没有子分类的一级分类，直接查该分类及其子分类（兼容原有逻辑）
-          const categoryIds = [category.id, ...category.children.map(c => c.id)];
-          where.categoryId = { in: categoryIds };
-        }
+        // 一级分类：查询自身及其所有子分类的商品
+        // 二级分类：查询自身及其子分类的商品
+        const categoryIds = [category.id, ...category.children.map(c => c.id)];
+        where.categoryId = { in: categoryIds };
       }
     }
 
@@ -620,8 +620,6 @@ export const ProductService = {
         { name: { contains: term } },
         { description: { contains: term } },
         { brand: { contains: term } },
-        { tags: { string_contains: term } },
-        { specs: { string_contains: term } },
       ]);
     }
 
